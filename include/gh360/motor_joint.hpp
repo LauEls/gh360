@@ -1,0 +1,42 @@
+#ifndef MOTOR_JOINT_HPP_
+#define MOTOR_JOINT_HPP_
+
+#include <iostream>
+#include <cstdio>
+#include <memory>
+#include <vector>
+
+#include "joint.hpp"
+#include "mx_106_dict.hpp"
+#include "mx_64_dict.hpp"
+
+class MotorJoint: public Joint
+{
+    public:
+        MotorJoint();
+        virtual ~MotorJoint();
+
+        void set_joint_name(std::string name);
+        void set_motor_id(int motor_id);
+        void set_action_id(int action_id);
+        void set_movement_direction(int movement_direction);
+        void set_motor_model(gh360::MotorDictionary* motor_model);
+
+        std::string get_joint_name();
+        std::string get_joint_type();
+        int get_motor_id();
+        int get_action_id();
+        int get_movement_direction();
+        gh360::MotorDictionary* get_motor_model();
+
+    private:
+        std::string joint_type;
+        int motor_id;
+        int action_id;
+        int movement_direction;
+        gh360::MotorDictionary* motor_model;
+
+
+};
+
+#endif // MOTOR_JOINT_HPP_

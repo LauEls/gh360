@@ -1,0 +1,54 @@
+/shoulder/motor_handler:
+  ros__parameters:
+    joint_names: ['elbow', 'wrist_pitch']
+    port_name: "/dev/ttyUSB0"
+    baud_rate: 1000000
+    protocol: 2
+    wrist_pitch:
+      joint_type: "soft_joint"
+      right:
+        motor_id: 30
+        action_id: 0
+        movement_direction: 1
+      left:
+        motor_id: 31
+        action_id: 1
+        movement_direction: 1
+    elbow:
+      joint_type: "soft_joint"
+      right:
+        motor_id: 30
+        action_id: 0
+        movement_direction: 1
+      left:
+        motor_id: 31
+        action_id: 1
+        movement_direction: 1
+      
+
+/lowerarm/motor_handler:
+  ros__parameters:
+    joint_names: ['elbow', 'forearm_roll', 'wrist_pitch']
+    port_name: "/dev/ttyUSB0"
+    baud_rate: 1000000
+    protocol: 2
+    wrist_pitch:
+      joint_type: "soft_joint"
+      right:
+        motor_id: 60
+        movement_direction: 1
+      left:
+        motor_id: 61
+        movement_direction: 1
+    elbow:
+      joint_type: "soft_joint"
+      right:
+        motor_id: 62
+        movement_direction: 1
+      left:
+        motor_id: 63
+        movement_direction: 1
+    forearm_roll:
+      joint_type: "motor_joint"
+      motor_id: 31
+      movement_direction: 1

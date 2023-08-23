@@ -1,0 +1,8 @@
+<library path="gh360">
+  <class type="gh360::MX_106_DICT" base_class_type="gh360::MotorDictionary">
+    <description>Address dictionary class for Dynamixel MX-106 Motor</description>
+  </class>
+  <class type="gh360::MX_64_DICT" base_class_type="gh360::MotorDictionary">
+    <description>Address dictionary class for Dynamixel MX-64 Motor</description>
+  </class>
+</library>

@@ -1,0 +1,143 @@
+cmake_minimum_required(VERSION 3.5)
+project(gh360)
+
+# Default to C99
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 99)
+endif()
+
+# Default to C++14
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 14)
+endif()
+
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+# find dependencies
+find_package(ament_cmake REQUIRED)
+find_package(dynamixel_sdk REQUIRED)
+# find_package(dynamixel_sdk_custom_interfaces REQUIRED)
+# find_package(dynamixel_workbench_toolbox REQUIRED)
+find_package(rclcpp REQUIRED)
+# uncomment the following section in order to fill in
+# further dependencies manually.
+# find_package(<dependency> REQUIRED)
+
+include_directories(include)
+
+# set(dependencies_lib
+#   "dynamixel_sdk"
+#   "rclcpp"
+# )
+
+# set(LIB_NAME "gh360")
+
+# add_library(${LIB_NAME} SHARED
+#   src/mx_106_dict.cpp
+#   src/mx_64_dict.cpp
+# )
+# ament_target_dependencies(${LIB_NAME} ${dependencies_lib})
+
+# # Install launch files.
+# install(DIRECTORY
+#   launch
+#   DESTINATION share/${PROJECT_NAME}/
+# )
+
+# #Install config files
+# install(DIRECTORY
+#   config
+#   DESTINATION share/${PROJECT_NAME}
+# )
+
+# install(TARGETS ${LIB_NAME}
+#   ARCHIVE DESTINATION lib
+#   LIBRARY DESTINATION lib
+#   RUNTIME DESTINATION bin/${PROJECT_NAME}
+# )
+
+# install(DIRECTORY include/
+#   DESTINATION include/
+# )
+
+# ################################################################################
+# # Test
+# ################################################################################
+
+# ################################################################################
+# # Macro for ament package
+# ################################################################################
+# ament_export_include_directories(include)
+# ament_export_dependencies(dynamixel_sdk)
+# ament_export_dependencies(rclcpp)
+# ament_export_libraries(${LIB_NAME})
+# ament_package()
+
+
+add_library(motor_dicts src/mx_106_dict.cpp) 
+# # this line to exports the library
+# ament_export_targets(motor_dict HAS_LIBRARY_TARGET)
+
+add_executable(motor_handler src/motor_handler.cpp)
+target_link_libraries(motor_handler LINK_PUBLIC motor_dicts)
+
+ament_target_dependencies(
+  motor_handler
+  dynamixel_sdk
+  rclcpp
+)
+
+install(TARGETS
+  motor_handler
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+# Install launch files.
+install(DIRECTORY
+  launch
+  DESTINATION share/${PROJECT_NAME}/
+)
+
+#Install config files
+install(DIRECTORY
+  config
+  DESTINATION share/${PROJECT_NAME}
+)
+
+# install(TARGETS ${LIB_NAME}
+#   ARCHIVE DESTINATION lib
+#   LIBRARY DESTINATION lib
+#   RUNTIME DESTINATION bin
+# )
+
+# install(DIRECTORY include/
+#   DESTINATION include
+# )
+# install(TARGETS motor_dict
+#   EXPORT motor_dict
+#   ARCHIVE DESTINATION lib
+#   LIBRARY DESTINATION lib
+#   RUNTIME DESTINATION bin
+#   INCLUDES DESTINATION include
+# )
+
+
+
+if(BUILD_TESTING)
+  find_package(ament_lint_auto REQUIRED)
+  # the following line skips the linter which checks for copyrights
+  # uncomment the line when a copyright and license is not present in all source files
+  #set(ament_cmake_copyright_FOUND TRUE)
+  # the following line skips cpplint (only works in a git repo)
+  # uncomment the line when this package is not in a git repo
+  #set(ament_cmake_cpplint_FOUND TRUE)
+  ament_lint_auto_find_test_dependencies()
+endif()
+
+# ament_export_include_directories(include)
+# ament_export_dependencies(dynamixel_sdk)
+# ament_export_dependencies(rclcpp)
+# ament_export_libraries(gh360)
+ament_package()
