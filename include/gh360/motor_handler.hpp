@@ -41,9 +41,11 @@ namespace gh360
             bool setTorqueEnable(Joint* joint, int value);
             // bool setPositionControlMode(uint8_t id);
             // bool setExtendedPositionControlMode(uint8_t id);
+            bool readPresentPosition();
+            // bool writeGoalPosition();
             bool syncRead(uint8_t size, uint8_t address);
-            bool syncWrite();
-            bool writeRegister(uint8_t id, int32_t data, uint8_t data_size, uint8_t address);
+            bool syncWrite(uint8_t size, uint8_t address);
+            bool writeRegister(uint8_t id, int data, uint8_t data_size, uint8_t address);
 
         private:
             dynamixel::PortHandler * portHandler;
@@ -53,18 +55,20 @@ namespace gh360
             int baud_rate;
             int protocol;
             constexpr static int motor_cnt = 2;
+            bool multi_motor_models = false;
+            MotorDictionary* joints_motor_model;
 
             std::vector<std::string> joint_names;
             std::vector<Joint*> joints;
-            std::string joint_type;
-            int right_id;
-            int left_id;
+            // std::string joint_type;
+            // int right_id;
+            // int left_id;
 
             // gh360::MX_106_DICT* motor_test = new gh360::MX_106_DICT(2);
 
-            uint16_t model_number = 0;
-            uint8_t dxl_id[motor_cnt] = {30, 31};
-            std::vector<MotorDictionary*> motor_dicts;
+            // uint16_t model_number = 0;
+            // uint8_t dxl_id[motor_cnt] = {30, 31};
+            // std::vector<MotorDictionary*> motor_dicts;
 
             // DynamixelWorkbench dxl_wb;
             const char *log;

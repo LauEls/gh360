@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <memory>
 #include <vector>
+#include <math.h>
 
 #include "joint.hpp"
 #include "mx_106_dict.hpp"
@@ -27,6 +28,8 @@ class SoftJoint: public Joint
         void set_left_motor_model(gh360::MotorDictionary* motor_model);
         void set_right_motor_present_position(int position);
         void set_left_motor_present_position(int position);
+        void set_right_motor_goal_position(double goal_pos);
+        void set_left_motor_goal_position(double goal_pos);
 
         std::string get_joint_name();
         std::string get_joint_type();
@@ -40,6 +43,10 @@ class SoftJoint: public Joint
         gh360::MotorDictionary* get_left_motor_model();
         double get_right_motor_present_position();
         double get_left_motor_present_position();
+        double get_right_motor_goal_position();
+        double get_left_motor_goal_position();
+        int get_right_motor_goal_position_int();
+        int get_left_motor_goal_position_int();
 
     private:
         std::string joint_type;
@@ -53,6 +60,8 @@ class SoftJoint: public Joint
         gh360::MotorDictionary* left_motor_model;
         double right_motor_present_position;
         double left_motor_present_position;
+        double right_motor_goal_pos;
+        double left_motor_goal_pos;
 
 
 };

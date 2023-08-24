@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <memory>
 #include <vector>
+#include <math.h>
 
 #include "joint.hpp"
 #include "mx_106_dict.hpp"
@@ -21,6 +22,8 @@ class MotorJoint: public Joint
         void set_action_id(int action_id);
         void set_movement_direction(int movement_direction);
         void set_motor_model(gh360::MotorDictionary* motor_model);
+        void set_motor_present_position(int position);
+        void set_motor_goal_position(double goal_pos);
 
         std::string get_joint_name();
         std::string get_joint_type();
@@ -28,6 +31,9 @@ class MotorJoint: public Joint
         int get_action_id();
         int get_movement_direction();
         gh360::MotorDictionary* get_motor_model();
+        double get_motor_present_position();
+        double get_motor_goal_position();
+        int get_motor_goal_position_int();
 
     private:
         std::string joint_type;
@@ -35,6 +41,8 @@ class MotorJoint: public Joint
         int action_id;
         int movement_direction;
         gh360::MotorDictionary* motor_model;
+        double motor_present_position;
+        double motor_goal_pos;
 
 
 };

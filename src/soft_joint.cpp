@@ -58,12 +58,24 @@ void SoftJoint::set_left_motor_model(gh360::MotorDictionary* motor_model)
 
 void SoftJoint::set_right_motor_present_position(int position)
 {
-    double motor_pos = position * 0.088;
+    double motor_pos = position * (2*M_PI/4096);
+    this->right_motor_present_position = motor_pos;
 }
 
 void SoftJoint::set_left_motor_present_position(int position)
 {
+    double motor_pos = position * (2*M_PI/4096);
+    this->left_motor_present_position = motor_pos;
+}
 
+void SoftJoint::set_right_motor_goal_position(double goal_pos)
+{
+    this->right_motor_goal_pos = goal_pos;
+}
+
+void SoftJoint::set_left_motor_goal_position(double goal_pos)
+{
+    this->left_motor_goal_pos = goal_pos;
 }
 
 std::string SoftJoint::get_joint_name()
@@ -114,4 +126,36 @@ gh360::MotorDictionary* SoftJoint::get_right_motor_model()
 gh360::MotorDictionary* SoftJoint::get_left_motor_model()
 {
     return this->left_motor_model;
+}
+
+double SoftJoint::get_right_motor_present_position()
+{
+    return this->right_motor_present_position;
+}
+
+double SoftJoint::get_left_motor_present_position()
+{
+    return this->left_motor_present_position;
+}
+
+double SoftJoint::get_right_motor_goal_position()
+{
+    return this->right_motor_goal_pos;
+}
+
+double SoftJoint::get_left_motor_goal_position()
+{
+    return this->left_motor_goal_pos;
+}
+
+int SoftJoint::get_right_motor_goal_position_int()
+{
+    int goal_pos_int = this->right_motor_goal_pos / (2*M_PI/4096);
+    return goal_pos_int;
+}
+
+int SoftJoint::get_left_motor_goal_position_int()
+{
+    int goal_pos_int = this->left_motor_goal_pos / (2*M_PI/4096);
+    return goal_pos_int;
 }
