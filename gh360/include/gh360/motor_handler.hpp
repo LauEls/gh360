@@ -5,6 +5,7 @@
 #include <memory>
 #include <iostream>
 #include <vector>
+#include <math.h>
 
 #include "rclcpp/rclcpp.hpp"
 // #include <DynamixelWorkbench.h>
@@ -42,6 +43,9 @@ namespace gh360
             // bool setPositionControlMode(uint8_t id);
             // bool setExtendedPositionControlMode(uint8_t id);
             bool readPresentPosition();
+            // bool readPresentVelocity();
+            // bool readPresentCurrent();
+            // bool readPresentTemperature();
             // bool writeGoalPosition();
             bool syncRead(uint8_t size, uint8_t address);
             bool syncWrite(uint8_t size, uint8_t address);

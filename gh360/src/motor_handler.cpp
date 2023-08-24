@@ -116,28 +116,22 @@ gh360::MotorHandler::MotorHandler()
     {
         if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
         {
-            soft_joint->set_right_motor_goal_position(0.0);
-            soft_joint->set_left_motor_goal_position(0.0);
+            soft_joint->set_right_motor_goal_position(M_PI);
+            soft_joint->set_left_motor_goal_position(M_PI);
         }
         else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
         {
-            motor_joint->set_motor_goal_position(0.0);
+            motor_joint->set_motor_goal_position(M_PI);
         }
     }
 
     bool comm_result;
-    if (!this->multi_motor_models)
-    {
-        uint8_t address = this->joints_motor_model->Goal_Position.address;
-        uint8_t size = this->joints_motor_model->Goal_Position.size;
-        // RCLCPP_INFO(this->get_logger(), "Address: %ld", address);
-        // RCLCPP_INFO(this->get_logger(), "Size: %ld", size);
-        comm_result = this->syncWrite(size, address);
-        // if (!comm_result) return false;
-    }
+    uint8_t address = this->joints_motor_model->Goal_Position.address;
+    uint8_t size = this->joints_motor_model->Goal_Position.size;
+    comm_result = this->syncWrite(size, address);
 
 
-    this->readPresentPosition();
+    // this->readPresentPosition();
 
 
 
@@ -194,181 +188,191 @@ bool gh360::MotorHandler::readPresentPosition()
 
 bool gh360::MotorHandler::syncRead(uint8_t size, uint8_t address)
 {
-    dynamixel::GroupSyncRead groupSyncRead(this->portHandler, this->packetHandler, address, size);
-    
-    bool dxl_addparam_result = false; 
-    uint8_t motor_id;
-    for (unsigned int i=0; i < this->joints.size(); i++)
+    if (!this->multi_motor_models)
     {
-        // if (dynamic_cast<SoftJoint*>(this->joints[i]) != nullptr)
-        if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
+        dynamixel::GroupSyncRead groupSyncRead(this->portHandler, this->packetHandler, address, size);
+        
+        bool dxl_addparam_result = false; 
+        uint8_t motor_id;
+        for (unsigned int i=0; i < this->joints.size(); i++)
         {
-            motor_id = soft_joint->get_right_motor_id();
-            dxl_addparam_result = groupSyncRead.addParam(motor_id);
-            if (dxl_addparam_result != true)
+            // if (dynamic_cast<SoftJoint*>(this->joints[i]) != nullptr)
+            if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
             {
-                // fprintf(stderr, "[ID:%03d] groupSyncRead addparam failed", motor_id);
-                RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncRead addparam failed", motor_id);
-                return false;
-            }
+                motor_id = soft_joint->get_right_motor_id();
+                dxl_addparam_result = groupSyncRead.addParam(motor_id);
+                if (dxl_addparam_result != true)
+                {
+                    // fprintf(stderr, "[ID:%03d] groupSyncRead addparam failed", motor_id);
+                    RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncRead addparam failed", motor_id);
+                    return false;
+                }
 
-            motor_id = soft_joint->get_left_motor_id();
-            dxl_addparam_result = groupSyncRead.addParam(motor_id);
-            if (dxl_addparam_result != true)
+                motor_id = soft_joint->get_left_motor_id();
+                dxl_addparam_result = groupSyncRead.addParam(motor_id);
+                if (dxl_addparam_result != true)
+                {
+                    // fprintf(stderr, "[ID:%03d] groupSyncRead addparam failed", motor_id);
+                    RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncRead addparam failed", motor_id);
+                    return false;
+                }
+            }
+            else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
             {
-                // fprintf(stderr, "[ID:%03d] groupSyncRead addparam failed", motor_id);
-                RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncRead addparam failed", motor_id);
-                return false;
+                motor_id = motor_joint->get_motor_id();
+                dxl_addparam_result = groupSyncRead.addParam(motor_id);
+                if (dxl_addparam_result != true)
+                {
+                    // fprintf(stderr, "[ID:%03d] groupSyncRead addparam failed", motor_id);
+                    RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncRead addparam failed", motor_id);
+                    return false;
+                }
             }
         }
-        else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
+
+        // Syncread present position
+        int dxl_comm_result = groupSyncRead.txRxPacket();
+        // if (dxl_comm_result != COMM_SUCCESS) this->packetHandler->printTxRxResult(dxl_comm_result);
+        if (dxl_comm_result != COMM_SUCCESS)
         {
-            motor_id = motor_joint->get_motor_id();
-            dxl_addparam_result = groupSyncRead.addParam(motor_id);
-            if (dxl_addparam_result != true)
+            RCLCPP_ERROR(this->get_logger(), "Failed to synread.");
+            return false;
+        } 
+
+
+        bool dxl_getdata_result = false;
+        // int32_t dxl1_present_position = 0, dxl2_present_position = 0;
+        for (unsigned int i=0; i < this->joints.size(); i++)
+        {
+            if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
             {
-                // fprintf(stderr, "[ID:%03d] groupSyncRead addparam failed", motor_id);
-                RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncRead addparam failed", motor_id);
-                return false;
+                motor_id = soft_joint->get_right_motor_id();
+                dxl_getdata_result = groupSyncRead.isAvailable(motor_id, address, size);
+                if (dxl_getdata_result != true)
+                {
+                    // fprintf(stderr, "[ID:%03d] groupSyncRead getdata failed", this->dxl_id[0]);
+                    RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncRead getdata failed", motor_id);
+                    return false;
+                }
+                // soft_joint->set_right_motor_present_position(groupSyncRead.getData(motor_id, address, size));
+                soft_joint->set_right_motor_status(groupSyncRead.getData(motor_id, address, size), address);
+
+                motor_id = soft_joint->get_left_motor_id();
+                dxl_getdata_result = groupSyncRead.isAvailable(motor_id, address, size);
+                if (dxl_getdata_result != true)
+                {
+                    // fprintf(stderr, "[ID:%03d] groupSyncRead getdata failed", this->dxl_id[0]);
+                    RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncRead getdata failed", motor_id);
+                    return false;
+                }
+                // soft_joint->set_left_motor_present_position(groupSyncRead.getData(motor_id, address, size));
+                soft_joint->set_left_motor_status(groupSyncRead.getData(motor_id, address, size), address);
+            }
+            else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
+            {
+                motor_id = motor_joint->get_motor_id();
+                dxl_getdata_result = groupSyncRead.isAvailable(motor_id, address, size);
+                if (dxl_getdata_result != true)
+                {
+                    // fprintf(stderr, "[ID:%03d] groupSyncRead getdata failed", this->dxl_id[0]);
+                    RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncRead getdata failed", motor_id);
+                    return false;
+                }
+                // motor_joint->set_motor_present_position(groupSyncRead.getData(motor_id, address, size));
+                motor_joint->set_motor_status(groupSyncRead.getData(motor_id, address, size), address);
             }
         }
-        // dxl_addparam_result = groupSyncRead.addParam(this->dxl_id[0]);
-        // if (dxl_addparam_result != true)
-        // {
-        //     fprintf(stderr, "[ID:%03d] groupSyncRead addparam failed", this->dxl_id[0]);
-        //     return false;
-        // }
+        return true;
     }
 
-    // int dxl_comm_result;
-    // Syncread present position
-    int dxl_comm_result = groupSyncRead.txRxPacket();
-    // if (dxl_comm_result != COMM_SUCCESS) this->packetHandler->printTxRxResult(dxl_comm_result);
-    if (dxl_comm_result != COMM_SUCCESS) RCLCPP_ERROR(this->get_logger(), "Failed to synread.");
-
-
-    bool dxl_getdata_result = false;
-    // int32_t dxl1_present_position = 0, dxl2_present_position = 0;
-    for (unsigned int i=0; i < this->joints.size(); i++)
-    {
-        if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
-        {
-            motor_id = soft_joint->get_right_motor_id();
-            dxl_getdata_result = groupSyncRead.isAvailable(motor_id, address, size);
-            if (dxl_getdata_result != true)
-            {
-                // fprintf(stderr, "[ID:%03d] groupSyncRead getdata failed", this->dxl_id[0]);
-                RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncRead getdata failed", motor_id);
-                return false;
-            }
-            soft_joint->set_right_motor_present_position(groupSyncRead.getData(motor_id, address, size));
-
-            motor_id = soft_joint->get_left_motor_id();
-            dxl_getdata_result = groupSyncRead.isAvailable(motor_id, address, size);
-            if (dxl_getdata_result != true)
-            {
-                // fprintf(stderr, "[ID:%03d] groupSyncRead getdata failed", this->dxl_id[0]);
-                RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncRead getdata failed", motor_id);
-                return false;
-            }
-            soft_joint->set_left_motor_present_position(groupSyncRead.getData(motor_id, address, size));
-        }
-        else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
-        {
-            motor_id = motor_joint->get_motor_id();
-            dxl_getdata_result = groupSyncRead.isAvailable(motor_id, address, size);
-            if (dxl_getdata_result != true)
-            {
-                // fprintf(stderr, "[ID:%03d] groupSyncRead getdata failed", this->dxl_id[0]);
-                RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncRead getdata failed", motor_id);
-                return false;
-            }
-            motor_joint->set_motor_present_position(groupSyncRead.getData(motor_id, address, size));
-        }
-    }
-
-    return true;
+    return false;
 }
 
 bool gh360::MotorHandler::syncWrite(uint8_t size, uint8_t address)
 {
-    dynamixel::GroupSyncWrite groupSyncWrite(this->portHandler, this->packetHandler, address, size);
-
-    uint8_t param_goal_position[4];
-    int motor_goal_pos;
-    uint8_t motor_id;
-    bool comm_result;
-
-    for (unsigned int i=0; i < this->joints.size(); i++)
+    if (!this->multi_motor_models)
     {
-        if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
+        dynamixel::GroupSyncWrite groupSyncWrite(this->portHandler, this->packetHandler, address, size);
+
+        uint8_t param_goal_position[4];
+        int motor_goal;
+        uint8_t motor_id;
+        bool comm_result;
+
+        for (unsigned int i=0; i < this->joints.size(); i++)
         {
-            motor_id = soft_joint->get_right_motor_id();
-            motor_goal_pos = soft_joint->get_right_motor_goal_position_int();
-
-            param_goal_position[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal_pos));
-            param_goal_position[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal_pos));
-            param_goal_position[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal_pos));
-            param_goal_position[3] = DXL_HIBYTE(DXL_HIWORD(motor_goal_pos));
-
-            comm_result = groupSyncWrite.addParam(motor_id, param_goal_position);
-            if (comm_result != true)
+            if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
             {
-                // fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed", motor_id);
-                RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncWrite addparam failed", motor_id);
-                return false;
+                motor_id = soft_joint->get_right_motor_id();
+                motor_goal = soft_joint->get_right_motor_goal_int(address);
+                // motor_goal_pos = soft_joint->get_right_motor_goal_position_int();
+
+                param_goal_position[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal));
+                param_goal_position[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal));
+                param_goal_position[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal));
+                param_goal_position[3] = DXL_HIBYTE(DXL_HIWORD(motor_goal));
+
+                comm_result = groupSyncWrite.addParam(motor_id, param_goal_position);
+                if (comm_result != true)
+                {
+                    // fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed", motor_id);
+                    RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncWrite addparam failed", motor_id);
+                    return false;
+                }
+
+                motor_id = soft_joint->get_left_motor_id();
+                // motor_goal_pos = soft_joint->get_left_motor_goal_position_int();
+                motor_goal = soft_joint->get_left_motor_goal_int(address);
+                param_goal_position[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal));
+                param_goal_position[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal));
+                param_goal_position[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal));
+                param_goal_position[3] = DXL_HIBYTE(DXL_HIWORD(motor_goal));
+
+                comm_result = groupSyncWrite.addParam(motor_id, param_goal_position);
+                if (comm_result != true)
+                {
+                    // fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed", motor_id);
+                    RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncWrite addparam failed", motor_id);
+                    return false;
+                }
+                
+            }
+            else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
+            {
+                motor_id = motor_joint->get_motor_id();
+                // motor_goal_pos = motor_joint->get_motor_goal_position_int();
+                motor_goal = motor_joint->get_motor_goal_int(address);
+
+                param_goal_position[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal));
+                param_goal_position[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal));
+                param_goal_position[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal));
+                param_goal_position[3] = DXL_HIBYTE(DXL_HIWORD(motor_goal));
+
+                comm_result = groupSyncWrite.addParam(motor_id, param_goal_position);
+                if (comm_result != true)
+                {
+                    // fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed", motor_id);
+                    RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncWrite addparam failed", motor_id);
+                    return false;
+                }
             }
 
-            motor_id = soft_joint->get_left_motor_id();
-            motor_goal_pos = soft_joint->get_left_motor_goal_position_int();
-
-            param_goal_position[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal_pos));
-            param_goal_position[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal_pos));
-            param_goal_position[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal_pos));
-            param_goal_position[3] = DXL_HIBYTE(DXL_HIWORD(motor_goal_pos));
-
-            comm_result = groupSyncWrite.addParam(motor_id, param_goal_position);
-            if (comm_result != true)
-            {
-                // fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed", motor_id);
-                RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncWrite addparam failed", motor_id);
-                return false;
-            }
-            
         }
-        else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
+
+        // Syncwrite goal position
+        comm_result = groupSyncWrite.txPacket();
+        if (comm_result != COMM_SUCCESS)
         {
-            motor_id = motor_joint->get_motor_id();
-            motor_goal_pos = motor_joint->get_motor_goal_position_int();
-        
-            param_goal_position[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal_pos));
-            param_goal_position[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal_pos));
-            param_goal_position[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal_pos));
-            param_goal_position[3] = DXL_HIBYTE(DXL_HIWORD(motor_goal_pos));
+            RCLCPP_ERROR(this->get_logger(), "Failed to sync write to motors.");
+            return false;
+        } 
 
-            comm_result = groupSyncWrite.addParam(motor_id, param_goal_position);
-            if (comm_result != true)
-            {
-                // fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed", motor_id);
-                RCLCPP_ERROR(this->get_logger(), "[ID:%03d] groupSyncWrite addparam failed", motor_id);
-                return false;
-            }
-        }
+        // Clear syncwrite parameter storage
+        groupSyncWrite.clearParam();
 
+        return true;
     }
-
-    // Syncwrite goal position
-    comm_result = groupSyncWrite.txPacket();
-    if (comm_result != COMM_SUCCESS)
-    {
-        RCLCPP_ERROR(this->get_logger(), "Failed to sync write to motors.");
-        return false;
-    } 
-
-    // Clear syncwrite parameter storage
-    groupSyncWrite.clearParam();
-
-    return true;
+    return false;
 }
 
 bool gh360::MotorHandler::openPortsAndSetBaudrate()

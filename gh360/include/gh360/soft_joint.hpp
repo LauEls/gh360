@@ -30,6 +30,8 @@ class SoftJoint: public Joint
         void set_left_motor_present_position(int position);
         void set_right_motor_goal_position(double goal_pos);
         void set_left_motor_goal_position(double goal_pos);
+        void set_right_motor_status(int data, uint8_t address);
+        void set_left_motor_status(int data, uint8_t address);
 
         std::string get_joint_name();
         std::string get_joint_type();
@@ -47,6 +49,10 @@ class SoftJoint: public Joint
         double get_left_motor_goal_position();
         int get_right_motor_goal_position_int();
         int get_left_motor_goal_position_int();
+        double get_right_motor_goal(uint8_t address);
+        double get_left_motor_goal(uint8_t address);
+        int get_right_motor_goal_int(uint8_t address);
+        int get_left_motor_goal_int(uint8_t address);
 
     private:
         std::string joint_type;
@@ -58,10 +64,26 @@ class SoftJoint: public Joint
         int left_movement_direction;
         gh360::MotorDictionary* right_motor_model;
         gh360::MotorDictionary* left_motor_model;
+        // Motor Position in rad
         double right_motor_present_position;
         double left_motor_present_position;
-        double right_motor_goal_pos;
-        double left_motor_goal_pos;
+        double right_motor_goal_position;
+        double left_motor_goal_position;
+        // Motor Velocity in rpm
+        double right_motor_present_velocity;
+        double left_motor_present_velocity;
+        double right_motor_goal_velocity;
+        double left_motor_goal_velocity;
+        // Motor Current in mA
+        double right_motor_present_current;
+        double left_motor_present_current;
+        double right_motor_goal_current;
+        double left_motor_goal_current;
+        // Motor Temperature in degrees
+        double right_motor_present_temperature;
+        double left_motor_present_temperature;
+        
+        
 
 
 };

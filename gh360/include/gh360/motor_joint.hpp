@@ -24,6 +24,7 @@ class MotorJoint: public Joint
         void set_motor_model(gh360::MotorDictionary* motor_model);
         void set_motor_present_position(int position);
         void set_motor_goal_position(double goal_pos);
+        void set_motor_status(int data, uint8_t address);
 
         std::string get_joint_name();
         std::string get_joint_type();
@@ -34,6 +35,8 @@ class MotorJoint: public Joint
         double get_motor_present_position();
         double get_motor_goal_position();
         int get_motor_goal_position_int();
+        double get_motor_goal(uint8_t address);
+        int get_motor_goal_int(uint8_t address);
 
     private:
         std::string joint_type;
@@ -41,8 +44,20 @@ class MotorJoint: public Joint
         int action_id;
         int movement_direction;
         gh360::MotorDictionary* motor_model;
+        
+        // Motor Position in rad
         double motor_present_position;
-        double motor_goal_pos;
+        double motor_goal_position;
+        // Motor Velocity in rpm
+        double motor_present_velocity;
+        double motor_goal_velocity;
+        // Motor Current in mA
+        double motor_present_current;
+        double motor_goal_current;
+        // Motor Temperature in degrees
+        double motor_present_temperature;
+
+        
 
 
 };
