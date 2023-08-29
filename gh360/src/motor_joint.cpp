@@ -102,6 +102,21 @@ double MotorJoint::get_motor_present_position()
     return this->motor_present_position;
 }
 
+double MotorJoint::get_motor_present_velocity()
+{
+    return this->motor_present_velocity;
+}
+
+double MotorJoint::get_motor_present_current()
+{
+    return this->motor_present_current;
+}
+
+double MotorJoint::get_motor_present_temperature()
+{
+    return this->motor_present_temperature;
+}
+
 double MotorJoint::get_motor_goal_position()
 {
     return this->motor_goal_position;

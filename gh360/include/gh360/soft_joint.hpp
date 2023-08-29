@@ -45,6 +45,12 @@ class SoftJoint: public Joint
         gh360::MotorDictionary* get_left_motor_model();
         double get_right_motor_present_position();
         double get_left_motor_present_position();
+        double get_right_motor_present_velocity();
+        double get_left_motor_present_velocity();
+        double get_right_motor_present_current();
+        double get_left_motor_present_current();
+        double get_right_motor_present_temperature();
+        double get_left_motor_present_temperature();
         double get_right_motor_goal_position();
         double get_left_motor_goal_position();
         int get_right_motor_goal_position_int();

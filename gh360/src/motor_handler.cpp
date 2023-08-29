@@ -109,26 +109,37 @@ gh360::MotorHandler::MotorHandler()
 
     if (!this->multi_motor_models) this->joints_motor_model = motor_model_type;
 
+    // this->motor_goal_positions_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorPositions>(
+    //   "set_motor_positions", 10, std::bind(&gh360::MotorHandler::motor_goal_positions_callback, this, std::placeholders::_1));
 
-    this->readPresentPosition();
+    // this->motor_state_publisher_ = this->create_publisher<gh360_interfaces::msg::PortStatus>("motor_status", 10);
+    // this->timer_ = this->create_wall_timer(500ms, std::bind(&gh360::MotorHandler::timer_callback, this));
+
+    this->position_step_service_ = this->create_service<gh360_interfaces::srv::MotorPositionStep>("motor_positions_step", std::bind(&gh360::MotorHandler::position_step_callback, this, std::placeholders::_1, std::placeholders::_2));
+
+    //CODE THAT SHOULD BE IN PUBLISHER/SUBSCRIBER
+    // this->readPresentPosition();
     
     for (unsigned int i=0; i < this->joints.size(); i++)
     {
         if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
         {
-            soft_joint->set_right_motor_goal_position(M_PI);
-            soft_joint->set_left_motor_goal_position(M_PI);
+            // soft_joint->set_right_motor_goal_position(M_PI);
+            // soft_joint->set_left_motor_goal_position(M_PI);
+            soft_joint->set_right_motor_goal_position(0.0);
+            soft_joint->set_left_motor_goal_position(0.0);
         }
         else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
         {
-            motor_joint->set_motor_goal_position(M_PI);
+            // motor_joint->set_motor_goal_position(M_PI);
+            motor_joint->set_motor_goal_position(0.0);
         }
     }
 
-    bool comm_result;
+    // bool comm_result;
     uint8_t address = this->joints_motor_model->Goal_Position.address;
     uint8_t size = this->joints_motor_model->Goal_Position.size;
-    comm_result = this->syncWrite(size, address);
+    this->syncWrite(size, address);
 
 
     // this->readPresentPosition();
@@ -155,6 +166,180 @@ gh360::MotorHandler::MotorHandler()
 
 gh360::MotorHandler::~MotorHandler()
 {
+}
+
+void gh360::MotorHandler::position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response)
+{
+
+    this->setMotorGoalPositions(request->motor_goal_positions);
+
+    this->syncWrite(this->joints_motor_model->Goal_Position.size, this->joints_motor_model->Goal_Position.address);
+
+    this->syncRead(this->joints_motor_model->Present_Position.size, this->joints_motor_model->Present_Position.address);
+    this->syncRead(this->joints_motor_model->Present_Velocity.size, this->joints_motor_model->Present_Velocity.address);
+    this->syncRead(this->joints_motor_model->Present_Current.size, this->joints_motor_model->Present_Current.address);
+    this->syncRead(this->joints_motor_model->Present_Temperature.size, this->joints_motor_model->Present_Temperature.address);
+
+    // gh360_interfaces::msg::PortStatus port_status_msg = gh360_interfaces::msg::PortStatus();
+    gh360_interfaces::msg::MotorStatus motor_status_msg;
+
+    for (unsigned int i=0; i < this->joints.size(); i++)
+    {
+        if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
+        {
+            motor_status_msg = gh360_interfaces::msg::MotorStatus();
+            motor_status_msg.motor_id = soft_joint->get_right_motor_id();
+            motor_status_msg.present_position = soft_joint->get_right_motor_present_position();
+            motor_status_msg.present_velocity = soft_joint->get_right_motor_present_velocity();
+            motor_status_msg.present_current = soft_joint->get_right_motor_present_current();
+            motor_status_msg.present_temperature = soft_joint->get_right_motor_present_temperature();
+            // port_status_msg.motors.push_back(motor_status_msg);
+            response->motor_status.push_back(motor_status_msg);
+
+            motor_status_msg = gh360_interfaces::msg::MotorStatus();
+            motor_status_msg.motor_id = soft_joint->get_left_motor_id();
+            motor_status_msg.present_position = soft_joint->get_left_motor_present_position();
+            motor_status_msg.present_velocity = soft_joint->get_left_motor_present_velocity();
+            motor_status_msg.present_current = soft_joint->get_left_motor_present_current();
+            motor_status_msg.present_temperature = soft_joint->get_left_motor_present_temperature();
+            // port_status_msg.motors.push_back(motor_status_msg);
+            response->motor_status.push_back(motor_status_msg);
+        }
+        else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
+        {
+            motor_status_msg = gh360_interfaces::msg::MotorStatus();
+            motor_status_msg.motor_id = motor_joint->get_motor_id();
+            motor_status_msg.present_position = motor_joint->get_motor_present_position();
+            motor_status_msg.present_velocity = motor_joint->get_motor_present_velocity();
+            motor_status_msg.present_current = motor_joint->get_motor_present_current();
+            motor_status_msg.present_temperature = motor_joint->get_motor_present_temperature();
+            // port_status_msg.motors.push_back(motor_status_msg);
+            response->motor_status.push_back(motor_status_msg);
+        }
+    }
+
+}
+
+void gh360::MotorHandler::motor_goal_positions_callback(const gh360_interfaces::msg::SetMotorPositions::SharedPtr msg)
+{
+    // for (unsigned int m=0; m < msg->motor_goal_positions.size(); m++)
+    // {
+    //     for (unsigned int i=0; i < this->joints.size(); i++)
+    //     {
+    //         if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
+    //         {
+    //             if (soft_joint->get_right_motor_id() == msg->motor_goal_positions[m].id) 
+    //             {
+    //                 soft_joint->set_right_motor_goal_position(msg->motor_goal_positions[m].position);
+    //             }
+    //             else if (soft_joint->get_left_motor_id() == msg->motor_goal_positions[m].id)
+    //             {
+    //                 soft_joint->set_left_motor_goal_position(msg->motor_goal_positions[m].position);
+    //             }
+                
+    //         }
+    //         else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
+    //         {
+    //             if (motor_joint->get_motor_id() == msg->motor_goal_positions[m].id) 
+    //             {
+    //                 motor_joint->set_motor_goal_position(msg->motor_goal_positions[m].position);
+    //             }
+    //         }
+    //     }
+    // }
+
+    this->setMotorGoalPositions(msg->motor_goal_positions);
+
+    // uint8_t address = this->joints_motor_model->Goal_Position.address;
+    // uint8_t size = this->joints_motor_model->Goal_Position.size;
+    this->syncWrite(this->joints_motor_model->Goal_Position.size, this->joints_motor_model->Goal_Position.address);
+
+
+    
+}
+
+void gh360::MotorHandler::timer_callback()
+{
+    // bool comm_result;
+
+    // uint8_t address = this->joints_motor_model->Present_Position.address;
+    // uint8_t size = this->joints_motor_model->Present_Position.size;
+    // RCLCPP_INFO(this->get_logger(), "Address: %ld", address);
+    // RCLCPP_INFO(this->get_logger(), "Size: %ld", size);
+    this->syncRead(this->joints_motor_model->Present_Position.size, this->joints_motor_model->Present_Position.address);
+    this->syncRead(this->joints_motor_model->Present_Velocity.size, this->joints_motor_model->Present_Velocity.address);
+    this->syncRead(this->joints_motor_model->Present_Current.size, this->joints_motor_model->Present_Current.address);
+    this->syncRead(this->joints_motor_model->Present_Temperature.size, this->joints_motor_model->Present_Temperature.address);
+
+    gh360_interfaces::msg::PortStatus port_status_msg = gh360_interfaces::msg::PortStatus();
+    gh360_interfaces::msg::MotorStatus motor_status_msg;
+
+    for (unsigned int i=0; i < this->joints.size(); i++)
+    {
+        if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
+        {
+            motor_status_msg = gh360_interfaces::msg::MotorStatus();
+            motor_status_msg.motor_id = soft_joint->get_right_motor_id();
+            motor_status_msg.present_position = soft_joint->get_right_motor_present_position();
+            motor_status_msg.present_velocity = soft_joint->get_right_motor_present_velocity();
+            motor_status_msg.present_current = soft_joint->get_right_motor_present_current();
+            motor_status_msg.present_temperature = soft_joint->get_right_motor_present_temperature();
+            port_status_msg.motors.push_back(motor_status_msg);
+
+            motor_status_msg = gh360_interfaces::msg::MotorStatus();
+            motor_status_msg.motor_id = soft_joint->get_left_motor_id();
+            motor_status_msg.present_position = soft_joint->get_left_motor_present_position();
+            motor_status_msg.present_velocity = soft_joint->get_left_motor_present_velocity();
+            motor_status_msg.present_current = soft_joint->get_left_motor_present_current();
+            motor_status_msg.present_temperature = soft_joint->get_left_motor_present_temperature();
+            port_status_msg.motors.push_back(motor_status_msg);
+        }
+        else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
+        {
+            motor_status_msg = gh360_interfaces::msg::MotorStatus();
+            motor_status_msg.motor_id = motor_joint->get_motor_id();
+            motor_status_msg.present_position = motor_joint->get_motor_present_position();
+            motor_status_msg.present_velocity = motor_joint->get_motor_present_velocity();
+            motor_status_msg.present_current = motor_joint->get_motor_present_current();
+            motor_status_msg.present_temperature = motor_joint->get_motor_present_temperature();
+            port_status_msg.motors.push_back(motor_status_msg);
+        }
+    }
+
+    // port_status_msg.motors.append();
+    // if (!comm_result) RCLCPP_ERROR(this->get_logger(), "Address: %ld", address);
+
+    this->motor_state_publisher_->publish(port_status_msg);
+}
+
+bool gh360::MotorHandler::setMotorGoalPositions(std::vector<gh360_interfaces::msg::SetPosition> motor_goal_positions)
+{
+    for (unsigned int m=0; m < motor_goal_positions.size(); m++)
+    {
+        for (unsigned int i=0; i < this->joints.size(); i++)
+        {
+            if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
+            {
+                if (soft_joint->get_right_motor_id() == motor_goal_positions[m].id) 
+                {
+                    soft_joint->set_right_motor_goal_position(motor_goal_positions[m].position);
+                }
+                else if (soft_joint->get_left_motor_id() == motor_goal_positions[m].id)
+                {
+                    soft_joint->set_left_motor_goal_position(motor_goal_positions[m].position);
+                }
+                
+            }
+            else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
+            {
+                if (motor_joint->get_motor_id() == motor_goal_positions[m].id) 
+                {
+                    motor_joint->set_motor_goal_position(motor_goal_positions[m].position);
+                }
+            }
+        }
+    }
+    return true;
 }
 
 bool gh360::MotorHandler::readPresentPosition()
@@ -703,8 +888,8 @@ int main(int argc, char * argv[])
     // int baud_rate = 1000000;
     // int protocol = 2;
     auto motorhandlernode = std::make_shared<gh360::MotorHandler>();
-    // rclcpp::spin(motorhandlernode);
-    // rclcpp::shutdown();
+    rclcpp::spin(motorhandlernode);
+    rclcpp::shutdown();
 
     return 0;
 }

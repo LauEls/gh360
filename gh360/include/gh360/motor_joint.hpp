@@ -33,6 +33,9 @@ class MotorJoint: public Joint
         int get_movement_direction();
         gh360::MotorDictionary* get_motor_model();
         double get_motor_present_position();
+        double get_motor_present_velocity();
+        double get_motor_present_current();
+        double get_motor_present_temperature();
         double get_motor_goal_position();
         int get_motor_goal_position_int();
         double get_motor_goal(uint8_t address);

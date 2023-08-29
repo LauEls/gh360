@@ -6,8 +6,14 @@
 #include <iostream>
 #include <vector>
 #include <math.h>
+#include <chrono>
 
 #include "rclcpp/rclcpp.hpp"
+#include "gh360_interfaces/msg/port_status.hpp"
+#include "gh360_interfaces/msg/motor_status.hpp"
+#include "gh360_interfaces/msg/set_motor_positions.hpp"
+#include "gh360_interfaces/msg/set_position.hpp"
+#include "gh360_interfaces/srv/motor_position_step.hpp"
 // #include <DynamixelWorkbench.h>
 // #include <dynamixel_workbench_toolbox/dynamixel_workbench.h>
 #include "dynamixel_sdk/dynamixel_sdk.h"
@@ -21,6 +27,7 @@
 #include "soft_joint.hpp"
 #include "motor_joint.hpp"
 
+using namespace std::chrono_literals;
 
 namespace gh360
 {
@@ -47,11 +54,17 @@ namespace gh360
             // bool readPresentCurrent();
             // bool readPresentTemperature();
             // bool writeGoalPosition();
+            bool setMotorGoalPositions(std::vector<gh360_interfaces::msg::SetPosition> motor_goal_positions);
             bool syncRead(uint8_t size, uint8_t address);
             bool syncWrite(uint8_t size, uint8_t address);
-            bool writeRegister(uint8_t id, int data, uint8_t data_size, uint8_t address);
+            bool writeRegister(uint8_t id, int32_t data, uint8_t data_size, uint8_t address);
 
         private:
+            void timer_callback();
+            void motor_goal_positions_callback(const gh360_interfaces::msg::SetMotorPositions::SharedPtr msg);
+            void position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
+
+
             dynamixel::PortHandler * portHandler;
             dynamixel::PacketHandler * packetHandler;
 
@@ -61,6 +74,11 @@ namespace gh360
             constexpr static int motor_cnt = 2;
             bool multi_motor_models = false;
             MotorDictionary* joints_motor_model;
+
+            rclcpp::TimerBase::SharedPtr timer_;
+            rclcpp::Publisher<gh360_interfaces::msg::PortStatus>::SharedPtr motor_state_publisher_;
+            rclcpp::Subscription<gh360_interfaces::msg::SetMotorPositions>::SharedPtr motor_goal_positions_subscriber_;
+            rclcpp::Service<gh360_interfaces::srv::MotorPositionStep>::SharedPtr position_step_service_;
 
             std::vector<std::string> joint_names;
             std::vector<Joint*> joints;

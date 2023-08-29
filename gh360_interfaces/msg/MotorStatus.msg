@@ -1,0 +1,5 @@
+int64 motor_id
+float64 present_position
+float64 present_velocity
+float64 present_current
+float64 present_temperature

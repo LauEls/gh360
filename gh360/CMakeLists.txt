@@ -22,6 +22,7 @@ find_package(dynamixel_sdk REQUIRED)
 # find_package(dynamixel_workbench_toolbox REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(gh360_interfaces REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -44,7 +45,7 @@ target_link_libraries(
   motor_handler
   gh360
 )
-ament_target_dependencies(motor_handler "rclcpp" "std_msgs")
+ament_target_dependencies(motor_handler rclcpp std_msgs gh360_interfaces)
 
 # add_executable(port_handler src/port_handler.cpp)
 # target_link_libraries(

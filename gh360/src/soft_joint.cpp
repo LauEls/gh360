@@ -179,6 +179,36 @@ double SoftJoint::get_left_motor_present_position()
     return this->left_motor_present_position;
 }
 
+double SoftJoint::get_right_motor_present_velocity()
+{
+    return this->right_motor_present_velocity;
+}
+
+double SoftJoint::get_left_motor_present_velocity()
+{
+    return this->left_motor_present_velocity;
+}
+
+double SoftJoint::get_right_motor_present_current()
+{
+    return this->right_motor_present_current;
+}
+
+double SoftJoint::get_left_motor_present_current()
+{
+    return this->left_motor_present_current;
+}
+
+double SoftJoint::get_right_motor_present_temperature()
+{
+    return this->right_motor_present_temperature;
+}
+
+double SoftJoint::get_left_motor_present_temperature()
+{
+    return this->left_motor_present_temperature;
+}
+
 double SoftJoint::get_right_motor_goal_position()
 {
     return this->right_motor_goal_position;
