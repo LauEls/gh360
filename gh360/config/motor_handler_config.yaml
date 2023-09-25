@@ -28,7 +28,7 @@
 
 /lowerarm/motor_handler:
   ros__parameters:
-    joint_names: ['forearm_roll', 'wrist_pitch']
+    joint_names: ['wrist_pitch']
     port_name: "/dev/ttyUSB0"
     baud_rate: 1000000
     protocol: 2

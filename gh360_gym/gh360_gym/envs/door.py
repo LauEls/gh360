@@ -89,7 +89,7 @@ class DoorEnv(gym.Env):
 
         set_motor_msg = SetPosition()
         set_motor_msg.id = 61
-        set_motor_msg.position = action[0]
+        set_motor_msg.position = action[1]
 
         self.motor_msg.motor_goal_positions.append(set_motor_msg)
         self.motor_pos_req.motor_goal_positions.append(set_motor_msg)
@@ -97,29 +97,39 @@ class DoorEnv(gym.Env):
 
         set_motor_msg = SetPosition()
         set_motor_msg.id = 62
-        set_motor_msg.position = action[0]
+        set_motor_msg.position = action[2]
 
         self.motor_msg.motor_goal_positions.append(set_motor_msg)
         self.motor_pos_req.motor_goal_positions.append(set_motor_msg)
 
         # self.motor_publisher.publish(self.motor_msg)
-        self.future = self.cli.call_async(self.motor_pos_req)
-        rclpy.spin_until_future_complete(self.node, self.future)
+        # self.future = self.cli.call_async(self.motor_pos_req)
+        # rclpy.spin_until_future_complete(self.node, self.future)
         
-        print(self.future.result().motor_status[0].present_position)
+        # print(self.future.result().motor_status[0].present_position)
 
         # self.internal_state += action
         # self.motor_msg.id = 30
         # self.motor_msg.position = self.internal_state
 
-        # self.control_timestep = 0.2
-        # self.model_timestep = 0.05
+        self.control_timestep = 0.2
+        self.model_timestep = 0.1
 
         # start = time.time()
-        # for i in range(int(self.control_timestep / self.model_timestep)):
-        # # for i in range(4):
-        #     self.motor_publisher.publish(self.motor_msg)
-        #     time.sleep(self.model_timestep)
+        for i in range(int(self.control_timestep / self.model_timestep)):
+        # for i in range(4):
+            # start_2 = time.time()
+            start = time.time()
+            # self.motor_publisher.publish(self.motor_msg)
+            self.future = self.cli.call_async(self.motor_pos_req)
+            rclpy.spin_until_future_complete(self.node, self.future)
+            end = time.time()
+            sleep_time = self.model_timestep - (end-start)
+            if sleep_time > 0.0:
+            # print(sleep_time)
+                time.sleep(sleep_time)
+            # end_2 = time.time()
+            # print(end_2 - start)
 
         # end = time.time()
         # print(end-start)

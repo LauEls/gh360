@@ -112,8 +112,8 @@ gh360::MotorHandler::MotorHandler()
     // this->motor_goal_positions_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorPositions>(
     //   "set_motor_positions", 10, std::bind(&gh360::MotorHandler::motor_goal_positions_callback, this, std::placeholders::_1));
 
-    // this->motor_state_publisher_ = this->create_publisher<gh360_interfaces::msg::PortStatus>("motor_status", 10);
-    // this->timer_ = this->create_wall_timer(500ms, std::bind(&gh360::MotorHandler::timer_callback, this));
+    this->motor_state_publisher_ = this->create_publisher<gh360_interfaces::msg::PortStatus>("motor_status", 10);
+    this->timer_ = this->create_wall_timer(100ms, std::bind(&gh360::MotorHandler::timer_callback, this));
 
     this->position_step_service_ = this->create_service<gh360_interfaces::srv::MotorPositionStep>("motor_positions_step", std::bind(&gh360::MotorHandler::position_step_callback, this, std::placeholders::_1, std::placeholders::_2));
 
@@ -173,12 +173,12 @@ void gh360::MotorHandler::position_step_callback(const std::shared_ptr<gh360_int
 
     this->setMotorGoalPositions(request->motor_goal_positions);
 
-    this->syncWrite(this->joints_motor_model->Goal_Position.size, this->joints_motor_model->Goal_Position.address);
+    // this->syncWrite(this->joints_motor_model->Goal_Position.size, this->joints_motor_model->Goal_Position.address);
 
-    this->syncRead(this->joints_motor_model->Present_Position.size, this->joints_motor_model->Present_Position.address);
-    this->syncRead(this->joints_motor_model->Present_Velocity.size, this->joints_motor_model->Present_Velocity.address);
-    this->syncRead(this->joints_motor_model->Present_Current.size, this->joints_motor_model->Present_Current.address);
-    this->syncRead(this->joints_motor_model->Present_Temperature.size, this->joints_motor_model->Present_Temperature.address);
+    // this->syncRead(this->joints_motor_model->Present_Position.size, this->joints_motor_model->Present_Position.address);
+    // this->syncRead(this->joints_motor_model->Present_Velocity.size, this->joints_motor_model->Present_Velocity.address);
+    // this->syncRead(this->joints_motor_model->Present_Current.size, this->joints_motor_model->Present_Current.address);
+    // this->syncRead(this->joints_motor_model->Present_Temperature.size, this->joints_motor_model->Present_Temperature.address);
 
     // gh360_interfaces::msg::PortStatus port_status_msg = gh360_interfaces::msg::PortStatus();
     gh360_interfaces::msg::MotorStatus motor_status_msg;
@@ -252,7 +252,7 @@ void gh360::MotorHandler::motor_goal_positions_callback(const gh360_interfaces::
 
     // uint8_t address = this->joints_motor_model->Goal_Position.address;
     // uint8_t size = this->joints_motor_model->Goal_Position.size;
-    this->syncWrite(this->joints_motor_model->Goal_Position.size, this->joints_motor_model->Goal_Position.address);
+    
 
 
     
@@ -270,6 +270,7 @@ void gh360::MotorHandler::timer_callback()
     this->syncRead(this->joints_motor_model->Present_Velocity.size, this->joints_motor_model->Present_Velocity.address);
     this->syncRead(this->joints_motor_model->Present_Current.size, this->joints_motor_model->Present_Current.address);
     this->syncRead(this->joints_motor_model->Present_Temperature.size, this->joints_motor_model->Present_Temperature.address);
+    this->syncWrite(this->joints_motor_model->Goal_Position.size, this->joints_motor_model->Goal_Position.address);
 
     gh360_interfaces::msg::PortStatus port_status_msg = gh360_interfaces::msg::PortStatus();
     gh360_interfaces::msg::MotorStatus motor_status_msg;
