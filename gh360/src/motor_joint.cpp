@@ -2,7 +2,8 @@
 
 MotorJoint::MotorJoint()
 {
-
+    this->joint_type = "motor_joint";
+    this->motor_init_pos = true;
 }
 
 MotorJoint::~MotorJoint()
@@ -39,6 +40,12 @@ void MotorJoint::set_motor_present_position(int position)
 {
     double motor_pos = position * (2*M_PI/4096);
     this->motor_present_position = motor_pos;
+
+    if (this->motor_init_pos == true)
+    {
+        this->motor_goal_position = this->motor_present_position;
+        this->motor_init_pos = false;
+    }
 }
 
 void MotorJoint::set_motor_goal_position(double goal_pos)
@@ -51,6 +58,11 @@ void MotorJoint::set_motor_status(int data, uint8_t address)
     if (address == this->motor_model->Present_Position.address) 
     {
         this->motor_present_position = data * (2*M_PI/4096);
+        if (this->motor_init_pos == true)
+        {
+            this->motor_goal_position = this->motor_present_position;
+            this->motor_init_pos = false;
+        }
     }
     else if (address == this->motor_model->Present_Velocity.address) 
     {

@@ -4,6 +4,8 @@
 SoftJoint::SoftJoint() 
 {
     this->joint_type = "soft_joint";
+    this->right_motor_init_pos = true;
+    this->left_motor_init_pos = true;
 }
 
 SoftJoint::~SoftJoint() 
@@ -60,12 +62,24 @@ void SoftJoint::set_right_motor_present_position(int position)
 {
     double motor_pos = position * (2*M_PI/4096);
     this->right_motor_present_position = motor_pos;
+
+    if (this->right_motor_init_pos == true)
+    {
+        this->right_motor_goal_position = this->right_motor_present_position;
+        this->right_motor_init_pos = false;
+    }
 }
 
 void SoftJoint::set_left_motor_present_position(int position)
 {
     double motor_pos = position * (2*M_PI/4096);
     this->left_motor_present_position = motor_pos;
+
+    if (this->left_motor_init_pos == true)
+    {
+        this->left_motor_goal_position = this->left_motor_present_position;
+        this->left_motor_init_pos = false;
+    }
 }
 
 void SoftJoint::set_right_motor_goal_position(double goal_pos)
@@ -83,6 +97,11 @@ void SoftJoint::set_right_motor_status(int data, uint8_t address)
     if (address == this->right_motor_model->Present_Position.address) 
     {
         this->right_motor_present_position = data * (2*M_PI/4096);
+        if (this->right_motor_init_pos == true)
+        {
+            this->right_motor_goal_position = this->right_motor_present_position;
+            this->right_motor_init_pos = false;
+        }
     }
     else if (address == this->right_motor_model->Present_Velocity.address) 
     {
@@ -104,6 +123,11 @@ void SoftJoint::set_left_motor_status(int data, uint8_t address)
     if (address == this->left_motor_model->Present_Position.address) 
     {
         this->left_motor_present_position = data * (2*M_PI/4096);
+        if (this->left_motor_init_pos == true)
+        {
+            this->left_motor_goal_position = this->left_motor_present_position;
+            this->left_motor_init_pos = false;
+        }
     }
     else if (address == this->left_motor_model->Present_Velocity.address) 
     {

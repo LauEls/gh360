@@ -60,7 +60,7 @@ class MotorJoint: public Joint
         // Motor Temperature in degrees
         double motor_present_temperature;
 
-        
+        bool motor_init_pos = true;
 
 
 };

@@ -109,6 +109,15 @@ gh360::MotorHandler::MotorHandler()
 
     if (!this->multi_motor_models) this->joints_motor_model = motor_model_type;
 
+    this->syncRead(this->joints_motor_model->Present_Position.size, this->joints_motor_model->Present_Position.address);
+    this->syncRead(this->joints_motor_model->Present_Velocity.size, this->joints_motor_model->Present_Velocity.address);
+    this->syncRead(this->joints_motor_model->Present_Current.size, this->joints_motor_model->Present_Current.address);
+    this->syncRead(this->joints_motor_model->Present_Temperature.size, this->joints_motor_model->Present_Temperature.address);
+
+    // RCLCPP_INFO(this->get_logger(), "Motor Position: %f", this->joints[0].get_right_motor_present_position());
+    // SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[0]);
+    // RCLCPP_INFO(this->get_logger(), "Current Right Position: %f", soft_joint->get_right_motor_present_position());
+    // RCLCPP_INFO(this->get_logger(), "Current Right Position: %f", soft_joint->get_right_motor_goal_position());
     // this->motor_goal_positions_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorPositions>(
     //   "set_motor_positions", 10, std::bind(&gh360::MotorHandler::motor_goal_positions_callback, this, std::placeholders::_1));
 
@@ -120,26 +129,26 @@ gh360::MotorHandler::MotorHandler()
     //CODE THAT SHOULD BE IN PUBLISHER/SUBSCRIBER
     // this->readPresentPosition();
     
-    for (unsigned int i=0; i < this->joints.size(); i++)
-    {
-        if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
-        {
-            // soft_joint->set_right_motor_goal_position(M_PI);
-            // soft_joint->set_left_motor_goal_position(M_PI);
-            soft_joint->set_right_motor_goal_position(0.0);
-            soft_joint->set_left_motor_goal_position(0.0);
-        }
-        else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
-        {
-            // motor_joint->set_motor_goal_position(M_PI);
-            motor_joint->set_motor_goal_position(0.0);
-        }
-    }
+    // for (unsigned int i=0; i < this->joints.size(); i++)
+    // {
+    //     if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
+    //     {
+    //         // soft_joint->set_right_motor_goal_position(M_PI);
+    //         // soft_joint->set_left_motor_goal_position(M_PI);
+    //         soft_joint->set_right_motor_goal_position(0.0);
+    //         soft_joint->set_left_motor_goal_position(0.0);
+    //     }
+    //     else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
+    //     {
+    //         // motor_joint->set_motor_goal_position(M_PI);
+    //         motor_joint->set_motor_goal_position(0.0);
+    //     }
+    // }
 
-    // bool comm_result;
-    uint8_t address = this->joints_motor_model->Goal_Position.address;
-    uint8_t size = this->joints_motor_model->Goal_Position.size;
-    this->syncWrite(size, address);
+    // // bool comm_result;
+    // uint8_t address = this->joints_motor_model->Goal_Position.address;
+    // uint8_t size = this->joints_motor_model->Goal_Position.size;
+    // this->syncWrite(size, address);
 
 
     // this->readPresentPosition();
@@ -642,7 +651,7 @@ gh360::MotorDictionary* gh360::MotorHandler::getMotorModel(int motor_id)
     int dxl_comm_result = this->packetHandler->ping(this->portHandler, motor_id, &model_number, &dxl_error);
     if (dxl_comm_result != COMM_SUCCESS) 
     {
-        RCLCPP_ERROR(rclcpp::get_logger("motor_handler"), "Failed to get model number!");
+        RCLCPP_ERROR(rclcpp::get_logger("motor_handler"), "Failed to get model number from id: %ld", motor_id);
         return NULL;
     }
     else if (dxl_error != 0)

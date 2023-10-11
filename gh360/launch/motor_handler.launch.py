@@ -9,15 +9,25 @@ from ament_index_python.packages import get_package_share_directory
 def generate_launch_description():
     
     return LaunchDescription([
-        # Node(
-        #     package='gh360',
-        #     executable='motor_handler',
-        #     name='motor_handler',
-        #     namespace='shoulder',
-        #     parameters=[os.path.join(
-        #         get_package_share_directory('gh360'),
-        #         'config', 'motor_handler_config.yaml')],
-        #     output='screen'),
+        Node(
+            package='gh360',
+            executable='motor_handler',
+            name='motor_handler',
+            namespace='shoulder',
+            parameters=[os.path.join(
+                get_package_share_directory('gh360'),
+                'config', 'motor_handler_config.yaml')],
+            output='screen'),
+
+        Node(
+            package='gh360',
+            executable='motor_handler',
+            name='motor_handler',
+            namespace='upperarm',
+            parameters=[os.path.join(
+                get_package_share_directory('gh360'),
+                'config', 'motor_handler_config.yaml')],
+            output='screen'),
 
         Node(
             package='gh360',

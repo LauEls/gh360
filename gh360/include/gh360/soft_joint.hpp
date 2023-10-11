@@ -89,6 +89,9 @@ class SoftJoint: public Joint
         double right_motor_present_temperature;
         double left_motor_present_temperature;
         
+        bool right_motor_init_pos = true;
+        bool left_motor_init_pos = true;
+
         
 
 

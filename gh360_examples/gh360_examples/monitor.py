@@ -6,61 +6,45 @@ import tkinter.ttk as ttk
 from tkinter import RIGHT
 import threading
 
-from .gui_util import GUIJoint, GUIMotor
+from .gui_util import GUIMotor
 
 from std_msgs.msg import String
 from gh360_interfaces.msg import SetMotorPositions, SetPosition, PortStatus
 from gh360_interfaces.srv import MotorPositionStep
 
-# class App(threading.Thread):
-
-#     def __init__(self):
-#         threading.Thread.__init__(self)
-#         self.start()
-
-#     def callback(self):
-#         self.root.quit()
-
-#     def run(self):
-#         # self.root = tk.Tk()
-#         # self.root.protocol("WM_DELETE_WINDOW", self.callback)
-
-#         # label = tk.Label(self.root, text="Hello World")
-#         # label.pack()
-
-#         self.window = tk.Tk()
-#         self.window.title("GH360 Monitor")
-#         self.window.resizable(width=False, height=False)
-
-#         self.gui_motors = []
-#         self.create_joint(joint_name="Shoulder Yaw", row=0, column=0, motor_ids=[0,1])
-#         self.create_joint(joint_name="Shoulder Roll", row=1, column=0, motor_ids=[2,3])
-#         self.create_joint(joint_name="Shoulder Pitch", row=2, column=0, motor_ids=[4,5])
-#         self.create_joint(joint_name="Upperarm Roll", row=3, column=0, motor_ids=[6,7])
-#         self.create_joint(joint_name="Elbow", row=0, column=1, motor_ids=[8,9])
-#         self.create_joint(joint_name="Forearm Roll", row=1, column=1, motor_ids=[10])
-#         self.create_joint(joint_name="Wrist Pitch", row=2, column=1, motor_ids=[60, 61])
-
-        # self.window.mainloop()
-
-    
-
-
-
 class Monitor(Node):
 
     def __init__(self):
         super().__init__('gh360_monitor')
-        self.subscription = self.create_subscription(
+        self.create_subscription(
             PortStatus,
-            '/lowerarm/motor_status',
-            self.lowerarm_callback,
+            '/shoulder/motor_status',
+            self.port_callback,
             10)
         
+        self.create_subscription(
+            PortStatus,
+            '/upperarm/motor_status',
+            self.port_callback,
+            10)
+        
+        self.create_subscription(
+            PortStatus,
+            '/lowerarm/motor_status',
+            self.port_callback,
+            10)
+        
+        self.shoulder_client = self.create_client(MotorPositionStep, '/shoulder/motor_positions_step')
+        while not self.shoulder_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('shoulder motor position service not available, waiting again...')
+
+        self.upperarm_client = self.create_client(MotorPositionStep, '/upperarm/motor_positions_step')
+        while not self.upperarm_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('upperarm motor position service not available, waiting again...')
+
         self.lowerarm_client = self.create_client(MotorPositionStep, '/lowerarm/motor_positions_step')
         while not self.lowerarm_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('service not available, waiting again...')
-        
+            self.get_logger().info('lowerarm motor position service not available, waiting again...')
         
         self.window = tk.Tk()
         self.window.title("GH360 Monitor")
@@ -69,28 +53,18 @@ class Monitor(Node):
         self.test_label_value = "0.0000"
 
         self.gui_motors = []
-        self.create_joint(joint_name="Shoulder Yaw", row=0, column=0, motor_ids=[0,1])
-        self.create_joint(joint_name="Shoulder Roll", row=1, column=0, motor_ids=[2,3])
-        self.create_joint(joint_name="Shoulder Pitch", row=2, column=0, motor_ids=[4,5])
-        self.create_joint(joint_name="Upperarm Roll", row=3, column=0, motor_ids=[6,7])
-        self.create_joint(joint_name="Elbow", row=0, column=1, motor_ids=[8,9])
-        self.create_joint(joint_name="Forearm Roll", row=1, column=1, motor_ids=[10])
-        self.create_joint(joint_name="Wrist Pitch", row=2, column=1, motor_ids=[60, 61])
-
+        self.create_joint(joint_name="Shoulder Yaw", port_name="shoulder", row=0, column=0, motor_ids=[1,2])
+        self.create_joint(joint_name="Shoulder Roll", port_name="shoulder", row=1, column=0, motor_ids=[3,4])
+        self.create_joint(joint_name="Shoulder Pitch", port_name="shoulder", row=2, column=0, motor_ids=[5,6])
+        self.create_joint(joint_name="Upperarm Roll", port_name="upperarm", row=3, column=0, motor_ids=[7,8])
+        self.create_joint(joint_name="Elbow", port_name="upperarm", row=0, column=1, motor_ids=[9,10])
+        self.create_joint(joint_name="Forearm Roll", port_name="lowerarm", row=1, column=1, motor_ids=[11])
+        self.create_joint(joint_name="Wrist Pitch", port_name="lowerarm", row=2, column=1, motor_ids=[12,13])
         
 
-
-        # self.present_positions = []
-        # self.present_velocities = []
-        # self.present_current = []
-
-        # self.window.mainloop()
-        # process_thread = threading.Thread(target=self.window.mainloop)
-        # process_thread.start()
-        
-
-    def lowerarm_callback(self, msg):
-        self.get_logger().info('Callback loop')
+    # def lowerarm_callback(self, msg):
+    def port_callback(self, msg):
+        # self.get_logger().info('Callback loop')
         for motor in msg.motors:
             for gui_motor in self.gui_motors:
                 if gui_motor.id == motor.motor_id:
@@ -102,39 +76,42 @@ class Monitor(Node):
         self.window.update()
 
     def get_label_str(self, long_value):
-        # short_value = round(long_value, 4)
-
         return '%.4f' % long_value
 
 
-    def send_goal_pos(self, motor_id, goal_pos):
+    def send_goal_pos(self, motor_id, port_name, goal_pos):
         print(motor_id)
         self.motor_pos_req = MotorPositionStep.Request()
 
-        if motor_id == 60:
-            set_motor_msg = SetPosition()
-            set_motor_msg.id = 60
-            set_motor_msg.position = goal_pos
-            self.motor_pos_req.motor_goal_positions.append(set_motor_msg)
-            self.future = self.lowerarm_client.call_async(self.motor_pos_req)
-            # rclpy.spin_until_future_complete(self, self.future)
-            # self.lowerarm_client
-            
+        set_motor_msg = SetPosition()
+        set_motor_msg.id = motor_id
+        set_motor_msg.position = goal_pos
+        self.motor_pos_req.motor_goal_positions.append(set_motor_msg)
 
-    def create_joint(self, joint_name, row, column, motor_ids):
+        if port_name == 'shoulder':
+            self.future = self.shoulder_client.call_async(self.motor_pos_req)
+        elif port_name == 'upperarm':
+            self.future = self.upperarm_client.call_async(self.motor_pos_req)
+        elif port_name == 'lowerarm':
+            self.future = self.lowerarm_client.call_async(self.motor_pos_req)
+        else:
+            print("Not a valid port name")
+            
+            
+    def create_joint(self, joint_name, port_name, row, column, motor_ids):
         frm_joint = tk.Frame(master=self.window)
         lbl_joint = tk.Label(master=frm_joint, text=joint_name)
         lbl_joint.grid(row=0, column=0, padx=10)
 
         if len(motor_ids) == 2:
-            self.create_motor(motor_id=motor_ids[0], master_frame=frm_joint, row=1)
-            self.create_motor(motor_id=motor_ids[1], master_frame=frm_joint, row=2)
+            self.create_motor(motor_id=motor_ids[0], port_name=port_name, master_frame=frm_joint, row=1)
+            self.create_motor(motor_id=motor_ids[1], port_name=port_name, master_frame=frm_joint, row=2)
         else:
-            self.create_motor(motor_id=motor_ids[0], master_frame=frm_joint, row=1)
+            self.create_motor(motor_id=motor_ids[0], port_name=port_name, master_frame=frm_joint, row=1)
 
         frm_joint.grid(row=row, column=column, padx=10)
 
-    def create_motor(self, motor_id, master_frame, row):
+    def create_motor(self, motor_id, port_name, master_frame, row):
         frm_motor = tk.Frame(master=master_frame)
 
         lbl_motor = tk.Label(master=frm_motor, text="Motor "+str(motor_id))
@@ -150,7 +127,7 @@ class Monitor(Node):
         btn_motor_goal_pos = tk.Button(
             master=frm_motor,
             text="Send Goal",
-            command=lambda: self.send_goal_pos(motor_id=motor_id, goal_pos=float(ent_motor_goal_pos.get()))
+            command=lambda: self.send_goal_pos(motor_id=motor_id, port_name=port_name, goal_pos=float(ent_motor_goal_pos.get()))
         )
         btn_motor_goal_pos.grid(row=1, column=3)
 
@@ -180,6 +157,7 @@ class Monitor(Node):
             _present_pos=lbl_motor_present_pos_value, 
             _present_vel=lbl_motor_present_vel_value,
             _present_current=lbl_motor_present_current_value,
+            _port_name=port_name,
         )
         self.gui_motors.append(new_motor)
 
