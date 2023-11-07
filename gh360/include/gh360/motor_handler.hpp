@@ -55,6 +55,8 @@ namespace gh360
             // bool readPresentTemperature();
             // bool writeGoalPosition();
             bool setMotorGoalPositions(std::vector<gh360_interfaces::msg::SetPosition> motor_goal_positions);
+            bool setDeltaMotorGoalPositions(std::vector<gh360_interfaces::msg::SetPosition> delta_motor_goal_positions);
+            gh360_interfaces::msg::PortStatus getMotorStatus();
             bool syncRead(uint8_t size, uint8_t address);
             bool syncWrite(uint8_t size, uint8_t address);
             bool writeRegister(uint8_t id, int32_t data, uint8_t data_size, uint8_t address);
@@ -63,7 +65,7 @@ namespace gh360
             void timer_callback();
             void motor_goal_positions_callback(const gh360_interfaces::msg::SetMotorPositions::SharedPtr msg);
             void position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
-
+            void delta_position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
 
             dynamixel::PortHandler * portHandler;
             dynamixel::PacketHandler * packetHandler;
@@ -79,6 +81,7 @@ namespace gh360
             rclcpp::Publisher<gh360_interfaces::msg::PortStatus>::SharedPtr motor_state_publisher_;
             rclcpp::Subscription<gh360_interfaces::msg::SetMotorPositions>::SharedPtr motor_goal_positions_subscriber_;
             rclcpp::Service<gh360_interfaces::srv::MotorPositionStep>::SharedPtr position_step_service_;
+            rclcpp::Service<gh360_interfaces::srv::MotorPositionStep>::SharedPtr delta_position_step_service_;
 
             std::vector<std::string> joint_names;
             std::vector<Joint*> joints;

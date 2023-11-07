@@ -1,11 +1,12 @@
 
 
-# class GUIJoint:
-#     def __init__(self, _joint_name, _port_name):
-#         self.joint_name = _joint_name
-#         self.motors = []
+class GUIJoint:
+    def __init__(self, _joint_name, _port_name, _joint_angle):
+        self.joint_name = _joint_name
+        self.joint_angle = _joint_angle
+        self.motors = []
 
-#         self.port_name = _port_name
+        self.port_name = _port_name
 
 
 class GUIMotor:

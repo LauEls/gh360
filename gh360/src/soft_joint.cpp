@@ -109,7 +109,14 @@ void SoftJoint::set_right_motor_status(int data, uint8_t address)
     }
     else if (address == this->right_motor_model->Present_Current.address) 
     {
-        this->right_motor_present_current = data * 3.36;
+        if (data > 0x7fff)
+        {
+            this->right_motor_present_current = (data - 65536) * 3.36;
+        }
+        else
+        {
+            this->right_motor_present_current = data * 3.36;
+        }
     }
     else if (address == this->right_motor_model->Present_Temperature.address)
     {
@@ -135,7 +142,14 @@ void SoftJoint::set_left_motor_status(int data, uint8_t address)
     }
     else if (address == this->left_motor_model->Present_Current.address) 
     {
-        this->left_motor_present_current = data * 3.36;
+        if (data > 0x7fff)
+        {
+            this->left_motor_present_current = (data - 65536) * 3.36;
+        }
+        else
+        {
+            this->left_motor_present_current = data * 3.36;
+        }
     }
     else if (address == this->left_motor_model->Present_Temperature.address)
     {

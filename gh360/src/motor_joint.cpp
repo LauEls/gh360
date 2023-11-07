@@ -70,7 +70,15 @@ void MotorJoint::set_motor_status(int data, uint8_t address)
     }
     else if (address == this->motor_model->Present_Current.address) 
     {
-        this->motor_present_current = data * 3.36;
+        // this->motor_present_current = data * 3.36;
+        if (data > 0x7fff)
+        {
+            this->motor_present_current = (data - 65536) * 3.36;
+        }
+        else
+        {
+            this->motor_present_current = data * 3.36;
+        }
     }
     else if (address == this->motor_model->Present_Temperature.address)
     {

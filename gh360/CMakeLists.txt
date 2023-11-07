@@ -47,12 +47,12 @@ target_link_libraries(
 )
 ament_target_dependencies(motor_handler rclcpp std_msgs gh360_interfaces)
 
-# add_executable(port_handler src/port_handler.cpp)
-# target_link_libraries(
-#   motor_handler
-#   gh360
-# )
-# ament_target_dependencies(motor_handler "rclcpp" "std_msgs")
+add_executable(encoder_handler src/encoder_handler.cpp)
+target_link_libraries(
+  encoder_handler
+  gh360
+)
+ament_target_dependencies(encoder_handler rclcpp std_msgs gh360_interfaces)
 
 
 
@@ -72,6 +72,7 @@ install(
 
 install(TARGETS 
   motor_handler
+  encoder_handler
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files.

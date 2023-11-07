@@ -6,10 +6,10 @@ import tkinter.ttk as ttk
 from tkinter import RIGHT
 import threading
 
-from .gui_util import GUIMotor
+from .gui_util import GUIMotor, GUIJoint
 
 from std_msgs.msg import String
-from gh360_interfaces.msg import SetMotorPositions, SetPosition, PortStatus
+from gh360_interfaces.msg import SetMotorPositions, SetPosition, PortStatus, ArmEncoderStates
 from gh360_interfaces.srv import MotorPositionStep
 
 class Monitor(Node):
@@ -34,6 +34,15 @@ class Monitor(Node):
             self.port_callback,
             10)
         
+        self.create_subscription(
+            ArmEncoderStates,
+            '/encoder_status',
+            self.encoder_callback,
+            10
+        )
+        
+        
+        
         self.shoulder_client = self.create_client(MotorPositionStep, '/shoulder/motor_positions_step')
         while not self.shoulder_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('shoulder motor position service not available, waiting again...')
@@ -53,13 +62,14 @@ class Monitor(Node):
         self.test_label_value = "0.0000"
 
         self.gui_motors = []
-        self.create_joint(joint_name="Shoulder Yaw", port_name="shoulder", row=0, column=0, motor_ids=[1,2])
-        self.create_joint(joint_name="Shoulder Roll", port_name="shoulder", row=1, column=0, motor_ids=[3,4])
-        self.create_joint(joint_name="Shoulder Pitch", port_name="shoulder", row=2, column=0, motor_ids=[5,6])
-        self.create_joint(joint_name="Upperarm Roll", port_name="upperarm", row=3, column=0, motor_ids=[7,8])
-        self.create_joint(joint_name="Elbow", port_name="upperarm", row=0, column=1, motor_ids=[9,10])
-        self.create_joint(joint_name="Forearm Roll", port_name="lowerarm", row=1, column=1, motor_ids=[11])
-        self.create_joint(joint_name="Wrist Pitch", port_name="lowerarm", row=2, column=1, motor_ids=[12,13])
+        self.gui_joints = []
+        self.create_joint(joint_name="Shoulder Yaw", joint_id="shoulder_yaw", port_name="shoulder", row=0, column=0, motor_ids=[1,2])
+        self.create_joint(joint_name="Shoulder Roll", joint_id="shoulder_roll", port_name="shoulder", row=1, column=0, motor_ids=[3,4])
+        self.create_joint(joint_name="Shoulder Pitch", joint_id="shoulder_pitch", port_name="shoulder", row=2, column=0, motor_ids=[5,6])
+        self.create_joint(joint_name="Upperarm Roll", joint_id="upperarm_roll", port_name="upperarm", row=3, column=0, motor_ids=[7,8])
+        self.create_joint(joint_name="Elbow", joint_id="elbow", port_name="upperarm", row=0, column=1, motor_ids=[9,10])
+        self.create_joint(joint_name="Forearm Roll", joint_id="forearm_roll", port_name="lowerarm", row=1, column=1, motor_ids=[11])
+        self.create_joint(joint_name="Wrist Pitch", joint_id="wrist_pitch", port_name="lowerarm", row=2, column=1, motor_ids=[12,13])
         
 
     # def lowerarm_callback(self, msg):
@@ -74,6 +84,14 @@ class Monitor(Node):
                     # self.test_label_value = self.get_label_str(motor.present_position)
 
         self.window.update()
+
+    def encoder_callback(self, msg):
+        for joint in msg.current_joint_angles:
+            for gui_joint in self.gui_joints:
+                if gui_joint.joint_name == joint.joint_name:
+                    gui_joint.joint_angle.config(text="Joint Angle: "+self.get_label_str(joint.current_pos))
+
+        
 
     def get_label_str(self, long_value):
         return '%.4f' % long_value
@@ -97,11 +115,19 @@ class Monitor(Node):
         else:
             print("Not a valid port name")
             
-            
-    def create_joint(self, joint_name, port_name, row, column, motor_ids):
+
+    def create_joint(self, joint_name, joint_id, port_name, row, column, motor_ids):
         frm_joint = tk.Frame(master=self.window)
         lbl_joint = tk.Label(master=frm_joint, text=joint_name)
         lbl_joint.grid(row=0, column=0, padx=10)
+        if joint_id != 'forearm_roll':
+            lbl_joint_angle = tk.Label(master=frm_joint, text="Joint Angle: 0.000")
+            lbl_joint_angle.grid(row=0, column=1, padx=10, sticky="w")
+
+            new_joint = GUIJoint(_joint_name=joint_id, 
+                             _port_name=port_name,
+                             _joint_angle=lbl_joint_angle)
+            self.gui_joints.append(new_joint)
 
         if len(motor_ids) == 2:
             self.create_motor(motor_id=motor_ids[0], port_name=port_name, master_frame=frm_joint, row=1)

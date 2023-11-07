@@ -38,13 +38,4 @@ def generate_launch_description():
                 get_package_share_directory('gh360'),
                 'config', 'motor_handler_config.yaml')],
             output='screen'),
-
-        # Node(
-        #     package='gh360',
-        #     executable='port_handler',
-        #     name='port_handler',
-        #     parameters=[os.path.join(
-        #         get_package_share_directory('gh360'),
-        #         'config', 'motor_handler_config.yaml')],
-        #     output='screen'),
     ])
