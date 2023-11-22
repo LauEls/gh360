@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <cstdio>
+#include <math.h>
 
 class Joint
 {
@@ -13,6 +14,17 @@ class Joint
 
         virtual std::string get_joint_name() = 0;
         virtual std::string get_joint_type() = 0;
+
+        double positionIntToDouble(int data);
+        double velocityIntToDouble(int data);
+        double currentIntToDouble(int data);
+
+        int positionDoubleToInt(double value);
+        int velocityDoubleToInt(double value);
+        int currentDoubleToInt(double value);
+
+        double calc_set_motor_goal_pos(double goal_pos_adjusted, double offset, int movement_direction);
+        double calc_get_motor_pos(double present_pos_raw, double offset, int movement_direction);
 
     protected:
         Joint(){}

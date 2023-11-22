@@ -25,9 +25,11 @@ class MotorJoint: public Joint
         void set_motor_present_position(int position);
         void set_motor_goal_position(double goal_pos);
         void set_motor_status(int data, uint8_t address);
+        void set_offset(double offset);
 
         std::string get_joint_name();
         std::string get_joint_type();
+
         int get_motor_id();
         int get_action_id();
         int get_movement_direction();
@@ -59,6 +61,7 @@ class MotorJoint: public Joint
         double motor_goal_current;
         // Motor Temperature in degrees
         double motor_present_temperature;
+        double offset;
 
         bool motor_init_pos = true;
 

@@ -24,6 +24,8 @@ class SoftJoint: public Joint
         void set_left_action_id(int action_id);
         void set_right_movement_direction(int movement_direction);
         void set_left_movement_direction(int movement_direction);
+        void set_right_offset(double offset);
+        void set_left_offset(double offset);
         void set_right_motor_model(gh360::MotorDictionary* motor_model);
         void set_left_motor_model(gh360::MotorDictionary* motor_model);
         void set_right_motor_present_position(int position);
@@ -68,6 +70,8 @@ class SoftJoint: public Joint
         int left_action_id;
         int right_movement_direction;
         int left_movement_direction;
+        double right_offset;
+        double left_offset;
         gh360::MotorDictionary* right_motor_model;
         gh360::MotorDictionary* left_motor_model;
         // Motor Position in rad

@@ -9,6 +9,7 @@ import threading
 from .gui_util import GUIMotor, GUIJoint
 
 from std_msgs.msg import String
+from std_srvs.srv import SetBool
 from gh360_interfaces.msg import SetMotorPositions, SetPosition, PortStatus, ArmEncoderStates
 from gh360_interfaces.srv import MotorPositionStep
 
@@ -54,6 +55,18 @@ class Monitor(Node):
         self.lowerarm_client = self.create_client(MotorPositionStep, '/lowerarm/motor_positions_step')
         while not self.lowerarm_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('lowerarm motor position service not available, waiting again...')
+
+        self.shoulder_shutdown_client = self.create_client(SetBool, '/shoulder/motor_set_torque')
+        while not self.shoulder_shutdown_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('shoulder motor torque service not available, waiting again...')
+
+        self.upperarm_shutdown_client = self.create_client(SetBool, '/upperarm/motor_set_torque')
+        while not self.upperarm_shutdown_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('upperarm motor torque service not available, waiting again...')
+
+        self.lowerarm_shutdown_client = self.create_client(SetBool, '/lowerarm/motor_set_torque')
+        while not self.lowerarm_shutdown_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('lowerarm motor torque service not available, waiting again...')
         
         self.window = tk.Tk()
         self.window.title("GH360 Monitor")
@@ -70,7 +83,30 @@ class Monitor(Node):
         self.create_joint(joint_name="Elbow", joint_id="elbow", port_name="upperarm", row=0, column=1, motor_ids=[9,10])
         self.create_joint(joint_name="Forearm Roll", joint_id="forearm_roll", port_name="lowerarm", row=1, column=1, motor_ids=[11])
         self.create_joint(joint_name="Wrist Pitch", joint_id="wrist_pitch", port_name="lowerarm", row=2, column=1, motor_ids=[12,13])
+
+        frm_btns = tk.Frame(master=self.window)
+        btn_motor_start = tk.Button(
+            master=frm_btns,
+            text="Start",
+            command=lambda: self.set_torque_request(True)
+        )
+        btn_motor_start.grid(row=0, column=0)
+
+        btn_motor_stop = tk.Button(
+            master=frm_btns,
+            text="Stop",
+            command=lambda: self.set_torque_request(False)
+        )
+        btn_motor_stop.grid(row=0, column=1)
+
+        frm_btns.grid(row=3, column=1)
         
+    def set_torque_request(self, torque_enable):
+        shutdown_request = SetBool.Request()
+        shutdown_request.data = torque_enable
+        self.future = self.shoulder_shutdown_client.call_async(shutdown_request)
+        self.future = self.upperarm_shutdown_client.call_async(shutdown_request)
+        self.future = self.lowerarm_shutdown_client.call_async(shutdown_request)
 
     # def lowerarm_callback(self, msg):
     def port_callback(self, msg):
@@ -86,7 +122,7 @@ class Monitor(Node):
         self.window.update()
 
     def encoder_callback(self, msg):
-        for joint in msg.current_joint_angles:
+        for joint in msg.current_joint_states:
             for gui_joint in self.gui_joints:
                 if gui_joint.joint_name == joint.joint_name:
                     gui_joint.joint_angle.config(text="Joint Angle: "+self.get_label_str(joint.current_pos))

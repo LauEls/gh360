@@ -10,6 +10,7 @@ namespace gh360
         public:
             MX_64_DICT(int protocol);
             virtual ~MX_64_DICT();
+
             
         private:
 

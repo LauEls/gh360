@@ -63,11 +63,14 @@
       joint_type: "soft_joint"
       right:
         motor_id: 13
-        movement_direction: 1
+        movement_direction: -1
+        offset: 0.0
       left:
         motor_id: 12
         movement_direction: 1
+        offset: 0.0
     forearm_roll:
       joint_type: "motor_joint"
       motor_id: 11
-      movement_direction: 1
+      movement_direction: -1
+      offset: -3.1416

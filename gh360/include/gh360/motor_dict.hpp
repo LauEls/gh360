@@ -9,6 +9,8 @@ namespace gh360
             
             virtual ~MotorDictionary(){}
 
+            double CURRENT_LIMIT;
+
             struct motor_dict
             {
                 int address;

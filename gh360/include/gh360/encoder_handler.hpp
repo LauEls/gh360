@@ -58,6 +58,13 @@ namespace gh360
             std::vector<double> shoulder_joint_angles;
             std::vector<double> upperarm_joint_angles;
             std::vector<double> lowerarm_joint_angles;
+            std::vector<double> shoulder_joint_vels;
+            std::vector<double> upperarm_joint_vels;
+            std::vector<double> lowerarm_joint_vels;
+
+            std::chrono::time_point<std::chrono::system_clock> shoulder_prev_time;
+            std::chrono::time_point<std::chrono::system_clock> upperarm_prev_time;
+            std::chrono::time_point<std::chrono::system_clock> lowerarm_prev_time;
     };   
 
 }

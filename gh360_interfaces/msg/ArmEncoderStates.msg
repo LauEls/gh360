@@ -1,1 +1,1 @@
-JointEncoderState[] current_joint_angles
+JointEncoderState[] current_joint_states

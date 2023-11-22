@@ -3,6 +3,8 @@
 
 gh360::MX_64_DICT::MX_64_DICT(int protocol)
 {
+    this->CURRENT_LIMIT = 2590;
+    
     if (protocol == 1)
     {
         //Control Table of EEPROM Area

@@ -13,7 +13,7 @@ from ros2pkg.api import get_prefix_path
 # from DynamixelSDK.dynamixel_sdk_custom_interfaces.msg import SetPosition
 # sys.path.append('/home/laurenz/phd_project/ros2_gh360_ws/src/DynamixelSDK/dynamixel_sdk_custom_interfaces.msg')
 # from dynamixel_sdk_custom_interfaces.msg import SetPosition
-from gh360_interfaces.msg import SetMotorPositions, SetPosition
+from gh360_interfaces.msg import SetMotorPositions, SetPosition, ArmEncoderStates
 from gh360_interfaces.srv import MotorPositionStep
 
 from gh360_gym.envs.utils import SoftJoint, MotorJoint
@@ -43,6 +43,15 @@ class DoorEnv(gym.Env):
         self.input_max = np.ones(self.control_dim) * input_max
         # self.input_min = self.nums2array(input_min, self.control_dim)
         self.input_min = np.ones(self.control_dim) * input_min
+
+        # self.node.create_subscriber()
+
+        self.node.create_subscription(
+            ArmEncoderStates,
+            '/encoder_status',
+            self.encoder_callback,
+            10
+        )
 
         self.client_shoulder = self.node.create_client(MotorPositionStep, '/shoulder/motor_delta_positions_step')
         while not self.client_shoulder.wait_for_service(timeout_sec=1.0):
@@ -84,7 +93,16 @@ class DoorEnv(gym.Env):
         self.arm.append(new_joint)
 
         
+        
 
+        
+    def encoder_callback(self, msg):
+        for joint_msg in msg.current_joint_states:
+            for joint in self.arm:
+                if joint.joint_name == joint_msg.joint_name:
+                    joint.joint_velocity = joint_msg.current_vel
+                    joint.joint_angle = joint_msg.current_pos
+                    # gui_joint.joint_angle.config(text="Joint Angle: "+self.get_label_str(joint.current_pos))
 
     def _get_obs(self):
         """
@@ -109,10 +127,26 @@ class DoorEnv(gym.Env):
             handle_to_eef_pos
             hinge_qpos
             handle_qpos
-            robot0_proprio-state (all the robot related data from above combined in one array)
+            robot0_proprio-state (all the robot related data from above combined in one array) -> this + object state concatonated is what goes into the network
             object-state (all the object related data from above comined in one array)
         """
-        
+        obs = []
+        obs_joint_pos = []
+        obs_joint_pos_cos = []
+        obs_joint_pos_sin = []
+
+        #ROBOT SPECIFIC PARAMETERS
+        for joint in self.arm:
+            # if type(joint) == MotorJoint:
+            #     print("MotorJoint")
+            obs_joint_pos.append(joint.joint_angle)
+            obs_joint_pos_cos.append(np.cos(joint.joint_angle))
+            obs_joint_pos_sin.append(np.sin(joint.joint_angle))
+
+        #CALCUALATE FORWARD KINEMATICS TO GET EEF POS AND QUAT
+
+
+        #ENVIRONMENT SPECIFIC PARAMETERS
 
         obs = np.array(np.float32(self.internal_state/100))
         #print(obs)
@@ -142,7 +176,7 @@ class DoorEnv(gym.Env):
         joint_iter = 0
         motor_iter = 0
 
-        self.motor_pos_req = MotorPositionStep.Request()
+        motor_pos_req = MotorPositionStep.Request()
 
         while motor_iter < len(delta_action):
             if type(self.arm[joint_iter]) == SoftJoint:
@@ -156,13 +190,13 @@ class DoorEnv(gym.Env):
                 set_motor_msg.id = self.arm[joint_iter].id_right_motor
                 set_motor_msg.position = delta_motor_right
 
-                self.motor_pos_req.motor_goal_positions.append(set_motor_msg)
+                motor_pos_req.motor_goal_positions.append(set_motor_msg)
 
                 set_motor_msg = SetPosition()
                 set_motor_msg.id = self.arm[joint_iter].id_left_motor
                 set_motor_msg.position = delta_motor_left
 
-                self.motor_pos_req.motor_goal_positions.append(set_motor_msg)
+                motor_pos_req.motor_goal_positions.append(set_motor_msg)
 
                 motor_iter += 2
             else:
@@ -172,11 +206,14 @@ class DoorEnv(gym.Env):
                 set_motor_msg.id = self.arm[joint_iter].id_motor
                 set_motor_msg.position = delta_motor_pos
 
-                self.motor_pos_req.motor_goal_positions.append(set_motor_msg)
+                motor_pos_req.motor_goal_positions.append(set_motor_msg)
 
                 motor_iter += 1
 
             joint_iter += 1
+
+        
+        return motor_pos_req
 
 
 
@@ -188,57 +225,42 @@ class DoorEnv(gym.Env):
         Send action to the arm controller
 
         """
-        # self.motor_msg = SetMotorPositions()
-        # # self.motor_pos_req = MotorPositionStep()
-        # self.motor_pos_req = MotorPositionStep.Request()
+        self.motor_pos_req = self.set_eq_motor_goal(action)
+        zero_step = np.zeros(13)
+        zero_action_req = self.set_eq_motor_goal(zero_step)
 
-        # set_motor_msg = SetPosition()
-        # set_motor_msg.id = 60
-        # set_motor_msg.position = action[0]
-
-        # self.motor_msg.motor_goal_positions.append(set_motor_msg)
-        # self.motor_pos_req.motor_goal_positions.append(set_motor_msg)
-
-        # set_motor_msg = SetPosition()
-        # set_motor_msg.id = 61
-        # set_motor_msg.position = action[1]
-
-        # self.motor_msg.motor_goal_positions.append(set_motor_msg)
-        # self.motor_pos_req.motor_goal_positions.append(set_motor_msg)
-
-
-        # set_motor_msg = SetPosition()
-        # set_motor_msg.id = 62
-        # set_motor_msg.position = action[2]
-
-        # self.motor_msg.motor_goal_positions.append(set_motor_msg)
-        # self.motor_pos_req.motor_goal_positions.append(set_motor_msg)
-
-        self.set_eq_motor_goal(action)
-
-        # self.motor_publisher.publish(self.motor_msg)
-        # self.future = self.cli.call_async(self.motor_pos_req)
-        # rclpy.spin_until_future_complete(self.node, self.future)
-        
-        # print(self.future.result().motor_status[0].present_position)
-
-        # self.internal_state += action
-        # self.motor_msg.id = 30
-        # self.motor_msg.position = self.internal_state
+        # print(self.motor_pos_req)
 
         self.control_timestep = 0.2
         self.model_timestep = 0.1
 
+        policy_step = True
+
         # start = time.time()
+        #THIS MIGHT NOT WORK WITH DELTA POSITION SERVICE BECAUSE IT SENDS THE COMMAND MULTIPLE TIMES??????????????????????????
         for i in range(int(self.control_timestep / self.model_timestep)):
         # for i in range(4):
             # start_2 = time.time()
             start = time.time()
-            # self.motor_publisher.publish(self.motor_msg)
-            self.future = self.cli.call_async(self.motor_pos_req)
-            rclpy.spin_until_future_complete(self.node, self.future)
+            if policy_step:
+                # self.motor_publisher.publish(self.motor_msg)
+                self.shoulder_future = self.client_shoulder.call_async(self.motor_pos_req)
+                self.upperarm_future = self.client_upperarm.call_async(self.motor_pos_req)
+                self.lowerarm_future = self.client_lowerarm.call_async(self.motor_pos_req)
+                policy_step = False
+            else:
+                self.shoulder_future = self.client_shoulder.call_async(zero_action_req)
+                self.upperarm_future = self.client_upperarm.call_async(zero_action_req)
+                self.lowerarm_future = self.client_lowerarm.call_async(zero_action_req)
+               
+            rclpy.spin_until_future_complete(self.node, self.shoulder_future)
+            rclpy.spin_until_future_complete(self.node, self.upperarm_future)
+            rclpy.spin_until_future_complete(self.node, self.lowerarm_future)
+            self.shoulder_motor_states_msg = self.shoulder_future.result()
+            self.upperarm_motor_states_msg = self.upperarm_future.result()
+            self.lowerarm_motor_states_msg = self.lowerarm_future.result()
+
             end = time.time()
-            self.motor_states_msg = self.future.result()
             sleep_time = self.model_timestep - (end-start)
             if sleep_time > 0.0:
             # print(sleep_time)
@@ -248,9 +270,9 @@ class DoorEnv(gym.Env):
 
         # end = time.time()
         # print(end-start)
-        
-        reward = self.reward()
+
         observation = self._get_obs()
+        reward = self.reward()
         info = self._get_info()
         done = reward >= 0.99
         # done = False

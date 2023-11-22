@@ -22,6 +22,7 @@ find_package(dynamixel_sdk REQUIRED)
 # find_package(dynamixel_workbench_toolbox REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(gh360_interfaces REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -35,17 +36,18 @@ add_library(gh360
   src/mx_64_dict.cpp
   src/mx_106_dict.cpp
   # src/motor_handler.cpp
+  src/joint.cpp
   src/soft_joint.cpp
   src/motor_joint.cpp
 )
-ament_target_dependencies(gh360 "rclcpp" "std_msgs" "dynamixel_sdk")
+ament_target_dependencies(gh360 "rclcpp" "std_msgs" "std_srvs" "dynamixel_sdk")
 
 add_executable(motor_handler src/motor_handler.cpp)
 target_link_libraries(
   motor_handler
   gh360
 )
-ament_target_dependencies(motor_handler rclcpp std_msgs gh360_interfaces)
+ament_target_dependencies(motor_handler rclcpp std_msgs std_srvs gh360_interfaces)
 
 add_executable(encoder_handler src/encoder_handler.cpp)
 target_link_libraries(
