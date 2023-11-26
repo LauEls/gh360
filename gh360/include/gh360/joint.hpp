@@ -11,9 +11,11 @@ class Joint
         virtual ~Joint(){}
         
         std::string joint_name;
+        double joint_angle;
 
         virtual std::string get_joint_name() = 0;
         virtual std::string get_joint_type() = 0;
+        virtual double get_joint_angle() = 0;
 
         double positionIntToDouble(int data);
         double velocityIntToDouble(int data);
@@ -25,6 +27,8 @@ class Joint
 
         double calc_set_motor_goal_pos(double goal_pos_adjusted, double offset, int movement_direction);
         double calc_get_motor_pos(double present_pos_raw, double offset, int movement_direction);
+        double calc_get_motor_vel(double present_vel_raw, int movement_direction);
+        double calc_get_motor_current(double present_current_raw, int movement_direction);
 
     protected:
         Joint(){}

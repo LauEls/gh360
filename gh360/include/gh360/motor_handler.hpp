@@ -7,6 +7,7 @@
 #include <vector>
 #include <math.h>
 #include <chrono>
+#include <unistd.h>
 
 #include "rclcpp/rclcpp.hpp"
 #include "gh360_interfaces/msg/port_status.hpp"
@@ -15,6 +16,7 @@
 #include "gh360_interfaces/msg/set_position.hpp"
 #include "gh360_interfaces/srv/motor_position_step.hpp"
 #include "std_srvs/srv/set_bool.hpp"
+#include "gh360_interfaces/msg/arm_encoder_states.hpp"
 // #include <DynamixelWorkbench.h>
 // #include <dynamixel_workbench_toolbox/dynamixel_workbench.h>
 #include "dynamixel_sdk/dynamixel_sdk.h"
@@ -48,6 +50,8 @@ namespace gh360
             MotorDictionary* getMotorModel(int motor_id);
             bool setOperatingMode(Joint* joint, int value);
             bool setTorqueEnable(Joint* joint, int value);
+            bool setVelocityProfile(Joint* joint, double value);
+            bool setAccelerationProfile(Joint* joint, double value);
             // bool setPositionControlMode(uint8_t id);
             // bool setExtendedPositionControlMode(uint8_t id);
             bool readPresentPosition();
@@ -62,6 +66,7 @@ namespace gh360
             bool syncWrite(uint8_t size, uint8_t address);
             bool writeRegister(uint8_t id, int32_t data, uint8_t data_size, uint8_t address);
             bool safetyCheck();
+            bool initMotorPositions();
 
         private:
             void timer_callback();
@@ -69,6 +74,7 @@ namespace gh360
             void position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
             void delta_position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
             void set_torque_callback(const std::shared_ptr<std_srvs::srv::SetBool::Request> request, std::shared_ptr<std_srvs::srv::SetBool::Response> response);
+            void encoder_callback(const gh360_interfaces::msg::ArmEncoderStates::SharedPtr msg);
 
             dynamixel::PortHandler * portHandler;
             dynamixel::PacketHandler * packetHandler;
@@ -79,6 +85,9 @@ namespace gh360
             constexpr static int motor_cnt = 2;
             bool multi_motor_models = false;
             MotorDictionary* joints_motor_model;
+            bool joint_states_recieved = false;
+            bool motors_initiated = false;
+            int init_state = 0;
 
             rclcpp::TimerBase::SharedPtr timer_;
             rclcpp::Publisher<gh360_interfaces::msg::PortStatus>::SharedPtr motor_state_publisher_;
@@ -86,6 +95,7 @@ namespace gh360
             rclcpp::Service<gh360_interfaces::srv::MotorPositionStep>::SharedPtr position_step_service_;
             rclcpp::Service<gh360_interfaces::srv::MotorPositionStep>::SharedPtr delta_position_step_service_;
             rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_torque_service_;
+            rclcpp::Subscription<gh360_interfaces::msg::ArmEncoderStates>::SharedPtr encoder_subscriber_;
 
             std::vector<std::string> joint_names;
             std::vector<Joint*> joints;

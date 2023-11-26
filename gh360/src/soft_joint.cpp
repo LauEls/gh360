@@ -179,6 +179,16 @@ void SoftJoint::set_left_motor_status(int data, uint8_t address)
     }
 }
 
+double SoftJoint::get_joint_angle()
+{
+    return this->joint_angle;
+}
+
+void SoftJoint::set_joint_angle(double new_angle)
+{
+    this->joint_angle = new_angle;
+}
+
 std::string SoftJoint::get_joint_name()
 {
     return this->joint_name;
@@ -243,22 +253,26 @@ double SoftJoint::get_left_motor_present_position()
 
 double SoftJoint::get_right_motor_present_velocity()
 {
-    return this->right_motor_present_velocity;
+    // return this->right_motor_present_velocity;
+    return this->calc_get_motor_vel(this->right_motor_present_velocity, this->right_movement_direction);
 }
 
 double SoftJoint::get_left_motor_present_velocity()
 {
-    return this->left_motor_present_velocity;
+    // return this->left_motor_present_velocity;
+    return this->calc_get_motor_vel(this->left_motor_present_velocity, this->left_movement_direction);
 }
 
 double SoftJoint::get_right_motor_present_current()
 {
-    return this->right_motor_present_current;
+    // return this->right_motor_present_current;
+    return this->calc_get_motor_current(this->right_motor_present_current, this->right_movement_direction);
 }
 
 double SoftJoint::get_left_motor_present_current()
 {
-    return this->left_motor_present_current;
+    // return this->left_motor_present_current;
+    return this->calc_get_motor_current(this->left_motor_present_current, this->left_movement_direction);
 }
 
 double SoftJoint::get_right_motor_present_temperature()
@@ -379,4 +393,24 @@ int SoftJoint::get_left_motor_goal_int(uint8_t address)
     }
     
     return 0;
+}
+
+void SoftJoint::set_right_reference_current(double data)
+{
+    this->right_reference_current = data;
+}
+
+void SoftJoint::set_left_reference_current(double data)
+{
+    this->left_reference_current = data;
+}
+
+double SoftJoint::get_right_reference_current()
+{
+    return this->right_reference_current;
+}
+
+double SoftJoint::get_left_reference_current()
+{
+    return this->left_reference_current;
 }

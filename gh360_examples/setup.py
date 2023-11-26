@@ -20,7 +20,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'monitor = gh360_examples.monitor:main'
+            'monitor = gh360_examples.monitor:main',
+            'streamdeck_test = gh360_examples.test_stream_deck:main'
         ],
     },
 )

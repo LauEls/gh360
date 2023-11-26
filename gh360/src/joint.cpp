@@ -80,3 +80,15 @@ double Joint::calc_get_motor_pos(double present_pos_raw, double offset, int move
     return present_pos_adjusted;
 }
 
+double Joint::calc_get_motor_vel(double present_vel_raw, int movement_direction)
+{
+    double present_vel_adjusted = present_vel_raw / movement_direction;
+    return present_vel_adjusted;
+}
+
+double Joint::calc_get_motor_current(double present_current_raw, int movement_direction)
+{
+    double present_current_adjusted = present_current_raw / movement_direction;
+    return present_current_adjusted;
+}
+

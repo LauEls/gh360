@@ -65,6 +65,10 @@ namespace gh360
             std::chrono::time_point<std::chrono::system_clock> shoulder_prev_time;
             std::chrono::time_point<std::chrono::system_clock> upperarm_prev_time;
             std::chrono::time_point<std::chrono::system_clock> lowerarm_prev_time;
+
+            bool shoulder_data_recieved = false;
+            bool upperarm_data_recieved = false;
+            bool lowerarm_data_recieved = false;
     };   
 
 }

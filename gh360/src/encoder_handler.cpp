@@ -7,6 +7,10 @@ gh360::EncoderHandler::EncoderHandler()
 {
     RCLCPP_INFO(this->get_logger(), "Run encoder handler node");
 
+    this->shoulder_data_recieved = false;
+    this->upperarm_data_recieved = false;
+    this->lowerarm_data_recieved = false;
+
     this->shoulder_encoder_subscriber_ = this->create_subscription<std_msgs::msg::String>("/arm1/Shoulder_Encoders", 10, std::bind(&gh360::EncoderHandler::shoulder_encoder_callback, this, std::placeholders::_1));
     this->upperarm_encoder_subscriber_ = this->create_subscription<std_msgs::msg::String>("/arm1/UpperArm_Encoders", 10, std::bind(&gh360::EncoderHandler::upperarm_encoder_callback, this, std::placeholders::_1));
     this->lowerarm_encoder_subscriber_ = this->create_subscription<std_msgs::msg::String>("/arm1/LowerArm_Encoders", 10, std::bind(&gh360::EncoderHandler::lowerarm_encoder_callback, this, std::placeholders::_1));
@@ -86,13 +90,14 @@ void gh360::EncoderHandler::shoulder_encoder_callback(const std_msgs::msg::Strin
     std::vector<double> joint_angles = this->strToDoubleVector(msg->data, ";");
     for (uint i=0; i<this->shoulder_joint_names.size(); i++)
     {
-        new_joint_angle = (joint_angles[this->shoulder_port_ids[i]-1] + this->shoulder_offsets[i]) * this->shoulder_inverters[i];
+        new_joint_angle = joint_angles[this->shoulder_port_ids[i]-1] * this->shoulder_inverters[i] - this->shoulder_offsets[i] ;
         new_joint_vel = (new_joint_angle - this->shoulder_joint_angles[i]) / elapsed_seconds.count()    ;
 
         this->shoulder_joint_angles[i] = new_joint_angle;
         this->shoulder_joint_vels[i] = new_joint_vel;
     }
-
+    
+    if (!(this->shoulder_data_recieved)) this->shoulder_data_recieved = true;
 }
 
 void gh360::EncoderHandler::upperarm_encoder_callback(const std_msgs::msg::String::SharedPtr msg)
@@ -120,13 +125,14 @@ void gh360::EncoderHandler::upperarm_encoder_callback(const std_msgs::msg::Strin
 
     for (uint i=0; i<this->upperarm_joint_names.size(); i++)
     {
-        new_joint_angle = (joint_angles[this->upperarm_port_ids[i]-1] + this->upperarm_offsets[i]) * this->upperarm_inverters[i];
+        new_joint_angle = joint_angles[this->upperarm_port_ids[i]-1] * this->upperarm_inverters[i] - this->upperarm_offsets[i];
         new_joint_vel = (new_joint_angle - this->upperarm_joint_angles[i]) / elapsed_seconds.count()    ;
 
         this->upperarm_joint_angles[i] = new_joint_angle;
         this->upperarm_joint_vels[i] = new_joint_vel;
     }
 
+    if (!(this->upperarm_data_recieved)) this->upperarm_data_recieved = true;
 }
 
 void gh360::EncoderHandler::lowerarm_encoder_callback(const std_msgs::msg::String::SharedPtr msg)
@@ -154,13 +160,14 @@ void gh360::EncoderHandler::lowerarm_encoder_callback(const std_msgs::msg::Strin
 
     for (uint i=0; i<this->lowerarm_joint_names.size(); i++)
     {
-        new_joint_angle = (joint_angles[this->lowerarm_port_ids[i]-1] + this->lowerarm_offsets[i]) * this->lowerarm_inverters[i];
+        new_joint_angle = joint_angles[this->lowerarm_port_ids[i]-1] * this->lowerarm_inverters[i] - this->lowerarm_offsets[i];
         new_joint_vel = (new_joint_angle - this->lowerarm_joint_angles[i]) / elapsed_seconds.count()    ;
 
         this->lowerarm_joint_angles[i] = new_joint_angle;
         this->lowerarm_joint_vels[i] = new_joint_vel;
     }
 
+    if (!(this->lowerarm_data_recieved)) this->lowerarm_data_recieved = true;
 }
 
 std::vector<double> gh360::EncoderHandler::strToDoubleVector(std::string s, std::string del)
@@ -184,41 +191,47 @@ std::vector<double> gh360::EncoderHandler::strToDoubleVector(std::string s, std:
 void gh360::EncoderHandler::timer_callback()
 {
     //  RCLCPP_INFO(this->get_logger(), "Publishing Loop");
-
-    gh360_interfaces::msg::ArmEncoderStates arm_encoder_msg = gh360_interfaces::msg::ArmEncoderStates();
-    gh360_interfaces::msg::JointEncoderState joint_encoder_msg;
-
-    for (uint i=0; i<this->shoulder_joint_names.size(); i++)
+    if (this->shoulder_data_recieved && this->upperarm_data_recieved && this->lowerarm_data_recieved)
     {
-        joint_encoder_msg = gh360_interfaces::msg::JointEncoderState();
-        joint_encoder_msg.joint_name = this->shoulder_joint_names[i];
-        joint_encoder_msg.current_pos = this->shoulder_joint_angles[i];
-        joint_encoder_msg.current_vel = this->shoulder_joint_vels[i];
-        
-        arm_encoder_msg.current_joint_states.push_back(joint_encoder_msg);
-    }
+        gh360_interfaces::msg::ArmEncoderStates arm_encoder_msg = gh360_interfaces::msg::ArmEncoderStates();
+        gh360_interfaces::msg::JointEncoderState joint_encoder_msg;
 
-    for (uint i=0; i<this->upperarm_joint_names.size(); i++)
+        for (uint i=0; i<this->shoulder_joint_names.size(); i++)
+        {
+            joint_encoder_msg = gh360_interfaces::msg::JointEncoderState();
+            joint_encoder_msg.joint_name = this->shoulder_joint_names[i];
+            joint_encoder_msg.current_pos = this->shoulder_joint_angles[i];
+            joint_encoder_msg.current_vel = this->shoulder_joint_vels[i];
+            
+            arm_encoder_msg.current_joint_states.push_back(joint_encoder_msg);
+        }
+
+        for (uint i=0; i<this->upperarm_joint_names.size(); i++)
+        {
+            joint_encoder_msg = gh360_interfaces::msg::JointEncoderState();
+            joint_encoder_msg.joint_name = this->upperarm_joint_names[i];
+            joint_encoder_msg.current_pos = this->upperarm_joint_angles[i];
+            joint_encoder_msg.current_vel = this->upperarm_joint_vels[i];
+            
+            arm_encoder_msg.current_joint_states.push_back(joint_encoder_msg);
+        }
+
+        for (uint i=0; i<this->lowerarm_joint_names.size(); i++)
+        {
+            joint_encoder_msg = gh360_interfaces::msg::JointEncoderState();
+            joint_encoder_msg.joint_name = this->lowerarm_joint_names[i];
+            joint_encoder_msg.current_pos = this->lowerarm_joint_angles[i];
+            joint_encoder_msg.current_vel = this->lowerarm_joint_vels[i];
+            
+            arm_encoder_msg.current_joint_states.push_back(joint_encoder_msg);
+        }
+
+        this->encoder_state_publisher_->publish(arm_encoder_msg);
+    }
+    else 
     {
-        joint_encoder_msg = gh360_interfaces::msg::JointEncoderState();
-        joint_encoder_msg.joint_name = this->upperarm_joint_names[i];
-        joint_encoder_msg.current_pos = this->upperarm_joint_angles[i];
-        joint_encoder_msg.current_vel = this->upperarm_joint_vels[i];
-        
-        arm_encoder_msg.current_joint_states.push_back(joint_encoder_msg);
+        RCLCPP_INFO(this->get_logger(), "Waiting for joint encoder data...");
     }
-
-    for (uint i=0; i<this->lowerarm_joint_names.size(); i++)
-    {
-        joint_encoder_msg = gh360_interfaces::msg::JointEncoderState();
-        joint_encoder_msg.joint_name = this->lowerarm_joint_names[i];
-        joint_encoder_msg.current_pos = this->lowerarm_joint_angles[i];
-        joint_encoder_msg.current_vel = this->lowerarm_joint_vels[i];
-        
-        arm_encoder_msg.current_joint_states.push_back(joint_encoder_msg);
-    }
-
-    this->encoder_state_publisher_->publish(arm_encoder_msg);
 }
 
 int main(int argc, char * argv[])

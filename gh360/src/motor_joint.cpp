@@ -45,6 +45,7 @@ void MotorJoint::set_motor_present_position(int position)
 {
     double motor_pos = this->positionIntToDouble(position);
     this->motor_present_position = motor_pos;
+    this->joint_angle = motor_pos;
 
     if (this->motor_init_pos == true)
     {
@@ -98,6 +99,11 @@ void MotorJoint::set_motor_status(int data, uint8_t address)
     
 }
 
+double MotorJoint::get_joint_angle()
+{
+    return this->get_motor_present_position();
+}
+
 std::string MotorJoint::get_joint_name()
 {
     return this->joint_name;
@@ -136,12 +142,14 @@ double MotorJoint::get_motor_present_position()
 
 double MotorJoint::get_motor_present_velocity()
 {
-    return this->motor_present_velocity;
+    // return this->motor_present_velocity;
+    return this->calc_get_motor_vel(this->motor_present_velocity, this->movement_direction);
 }
 
 double MotorJoint::get_motor_present_current()
 {
-    return this->motor_present_current;
+    // return this->motor_present_current;
+    return this->calc_get_motor_current(this->motor_present_current, this->movement_direction);
 }
 
 double MotorJoint::get_motor_present_temperature()
