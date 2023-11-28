@@ -39,6 +39,7 @@ class SoftJoint: public Joint
         void set_right_reference_position(double data);
         void set_left_reference_position(double data);
         void set_reference_joint_angle(double data);
+        void set_initialize(bool init);
 
         std::string get_joint_name();
         std::string get_joint_type();
@@ -74,7 +75,7 @@ class SoftJoint: public Joint
         double get_right_reference_position();
         double get_left_reference_position();
         double get_reference_joint_angle();
-
+        bool get_initialize();
 
         bool right_motor_goal_reached();
         bool left_motor_goal_reached();
@@ -118,6 +119,7 @@ class SoftJoint: public Joint
         
         bool right_motor_init_pos = true;
         bool left_motor_init_pos = true;
+        bool initialize = true;
 
         
 

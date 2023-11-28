@@ -102,6 +102,11 @@ double Joint::get_max_joint_angle()
     return this->max_joint_angle;
 }
 
+double Joint::get_motor_init_pos()
+{
+    return this->motor_init_pos;
+}
+
 void Joint::set_min_joint_angle(double min_joint_angle)
 {
     this->min_joint_angle = min_joint_angle;
@@ -112,3 +117,7 @@ void Joint::set_max_joint_angle(double max_joint_angle)
     this->max_joint_angle = max_joint_angle;
 }
 
+void Joint::set_motor_init_pos(double init_pos)
+{
+    this->motor_init_pos = init_pos;
+}

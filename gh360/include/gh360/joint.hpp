@@ -14,6 +14,7 @@ class Joint
         double joint_angle;
         double min_joint_angle;
         double max_joint_angle;
+        double motor_init_pos;
 
 
         virtual std::string get_joint_name() = 0;
@@ -22,8 +23,10 @@ class Joint
         
         double get_min_joint_angle();
         double get_max_joint_angle();
+        double get_motor_init_pos();
         void set_min_joint_angle(double min_joint_angle);
         void set_max_joint_angle(double max_joint_angle);
+        void set_motor_init_pos(double init_pos);
 
         double positionIntToDouble(int data);
         double velocityIntToDouble(int data);

@@ -179,6 +179,11 @@ void SoftJoint::set_left_motor_status(int data, uint8_t address)
     }
 }
 
+void SoftJoint::set_initialize(bool init)
+{
+    this->initialize = init;
+}
+
 double SoftJoint::get_joint_angle()
 {
     return this->joint_angle;
@@ -443,6 +448,11 @@ double SoftJoint::get_left_reference_position()
 double SoftJoint::get_reference_joint_angle()
 {
     return this->reference_joint_angle;
+}
+
+bool SoftJoint::get_initialize()
+{
+    return this->initialize;
 }
 
 bool SoftJoint::right_motor_goal_reached()

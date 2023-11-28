@@ -37,6 +37,7 @@ gh360::MotorHandler::MotorHandler()
 
         this->declare_parameter(this->joint_names[i]+".min_joint_angle", 0.0);
         this->declare_parameter(this->joint_names[i]+".max_joint_angle", 0.0);
+        this->declare_parameter(this->joint_names[i]+".motor_init_pos", 0.0);
 
         if (joint_type == "soft_joint") {
             this->declare_parameter(joint_name+".right.motor_id", 0);
@@ -50,6 +51,7 @@ gh360::MotorHandler::MotorHandler()
             new_joint->set_joint_name(joint_name);
             new_joint->set_min_joint_angle(get_parameter(joint_name+".min_joint_angle").as_double());
             new_joint->set_max_joint_angle(get_parameter(joint_name+".max_joint_angle").as_double());
+            new_joint->set_motor_init_pos(get_parameter(joint_name+".motor_init_pos").as_double());
             new_joint->set_right_motor_id(get_parameter(joint_name+".right.motor_id").as_int());
             new_joint->set_left_motor_id(get_parameter(joint_name+".left.motor_id").as_int());
             new_joint->set_right_movement_direction(get_parameter(joint_name+".right.movement_direction").as_int());
@@ -58,6 +60,7 @@ gh360::MotorHandler::MotorHandler()
             new_joint->set_left_offset(get_parameter(joint_name+".left.offset").as_double());
             new_joint->set_right_motor_model(this->getMotorModel(new_joint->get_right_motor_id()));
             new_joint->set_left_motor_model(this->getMotorModel(new_joint->get_left_motor_id()));
+            if (new_joint->get_right_motor_id() != 10) new_joint->set_initialize(false);
             this->setOperatingMode(new_joint, 4);
             this->setTorqueEnable(new_joint, 1);
             this->joints.push_back(new_joint);
@@ -76,6 +79,7 @@ gh360::MotorHandler::MotorHandler()
             new_joint->set_joint_name(joint_name);
             new_joint->set_min_joint_angle(get_parameter(joint_name+".min_joint_angle").as_double());
             new_joint->set_max_joint_angle(get_parameter(joint_name+".max_joint_angle").as_double());
+            new_joint->set_motor_init_pos(get_parameter(joint_name+".motor_init_pos").as_double());
             new_joint->set_motor_id(get_parameter(joint_name+".motor_id").as_int());
             new_joint->set_movement_direction(get_parameter(joint_name+".movement_direction").as_int());
             new_joint->set_offset(get_parameter(joint_name+".offset").as_double());
@@ -153,14 +157,17 @@ bool gh360::MotorHandler::initMotorPositions()
     else if (this->init_state == 1)
     {
         // RCLCPP_INFO(this->get_logger(), "Starting Motor Calibration!");
-        double right_present_position, left_present_position, right_closest_pos, left_closest_pos; 
+        double right_present_position, left_present_position, right_closest_pos, left_closest_pos, init_pos; 
         //left_present_current, right_present_current,
+        // double init_pos = M_PI;
         
         for (unsigned int i=0; i < this->joints.size(); i++)
         {
             if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
             {
-                if (soft_joint->get_right_motor_id() != 13) continue;
+                // if ((soft_joint->get_right_motor_id() != 13) && (soft_joint->get_right_motor_id() != 10)) continue;
+                if (!(soft_joint->get_initialize())) continue;
+
                 RCLCPP_INFO(this->get_logger(), "Starting Motor Calibration!");
                 this->setVelocityProfile(soft_joint, 10.0);
 
@@ -170,8 +177,15 @@ bool gh360::MotorHandler::initMotorPositions()
                 left_present_position = soft_joint->get_left_motor_present_position();
                 // left_present_current = soft_joint->get_left_motor_present_current();
 
-                right_closest_pos = round(right_present_position/(M_PI*2))*(M_PI*2);
-                left_closest_pos = round(left_present_position/(M_PI*2))*(M_PI*2);
+                init_pos = soft_joint->get_motor_init_pos();
+
+                right_closest_pos = round(right_present_position/(M_PI*2-init_pos))*(M_PI*2-init_pos);
+                if (right_closest_pos >= right_present_position) soft_joint->set_right_reference_position(right_closest_pos-2*M_PI);
+                else soft_joint->set_right_reference_position(right_closest_pos+2*M_PI);
+
+                left_closest_pos = round(left_present_position/(M_PI*2-init_pos))*(M_PI*2-init_pos);
+                if (left_closest_pos >= left_present_position) soft_joint->set_left_reference_position(left_closest_pos-2*M_PI);
+                else soft_joint->set_left_reference_position(left_closest_pos+2*M_PI);
 
                 RCLCPP_INFO(this->get_logger(), "present right pos: %f", right_present_position);
                 RCLCPP_INFO(this->get_logger(), "closest right pos: %f", right_closest_pos);
@@ -181,7 +195,7 @@ bool gh360::MotorHandler::initMotorPositions()
                 soft_joint->set_right_motor_goal_position(right_closest_pos);
                 soft_joint->set_left_motor_goal_position(left_closest_pos);
 
-                RCLCPP_INFO(this->get_logger(), "Set Goal Pos");
+                RCLCPP_INFO(this->get_logger(), "Move to closest possible position");
             }
         }
 
@@ -227,9 +241,10 @@ bool gh360::MotorHandler::initMotorPositions()
         {
             if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
             {
-                if (soft_joint->get_right_motor_id() != 13) continue;
+                // if ((soft_joint->get_right_motor_id() != 13) && (soft_joint->get_right_motor_id() != 10)) continue;
+                if (!(soft_joint->get_initialize())) continue;
 
-                RCLCPP_INFO(this->get_logger(), "Set Goal Pos 2");
+                RCLCPP_INFO(this->get_logger(), "Ajusting cocontraction");
 
                 right_present_position = soft_joint->get_right_motor_present_position();
                 left_present_position = soft_joint->get_left_motor_present_position();
@@ -255,11 +270,13 @@ bool gh360::MotorHandler::initMotorPositions()
                     // this->init_motor_side[i] = 0;
                     if (right_present_current > 0.0)
                     {
-                        soft_joint->set_right_motor_goal_position(right_present_position - M_PI*2);
+                        // soft_joint->set_right_motor_goal_position(right_present_position - M_PI*2);
+                        soft_joint->set_right_motor_goal_position(soft_joint->get_right_motor_goal_position() - M_PI*2);
                     }
                     else 
                     {
-                        soft_joint->set_right_motor_goal_position(right_present_position + M_PI*2);
+                        // soft_joint->set_right_motor_goal_position(right_present_position + M_PI*2);
+                        soft_joint->set_right_motor_goal_position(soft_joint->get_right_motor_goal_position() + M_PI*2);
                     }
                     RCLCPP_INFO(this->get_logger(), "Moving right motor to: %f", soft_joint->get_right_motor_goal_position());
                    
@@ -274,11 +291,11 @@ bool gh360::MotorHandler::initMotorPositions()
                     // this->init_motor_side[i] = 1;
                     if (left_present_current > 0.0)
                     {
-                        soft_joint->set_left_motor_goal_position(left_present_position - M_PI*2);
+                        soft_joint->set_left_motor_goal_position(soft_joint->get_left_motor_goal_position() - M_PI*2);
                     }
                     else 
                     {
-                        soft_joint->set_left_motor_goal_position(left_present_position + M_PI*2);
+                        soft_joint->set_left_motor_goal_position(soft_joint->get_left_motor_goal_position() + M_PI*2);
                     }
                     RCLCPP_INFO(this->get_logger(), "Moving left motor to: %f", soft_joint->get_left_motor_goal_position());
                 }
@@ -295,7 +312,7 @@ bool gh360::MotorHandler::initMotorPositions()
     }
     else if (this->init_state == 4)
     {
-        bool reference_current = false;
+        bool reference_current = true;
         bool reference_joint_angle = false;
         bool positions_reached = this->initMovementCheck(reference_current, reference_joint_angle);
 
@@ -367,7 +384,9 @@ bool gh360::MotorHandler::initMotorPositions()
         {
             if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
             {
-                if (soft_joint->get_right_motor_id() != 13) continue;
+                // if ((soft_joint->get_right_motor_id() != 13) && (soft_joint->get_right_motor_id() != 10)) continue;
+                // if (soft_joint->get_right_motor_id() != 10) continue;
+                if (!(soft_joint->get_initialize())) continue;
 
                 right_present_position = soft_joint->get_right_motor_present_position();
                 left_present_position = soft_joint->get_left_motor_present_position();
@@ -409,32 +428,34 @@ bool gh360::MotorHandler::initMotorPositions()
     }
     else if (this->init_state == 6)
     {
-        bool positions_reached = true;
+        bool reference_current = false;
+        bool reference_joint_angle = true;
+        bool positions_reached = this->initMovementCheck(reference_current, reference_joint_angle);
 
-        for (unsigned int i=0; i < this->joints.size(); i++)
-        {
-            if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
-            {
-                if (soft_joint->get_right_motor_id() != 13) continue;
+        // for (unsigned int i=0; i < this->joints.size(); i++)
+        // {
+        //     if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
+        //     {
+        //         if (soft_joint->get_right_motor_id() != 13) continue;
 
-                RCLCPP_INFO(this->get_logger(), "Waiting to reach goal pos 3");
+        //         RCLCPP_INFO(this->get_logger(), "Waiting to reach goal pos 3");
 
-                if ((!(soft_joint->right_motor_goal_reached())) || (!(soft_joint->left_motor_goal_reached()))) 
-                {
-                    positions_reached = false;
-                }
-                // if (soft_joint->get_right_motor_present_current() > this->init_reference_current[i])
-                if (abs(soft_joint->get_joint_angle()) > abs(soft_joint->get_reference_joint_angle()))
-                {
-                    RCLCPP_INFO(this->get_logger(), "Present joing angle further away from 0 than reference angle. Moving back.");
-                    // soft_joint->set_right_motor_goal_position(this->init_reference_position[i]);
+        //         if ((!(soft_joint->right_motor_goal_reached())) || (!(soft_joint->left_motor_goal_reached()))) 
+        //         {
+        //             positions_reached = false;
+        //         }
+        //         // if (soft_joint->get_right_motor_present_current() > this->init_reference_current[i])
+        //         if (abs(soft_joint->get_joint_angle()) > abs(soft_joint->get_reference_joint_angle()))
+        //         {
+        //             RCLCPP_INFO(this->get_logger(), "Present joing angle further away from 0 than reference angle. Moving back.");
+        //             // soft_joint->set_right_motor_goal_position(this->init_reference_position[i]);
 
-                    // RCLCPP_INFO(this->get_logger(), "Right current higher than reference current. Moving back to: %f", soft_joint->get_right_reference_position());
-                    soft_joint->set_right_motor_goal_position(soft_joint->get_right_reference_position());
-                    soft_joint->set_left_motor_goal_position(soft_joint->get_left_reference_position());
-                }
-            }
-        }
+        //             // RCLCPP_INFO(this->get_logger(), "Right current higher than reference current. Moving back to: %f", soft_joint->get_right_reference_position());
+        //             soft_joint->set_right_motor_goal_position(soft_joint->get_right_reference_position());
+        //             soft_joint->set_left_motor_goal_position(soft_joint->get_left_reference_position());
+        //         }
+        //     }
+        // }
 
         if (positions_reached) return true;
     }
@@ -504,6 +525,10 @@ void gh360::MotorHandler::encoder_callback(const gh360_interfaces::msg::ArmEncod
 void gh360::MotorHandler::timer_callback()
 {
     // RCLCPP_INFO(this->get_logger(), "timer_callback...");
+    this->syncRead(this->joints_motor_model->Present_Position.size, this->joints_motor_model->Present_Position.address);
+    this->syncRead(this->joints_motor_model->Present_Velocity.size, this->joints_motor_model->Present_Velocity.address);
+    this->syncRead(this->joints_motor_model->Present_Current.size, this->joints_motor_model->Present_Current.address);
+    this->syncRead(this->joints_motor_model->Present_Temperature.size, this->joints_motor_model->Present_Temperature.address);
 
     if (!(this->motors_initiated))
     {
@@ -511,11 +536,6 @@ void gh360::MotorHandler::timer_callback()
         this->motors_initiated = this->initMotorPositions();
     }
     
-
-    this->syncRead(this->joints_motor_model->Present_Position.size, this->joints_motor_model->Present_Position.address);
-    this->syncRead(this->joints_motor_model->Present_Velocity.size, this->joints_motor_model->Present_Velocity.address);
-    this->syncRead(this->joints_motor_model->Present_Current.size, this->joints_motor_model->Present_Current.address);
-    this->syncRead(this->joints_motor_model->Present_Temperature.size, this->joints_motor_model->Present_Temperature.address);
     bool safety_check = this->safetyCheck();
     if (safety_check == true) 
     {
@@ -548,34 +568,86 @@ bool gh360::MotorHandler::initMovementCheck(bool reference_current/*=false*/, bo
     {
         if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
         {
-            if (soft_joint->get_right_motor_id() != 13) continue;
+            if (!(soft_joint->get_initialize())) continue;
 
             //Check current limit
-            if (abs(soft_joint->get_right_motor_present_current()) > this->joints_motor_model->CURRENT_LIMIT-100)
+            // RCLCPP_INFO(this->get_logger(), "Current difference: %f", abs(soft_joint->get_right_motor_present_current() - soft_joint->get_left_motor_present_current()));
+            if (abs(soft_joint->get_right_motor_present_current() - soft_joint->get_left_motor_present_current()) > 2000)
             {
-                //update goal to reference position
-                soft_joint->set_right_motor_goal_position(soft_joint->get_right_reference_position());
-                RCLCPP_INFO(this->get_logger(), "Right Motor reached current limit. Moving to reference position: %f", soft_joint->get_right_motor_goal_position());
-            }
-            else if (abs(soft_joint->get_left_motor_present_current()) > this->joints_motor_model->CURRENT_LIMIT-100)
-            {
-                //update goal to reference position
-                soft_joint->set_left_motor_goal_position(soft_joint->get_left_reference_position());
-                RCLCPP_INFO(this->get_logger(), "Left Motor reached current limit. Moving to reference position: %f", soft_joint->get_left_motor_goal_position());
+                if (abs(soft_joint->get_right_motor_present_current()) > abs(soft_joint->get_left_motor_present_current()))
+                {
+                    double old_goal = soft_joint->get_right_motor_goal_position();
+                    soft_joint->set_right_motor_goal_position(soft_joint->get_right_reference_position());
+                    soft_joint->set_right_reference_position(old_goal);
+                    RCLCPP_INFO(this->get_logger(), "Right Motor reached current limit. Moving to reference position: %f", soft_joint->get_right_motor_goal_position());
+                }
+                else 
+                {
+                    double old_goal = soft_joint->get_left_motor_goal_position();
+                    soft_joint->set_left_motor_goal_position(soft_joint->get_left_reference_position());
+                    soft_joint->set_left_reference_position(old_goal);
+                    RCLCPP_INFO(this->get_logger(), "Left Motor reached current limit. Moving to reference position: %f", soft_joint->get_left_motor_goal_position());
+                }
             }
 
+            // if (abs(soft_joint->get_right_motor_present_current()) > (this->joints_motor_model->CURRENT_LIMIT-1000))
+            // {
+            //     //update goal to reference position
+            //     soft_joint->set_right_motor_goal_position(soft_joint->get_right_reference_position());
+            //     RCLCPP_INFO(this->get_logger(), "Right Motor reached current limit. Moving to reference position: %f", soft_joint->get_right_motor_goal_position());
+            // }
+            // else if (abs(soft_joint->get_left_motor_present_current()) > (this->joints_motor_model->CURRENT_LIMIT-1000))
+            // {
+            //     //update goal to reference position
+            //     soft_joint->set_left_motor_goal_position(soft_joint->get_left_reference_position());
+            //     RCLCPP_INFO(this->get_logger(), "Left Motor reached current limit. Moving to reference position: %f", soft_joint->get_left_motor_goal_position());
+            // }
+
             //Check min/max angle
-            else if (soft_joint->get_joint_angle() > soft_joint->get_max_joint_angle())
-            {
-                soft_joint->set_right_motor_goal_position(soft_joint->get_right_motor_goal_position()-M_PI*2);
-                soft_joint->set_left_motor_goal_position(soft_joint->get_left_motor_goal_position()-M_PI*2);
-                RCLCPP_INFO(this->get_logger(), "Joint reached min joint angle. Moving to: %f, %f", soft_joint->get_right_motor_goal_position(), soft_joint->get_left_motor_goal_position());
-            }
-            else if (soft_joint->get_joint_angle() < soft_joint->get_min_joint_angle())
-            {
-                soft_joint->set_right_motor_goal_position(soft_joint->get_right_motor_goal_position()+M_PI*2);
-                soft_joint->set_left_motor_goal_position(soft_joint->get_left_motor_goal_position()+M_PI*2);
+            else if (soft_joint->get_joint_angle() >= soft_joint->get_max_joint_angle())
+            {      
+                if (soft_joint->get_right_motor_goal_position() > soft_joint->get_right_motor_present_position())
+                {
+                    soft_joint->set_right_motor_goal_position(soft_joint->get_right_reference_position());
+                }
+
+                if (soft_joint->get_left_motor_goal_position() > soft_joint->get_left_motor_present_position())
+                {
+                    soft_joint->set_left_motor_goal_position(soft_joint->get_left_reference_position());
+                }
+
                 RCLCPP_INFO(this->get_logger(), "Joint reached max joint angle. Moving to: %f, %f", soft_joint->get_right_motor_goal_position(), soft_joint->get_left_motor_goal_position());
+
+                // double new_right_motor_goal = soft_joint->get_right_motor_goal_position()-M_PI*2;
+                // double new_left_motor_goal = soft_joint->get_left_motor_goal_position()-M_PI*2;
+                // if (abs(new_right_motor_goal - soft_joint->get_right_motor_present_position()) <= M_PI*2)
+                // { 
+                //     soft_joint->set_right_motor_goal_position(new_right_motor_goal);
+                //     soft_joint->set_left_motor_goal_position(new_left_motor_goal);
+                //     RCLCPP_INFO(this->get_logger(), "Joint reached max joint angle. Moving to: %f, %f", soft_joint->get_right_motor_goal_position(), soft_joint->get_left_motor_goal_position());
+                // }
+            }
+            else if (soft_joint->get_joint_angle() <= soft_joint->get_min_joint_angle())
+            {
+                if (soft_joint->get_right_motor_goal_position() < soft_joint->get_right_motor_present_position())
+                {
+                    soft_joint->set_right_motor_goal_position(soft_joint->get_right_reference_position());
+                }
+
+                if (soft_joint->get_left_motor_goal_position() < soft_joint->get_left_motor_present_position())
+                {
+                    soft_joint->set_left_motor_goal_position(soft_joint->get_left_reference_position());
+                }
+
+                RCLCPP_INFO(this->get_logger(), "Joint reached min joint angle. Moving to: %f, %f", soft_joint->get_right_motor_goal_position(), soft_joint->get_left_motor_goal_position());
+                // double new_right_motor_goal = soft_joint->get_right_motor_goal_position()+M_PI*2;
+                // double new_left_motor_goal = soft_joint->get_left_motor_goal_position()+M_PI*2;
+                // if (abs(new_right_motor_goal - soft_joint->get_right_motor_present_position()) <= M_PI*2)
+                // { 
+                //     soft_joint->set_right_motor_goal_position(new_right_motor_goal);
+                //     soft_joint->set_left_motor_goal_position(new_left_motor_goal);
+                //     RCLCPP_INFO(this->get_logger(), "Joint reached min joint angle. Moving to: %f, %f", soft_joint->get_right_motor_goal_position(), soft_joint->get_left_motor_goal_position());
+                // }
             }
 
             //If true check summed reference currents
