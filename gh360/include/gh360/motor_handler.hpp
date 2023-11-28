@@ -67,6 +67,7 @@ namespace gh360
             bool writeRegister(uint8_t id, int32_t data, uint8_t data_size, uint8_t address);
             bool safetyCheck();
             bool initMotorPositions();
+            bool initMovementCheck(bool reference_current=false, bool reference_joint_angle=false);
 
         private:
             void timer_callback();
@@ -88,6 +89,8 @@ namespace gh360
             bool joint_states_recieved = false;
             bool motors_initiated = false;
             int init_state = 0;
+            // std::vector<double> init_reference_current, init_reference_position;
+            std::vector<int> init_motor_side;
 
             rclcpp::TimerBase::SharedPtr timer_;
             rclcpp::Publisher<gh360_interfaces::msg::PortStatus>::SharedPtr motor_state_publisher_;

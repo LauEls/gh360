@@ -83,28 +83,42 @@ class StreamDeckGH360Control:
 
     def key_change_callback(self, deck, key, key_state):
         print("Key: " + str(key) + " state: " + str(key_state))
-        if not key_state and self.key_swap[key] == 0:
-            deck.set_key_image(key, self.img_pressed_bytes)
-            self.key_swap[key] = 1
-        elif not key_state and self.key_swap[key] == 1:
-            deck.set_key_image(key, self.img_released_bytes)
-            self.key_swap[key] = 0
+        # if not key_state and self.key_swap[key] == 0:
+        #     deck.set_key_image(key, self.img_pressed_bytes)
+        #     self.key_swap[key] = 1
+        # elif not key_state and self.key_swap[key] == 1:
+        #     deck.set_key_image(key, self.img_released_bytes)
+        #     self.key_swap[key] = 0
 
         if key == 0 and not key_state:
             if self.encoder_process.poll() is None:
                 os.killpg(os.getpgid(self.encoder_process.pid), signal.SIGINT)
+                self.encoder_process.wait()
+                print("Encoder Process closed")
                 os.killpg(os.getpgid(self.bridge_process.pid), signal.SIGINT)
+                self.bridge_process.wait()
+                print("Bridge Process closed")
+                deck.set_key_image(key, self.img_released_bytes)
             else:
+                deck.set_key_image(key, self.img_pressed_bytes)
                 self.encoder_startup()
         if key == 1 and not key_state:
             if self.gh360_process.poll() is None:
                 os.killpg(os.getpgid(self.gh360_process.pid), signal.SIGINT)
+                self.gh360_process.wait()
+                print("GH360 Process closed")
+                deck.set_key_image(key, self.img_released_bytes)
             else:
+                deck.set_key_image(key, self.img_pressed_bytes)
                 self.gh360_startup()
         if key == 2 and not key_state:
             if self.monitor_process.poll() is None:
                 os.killpg(os.getpgid(self.monitor_process.pid), signal.SIGINT)
+                self.monitor_process.wait()
+                print("Monitor Process closed")
+                deck.set_key_image(key, self.img_released_bytes)
             else:
+                deck.set_key_image(key, self.img_pressed_bytes)
                 self.gh360_monitor()
         if key == 4 and not key_state: 
             if self.colcon_process.poll() is None:

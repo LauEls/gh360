@@ -9,13 +9,21 @@ class Joint
 {
     public:
         virtual ~Joint(){}
-        
+
         std::string joint_name;
         double joint_angle;
+        double min_joint_angle;
+        double max_joint_angle;
+
 
         virtual std::string get_joint_name() = 0;
         virtual std::string get_joint_type() = 0;
         virtual double get_joint_angle() = 0;
+        
+        double get_min_joint_angle();
+        double get_max_joint_angle();
+        void set_min_joint_angle(double min_joint_angle);
+        void set_max_joint_angle(double max_joint_angle);
 
         double positionIntToDouble(int data);
         double velocityIntToDouble(int data);

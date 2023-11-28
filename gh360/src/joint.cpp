@@ -92,3 +92,23 @@ double Joint::calc_get_motor_current(double present_current_raw, int movement_di
     return present_current_adjusted;
 }
 
+double Joint::get_min_joint_angle()
+{
+    return this->min_joint_angle;
+}
+        
+double Joint::get_max_joint_angle()
+{
+    return this->max_joint_angle;
+}
+
+void Joint::set_min_joint_angle(double min_joint_angle)
+{
+    this->min_joint_angle = min_joint_angle;
+}
+
+void Joint::set_max_joint_angle(double max_joint_angle)
+{
+    this->max_joint_angle = max_joint_angle;
+}
+

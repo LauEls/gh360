@@ -405,6 +405,21 @@ void SoftJoint::set_left_reference_current(double data)
     this->left_reference_current = data;
 }
 
+void SoftJoint::set_right_reference_position(double data)
+{
+    this->right_reference_position = data;
+}
+
+void SoftJoint::set_left_reference_position(double data)
+{
+    this->left_reference_position = data;
+}
+
+void SoftJoint::set_reference_joint_angle(double data)
+{
+    this->reference_joint_angle = data;
+}
+
 double SoftJoint::get_right_reference_current()
 {
     return this->right_reference_current;
@@ -413,4 +428,39 @@ double SoftJoint::get_right_reference_current()
 double SoftJoint::get_left_reference_current()
 {
     return this->left_reference_current;
+}
+
+double SoftJoint::get_right_reference_position()
+{
+    return this->right_reference_position;
+}
+
+double SoftJoint::get_left_reference_position()
+{
+    return this->left_reference_position;
+}
+
+double SoftJoint::get_reference_joint_angle()
+{
+    return this->reference_joint_angle;
+}
+
+bool SoftJoint::right_motor_goal_reached()
+{
+    if ((abs(this->get_right_motor_present_position() - this->get_right_motor_goal_position()) > 0.1) || (this->get_right_motor_present_velocity() > 0.0)) 
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool SoftJoint::left_motor_goal_reached()
+{
+    if ((abs(this->get_left_motor_present_position() - this->get_left_motor_goal_position()) > 0.1) || (this->get_left_motor_present_velocity() > 0.0))
+    {
+        return false;
+    }
+
+    return true;
 }
