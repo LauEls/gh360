@@ -60,7 +60,7 @@ gh360::MotorHandler::MotorHandler()
             new_joint->set_left_offset(get_parameter(joint_name+".left.offset").as_double());
             new_joint->set_right_motor_model(this->getMotorModel(new_joint->get_right_motor_id()));
             new_joint->set_left_motor_model(this->getMotorModel(new_joint->get_left_motor_id()));
-            if (new_joint->get_right_motor_id() != 10) new_joint->set_initialize(false);
+            // if (new_joint->get_right_motor_id() != 10 && new_joint->get_right_motor_id() != 13 && new_joint->get_right_motor_id() != 5) new_joint->set_initialize(false);
             this->setOperatingMode(new_joint, 4);
             this->setTorqueEnable(new_joint, 1);
             this->joints.push_back(new_joint);
@@ -205,28 +205,6 @@ bool gh360::MotorHandler::initMotorPositions()
     {
         bool positions_reached = this->initMovementCheck();
 
-        // for (unsigned int i=0; i < this->joints.size(); i++)
-        // {
-        //     if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
-        //     {
-        //         if (soft_joint->get_right_motor_id() != 13) continue;
-
-        //         RCLCPP_INFO(this->get_logger(), "Waiting to reach goal pos");
-
-        //         //CHECK IF CURRENT LIMIT HAS BEEN VIOLATED IF SO, MOVE THAT MOTOR TO THE OTHER 2*PI POSITION
-
-        //         if (!(soft_joint->right_motor_goal_reached())) 
-        //         {
-        //             positions_reached = false;
-        //         }
-        //         else if (!(soft_joint->left_motor_goal_reached()))
-        //         {
-        //             positions_reached = false;
-        //         }
-                
-        //     }
-        // }
-
         if (positions_reached) 
         {
             sleep(1);
@@ -316,59 +294,6 @@ bool gh360::MotorHandler::initMotorPositions()
         bool reference_joint_angle = false;
         bool positions_reached = this->initMovementCheck(reference_current, reference_joint_angle);
 
-        // for (unsigned int k=0; k<this->init_reference_position.size(); k++)
-        // {
-        //     RCLCPP_INFO(this->get_logger(), "Right reference position: %f", this->init_reference_position[k]);
-        // }
-        // copy(reference_position.begin(), reference_position.end(), std::ostream_iterator<double>(std::cout, " "));
-
-        // for (unsigned int i=0; i < this->joints.size(); i++)
-        // {
-        //     if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
-        //     {
-        //         if (soft_joint->get_right_motor_id() != 13) continue;
-
-        //         RCLCPP_INFO(this->get_logger(), "Waiting to reach goal pos 2");
-
-        //         if (this->init_motor_side[i] == 0)
-        //         {
-        //             //if present current is bigger than reference current move back to reference position
-
-        //             if (!(soft_joint->right_motor_goal_reached())) 
-        //             {
-        //                 positions_reached = false;
-        //             }
-        //             // if (soft_joint->get_right_motor_present_current() > this->init_reference_current[i])
-        //             if (abs(soft_joint->get_right_motor_present_current()) > abs(soft_joint->get_right_reference_current()))
-        //             {
-        //                 // RCLCPP_INFO(this->get_logger(), "Right current higher than reference current. Moving back to: %f", this->init_reference_position[i]);
-        //                 // soft_joint->set_right_motor_goal_position(this->init_reference_position[i]);
-
-        //                 RCLCPP_INFO(this->get_logger(), "Right current higher than reference current. Moving back to: %f", soft_joint->get_right_reference_position());
-        //                 soft_joint->set_right_motor_goal_position(soft_joint->get_right_reference_position());
-        //             }
-        //         }
-        //         else if (this->init_motor_side[i] == 1)
-        //         {
-        //             //if present current is bigger than reference current move back to reference position
-
-        //             if (!(soft_joint->left_motor_goal_reached()))
-        //             {
-        //                 positions_reached = false;
-        //             }
-        //             // if (soft_joint->get_left_motor_present_current() > this->init_reference_current[i])
-        //             if (abs(soft_joint->get_left_motor_present_current()) > abs(soft_joint->get_right_reference_current()))
-        //             {
-        //                 // soft_joint->set_left_motor_goal_position(this->init_reference_position[i]);
-        //                 // RCLCPP_INFO(this->get_logger(), "Left current higher than reference current. Moving back to: %f", this->init_reference_position[i]);
-
-        //                 RCLCPP_INFO(this->get_logger(), "Left current higher than reference current. Moving back to: %f", soft_joint->get_left_reference_position());
-        //                 soft_joint->set_right_motor_goal_position(soft_joint->get_left_reference_position());
-        //             }
-        //         }
-        //     }
-        // }
-
         if (positions_reached) this->init_state = 5;
     }
     else if (this->init_state == 5)
@@ -384,8 +309,6 @@ bool gh360::MotorHandler::initMotorPositions()
         {
             if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
             {
-                // if ((soft_joint->get_right_motor_id() != 13) && (soft_joint->get_right_motor_id() != 10)) continue;
-                // if (soft_joint->get_right_motor_id() != 10) continue;
                 if (!(soft_joint->get_initialize())) continue;
 
                 right_present_position = soft_joint->get_right_motor_present_position();
@@ -412,17 +335,7 @@ bool gh360::MotorHandler::initMotorPositions()
                 }
             }
         }
-        //check if joint angle is bigger or smaller than 0
-        // if bigger move to current pos - 2*pi
-        // if smaller move to current pos + 2*pi
 
-        //while loop as long as goal pos not reached and safety check not violated
-            //if movement direction is positive
-                //if joint angle is smaller than min or bigger than max joint angle move back to reference position
-                //if joint angle is further away from 0 then reference angle move back to reference motor position
-
-        
-        //set current motor position as 0 - reference offset.
         this->init_state = 6;
 
     }
@@ -432,32 +345,31 @@ bool gh360::MotorHandler::initMotorPositions()
         bool reference_joint_angle = true;
         bool positions_reached = this->initMovementCheck(reference_current, reference_joint_angle);
 
-        // for (unsigned int i=0; i < this->joints.size(); i++)
-        // {
-        //     if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
-        //     {
-        //         if (soft_joint->get_right_motor_id() != 13) continue;
+        if (positions_reached) 
+        {
+            this->init_state = 7;
+            sleep(1);
+        }
+    }
+    else if (this->init_state == 7)
+    {
+        double new_right_offset, new_left_offset;
 
-        //         RCLCPP_INFO(this->get_logger(), "Waiting to reach goal pos 3");
+        for (unsigned int i=0; i < this->joints.size(); i++)
+        {
+            if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
+            {
+                if (!(soft_joint->get_initialize())) continue;
 
-        //         if ((!(soft_joint->right_motor_goal_reached())) || (!(soft_joint->left_motor_goal_reached()))) 
-        //         {
-        //             positions_reached = false;
-        //         }
-        //         // if (soft_joint->get_right_motor_present_current() > this->init_reference_current[i])
-        //         if (abs(soft_joint->get_joint_angle()) > abs(soft_joint->get_reference_joint_angle()))
-        //         {
-        //             RCLCPP_INFO(this->get_logger(), "Present joing angle further away from 0 than reference angle. Moving back.");
-        //             // soft_joint->set_right_motor_goal_position(this->init_reference_position[i]);
+                new_right_offset = soft_joint->get_right_offset() + soft_joint->get_right_motor_present_position() - soft_joint->get_motor_init_pos();
+                new_left_offset = soft_joint->get_left_offset() + soft_joint->get_left_motor_present_position() - soft_joint->get_motor_init_pos();
 
-        //             // RCLCPP_INFO(this->get_logger(), "Right current higher than reference current. Moving back to: %f", soft_joint->get_right_reference_position());
-        //             soft_joint->set_right_motor_goal_position(soft_joint->get_right_reference_position());
-        //             soft_joint->set_left_motor_goal_position(soft_joint->get_left_reference_position());
-        //         }
-        //     }
-        // }
+                soft_joint->set_right_offset(new_right_offset);
+                soft_joint->set_left_offset(new_left_offset);
+            }
+        }
 
-        if (positions_reached) return true;
+        return true;
     }
     
     return false;

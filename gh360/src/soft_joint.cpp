@@ -455,6 +455,16 @@ bool SoftJoint::get_initialize()
     return this->initialize;
 }
 
+double SoftJoint::get_right_offset()
+{
+    return this->right_offset;
+}
+
+double SoftJoint::get_left_offset()
+{
+    return this->left_offset;
+}
+
 bool SoftJoint::right_motor_goal_reached()
 {
     if ((abs(this->get_right_motor_present_position() - this->get_right_motor_goal_position()) > 0.1) || (this->get_right_motor_present_velocity() > 0.0)) 

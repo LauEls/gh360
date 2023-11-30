@@ -34,15 +34,15 @@
       joint_type: "soft_joint"
       min_joint_angle: 0.0
       max_joint_angle: 1.5708
-      motor_init_pos: 0.0
+      motor_init_pos: 3.1416
       right:
         motor_id: 5
         movement_direction: 1
-        offset: -1.5708
+        offset: -3.1416
       left:
         motor_id: 6
         movement_direction: -1
-        offset: -7.854
+        offset: -9.4248
 
 /upperarm/motor_handler:
   ros__parameters:
@@ -58,11 +58,11 @@
       right:
         motor_id: 7
         movement_direction: 1
-        offset: 0.0
+        offset: 3.1416
       left:
         motor_id: 8
         movement_direction: -1
-        offset: 0.0
+        offset: -3.1416
     elbow:
       joint_type: "soft_joint"
       min_joint_angle: -0.1

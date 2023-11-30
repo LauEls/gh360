@@ -76,6 +76,8 @@ class SoftJoint: public Joint
         double get_left_reference_position();
         double get_reference_joint_angle();
         bool get_initialize();
+        double get_right_offset();
+        double get_left_offset();
 
         bool right_motor_goal_reached();
         bool left_motor_goal_reached();
