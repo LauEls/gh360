@@ -57,7 +57,7 @@
       motor_init_pos: 0.0
       right:
         motor_id: 7
-        movement_direction: 1
+        movement_direction: -1
         offset: 3.1416
       left:
         motor_id: 8

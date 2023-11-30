@@ -53,13 +53,23 @@ class DoorEnv(gym.Env):
             10
         )
 
-        self.client_shoulder = self.node.create_client(MotorPositionStep, '/shoulder/motor_delta_positions_step')
+        self.client_delta_shoulder = self.node.create_client(MotorPositionStep, '/shoulder/motor_delta_positions_step')
+        while not self.client_delta_shoulder.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().info('service not available, waiting again...')
+        self.client_delta_upperarm = self.node.create_client(MotorPositionStep, '/upperarm/motor_delta_positions_step')
+        while not self.client_delta_upperarm.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().info('service not available, waiting again...')
+        self.client_delta_lowerarm = self.node.create_client(MotorPositionStep, '/lowerarm/motor_delta_positions_step')
+        while not self.client_delta_lowerarm.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().info('service not available, waiting again...')
+
+        self.client_shoulder = self.node.create_client(MotorPositionStep, '/shoulder/motor_positions_step')
         while not self.client_shoulder.wait_for_service(timeout_sec=1.0):
             self.node.get_logger().info('service not available, waiting again...')
-        self.client_upperarm = self.node.create_client(MotorPositionStep, '/upperarm/motor_delta_positions_step')
+        self.client_upperarm = self.node.create_client(MotorPositionStep, '/upperarm/motor_positions_step')
         while not self.client_upperarm.wait_for_service(timeout_sec=1.0):
             self.node.get_logger().info('service not available, waiting again...')
-        self.client_lowerarm = self.node.create_client(MotorPositionStep, '/lowerarm/motor_delta_positions_step')
+        self.client_lowerarm = self.node.create_client(MotorPositionStep, '/lowerarm/motor_positions_step')
         while not self.client_lowerarm.wait_for_service(timeout_sec=1.0):
             self.node.get_logger().info('service not available, waiting again...')
         
@@ -160,6 +170,44 @@ class DoorEnv(gym.Env):
 
     def reset(self):
         self.internal_state = 0
+
+        action = [0.0, 0.0, 4.0, 2.5, 6.28, 0.0, 0.0]
+
+        motor_pos_req = MotorPositionStep.Request()
+
+        for i in range(len(self.arm)):
+            motor_pos = action[i]
+
+            if type(self.arm[i]) == SoftJoint:
+                set_motor_msg = SetPosition()
+                set_motor_msg.id = self.arm[i].id_right_motor
+                set_motor_msg.position = motor_pos
+
+                motor_pos_req.motor_goal_positions.append(set_motor_msg)
+
+                set_motor_msg = SetPosition()
+                set_motor_msg.id = self.arm[i].id_left_motor
+                set_motor_msg.position = motor_pos
+
+                motor_pos_req.motor_goal_positions.append(set_motor_msg)
+            else:
+                set_motor_msg = SetPosition()
+                set_motor_msg.id = self.arm[i].id_motor
+                set_motor_msg.position = motor_pos
+
+                motor_pos_req.motor_goal_positions.append(set_motor_msg)
+
+        shoulder_future = self.client_shoulder.call_async(motor_pos_req)
+        upperarm_future = self.client_upperarm.call_async(motor_pos_req)
+        lowerarm_future = self.client_lowerarm.call_async(motor_pos_req)
+
+        rclpy.spin_until_future_complete(self.node, shoulder_future)
+        rclpy.spin_until_future_complete(self.node, upperarm_future)
+        rclpy.spin_until_future_complete(self.node, lowerarm_future)
+        shoulder_motor_states_msg = shoulder_future.result()
+        upperarm_motor_states_msg = upperarm_future.result()
+        lowerarm_motor_states_msg = lowerarm_future.result()
+
         obs = self._get_obs()
         info = self._get_info()
         return obs, info
@@ -244,14 +292,14 @@ class DoorEnv(gym.Env):
             start = time.time()
             if policy_step:
                 # self.motor_publisher.publish(self.motor_msg)
-                self.shoulder_future = self.client_shoulder.call_async(self.motor_pos_req)
-                self.upperarm_future = self.client_upperarm.call_async(self.motor_pos_req)
-                self.lowerarm_future = self.client_lowerarm.call_async(self.motor_pos_req)
+                self.shoulder_future = self.client_delta_shoulder.call_async(self.motor_pos_req)
+                self.upperarm_future = self.client_delta_upperarm.call_async(self.motor_pos_req)
+                self.lowerarm_future = self.client_delta_lowerarm.call_async(self.motor_pos_req)
                 policy_step = False
             else:
-                self.shoulder_future = self.client_shoulder.call_async(zero_action_req)
-                self.upperarm_future = self.client_upperarm.call_async(zero_action_req)
-                self.lowerarm_future = self.client_lowerarm.call_async(zero_action_req)
+                self.shoulder_future = self.client_delta_shoulder.call_async(zero_action_req)
+                self.upperarm_future = self.client_delta_upperarm.call_async(zero_action_req)
+                self.lowerarm_future = self.client_delta_lowerarm.call_async(zero_action_req)
                
             rclpy.spin_until_future_complete(self.node, self.shoulder_future)
             rclpy.spin_until_future_complete(self.node, self.upperarm_future)

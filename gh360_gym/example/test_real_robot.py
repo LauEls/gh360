@@ -3,7 +3,7 @@ import gh360_gym
 
 import numpy as np
 
-recorded_actions = np.loadtxt("/home/laurenz/phd_project/sac/scripts/test_data/v5/delta_action.csv", delimiter=",", dtype=float)
+recorded_actions = np.loadtxt("/home/laurenz/phd_project/sac/scripts/test_data/v6/delta_action.csv", delimiter=",", dtype=float)
 
 
 env = gym.make('gh360_gym/Door-v0')
@@ -15,16 +15,20 @@ motor_action = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 
 inc = 0.01
 cnt = 0
 
+env.reset()
 
 base_action = np.zeros(11)
 
-for action in recorded_actions[:, 12:14]:
+for action in recorded_actions[:, 1:14]:
     print(action)
     action *= 10
 
-    mod_action = np.concatenate((base_action, action), axis=None)
+    # mod_action = np.concatenate((base_action, action), axis=None)
+    mod_action = action
 
     obs, reward, done, _ = env.step(mod_action)
+
+env.reset()
     
 # while not done:
 
