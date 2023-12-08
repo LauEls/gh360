@@ -126,6 +126,16 @@ void SoftJoint::set_left_motor_goal_velocity(double goal_vel)
     this->left_motor_goal_velocity = this->calc_set_motor_goal_vel(goal_vel, this->left_movement_direction);
 }
 
+void SoftJoint::set_right_motor_goal_current(double goal_current)
+{
+    this->right_motor_goal_current = this->calc_set_motor_goal_current(goal_current, this->right_movement_direction);
+}
+    
+void SoftJoint::set_left_motor_goal_current(double goal_current)
+{
+    this->left_motor_goal_current = this->calc_set_motor_goal_current(goal_current, this->right_movement_direction);
+}
+
 void SoftJoint::set_right_motor_status(int data, uint8_t address)
 {
     if (address == this->right_motor_model->Present_Position.address) 

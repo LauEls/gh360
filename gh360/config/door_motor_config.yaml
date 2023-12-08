@@ -1,0 +1,16 @@
+/door/motor_handler:
+  ros__parameters:
+    joint_names: ['door_joint']
+    port_name: "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_FT4TCJHY-if00-port0"
+    baud_rate: 1000000
+    protocol: 2
+    door_joint:
+      joint_type: "motor_joint"
+      min_joint_angle: 0.0
+      max_joint_angle: 1.5708
+      motor_init_pos: 0.0
+      motor_id: 31
+      movement_direction: 1
+      offset: 0.0
+      initialize: false
+      

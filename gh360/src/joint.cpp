@@ -82,6 +82,12 @@ double Joint::calc_set_motor_goal_vel(double goal_vel, int movement_direction)
     return goal_vel_raw;
 }
 
+double Joint::calc_set_motor_goal_current(double goal_current, int movement_direction)
+{
+    double goal_current_raw = goal_current * movement_direction;
+    return goal_current_raw;
+}
+
 double Joint::calc_get_motor_pos(double present_pos_raw, double offset, int movement_direction)
 {
     double present_pos_adjusted = present_pos_raw / movement_direction - offset;

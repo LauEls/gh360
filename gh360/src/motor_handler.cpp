@@ -28,6 +28,8 @@ gh360::MotorHandler::MotorHandler()
     // std::type_info& motor_model_type;
     gh360::MotorDictionary* motor_model_type;
     this->multi_motor_models = false;
+    this->require_encoder_data = false;
+    this->motors_initiated = true;
     for (unsigned int i = 0; i < this->joint_names.size(); i++) {
         RCLCPP_INFO(this->get_logger(), "Joint Name: %s", this->joint_names[i].c_str());
         
@@ -38,6 +40,11 @@ gh360::MotorHandler::MotorHandler()
         this->declare_parameter(this->joint_names[i]+".min_joint_angle", 0.0);
         this->declare_parameter(this->joint_names[i]+".max_joint_angle", 0.0);
         this->declare_parameter(this->joint_names[i]+".motor_init_pos", 0.0);
+        this->declare_parameter(this->joint_names[i]+".initialize", true);
+        this->motors_initiated = !(get_parameter(this->joint_names[i]+".initialize").as_bool());
+        
+        if (this->motors_initiated) RCLCPP_INFO(this->get_logger(), "motors_initiated = true");
+        else RCLCPP_INFO(this->get_logger(), "motors_initiated = false");
 
         if (joint_type == "soft_joint") {
             this->declare_parameter(joint_name+".right.motor_id", 0);
@@ -69,6 +76,8 @@ gh360::MotorHandler::MotorHandler()
             else if (typeid(new_joint->get_right_motor_model())!= typeid(motor_model_type)) this->multi_motor_models = true;
 
             if (typeid(new_joint->get_left_motor_model())!= typeid(motor_model_type)) this->multi_motor_models = true;
+
+            this->require_encoder_data = true;
         }
         else {
             this->declare_parameter(joint_name+".motor_id", 0);
@@ -103,7 +112,6 @@ gh360::MotorHandler::MotorHandler()
 
     this->encoder_subscriber_ = this->create_subscription<gh360_interfaces::msg::ArmEncoderStates>("/encoder_status", 10, std::bind(&gh360::MotorHandler::encoder_callback, this, std::placeholders::_1));
 
-    this->motors_initiated = false;
     this->init_state = 0;
     // this->init_reference_current = std::vector<double>(this->joints.size());
     // this->init_reference_position = std::vector<double>(this->joints.size());
@@ -117,7 +125,8 @@ gh360::MotorHandler::MotorHandler()
     this->delta_position_step_service_ = this->create_service<gh360_interfaces::srv::MotorPositionStep>("motor_delta_positions_step", std::bind(&gh360::MotorHandler::delta_position_step_callback, this, std::placeholders::_1, std::placeholders::_2));
     this->set_torque_service_ = this->create_service<std_srvs::srv::SetBool>("motor_set_torque", std::bind(&gh360::MotorHandler::set_torque_callback, this, std::placeholders::_1, std::placeholders::_2));
     this->move_home_service_ = this->create_service<std_srvs::srv::SetBool>("motor_move_home", std::bind(&gh360::MotorHandler::move_home_callback, this, std::placeholders::_1, std::placeholders::_2));
-
+    
+    this->motor_goal_currents_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorCurrents>("motor_goal_current", 10, std::bind(&gh360::MotorHandler::motor_goal_current_callback, this, std::placeholders::_1));
    
 }
 
@@ -141,7 +150,7 @@ bool gh360::MotorHandler::initMotorPositions()
     {
     // while (!(this->joint_states_recieved))
     // {
-        if (!(this->joint_states_recieved))
+        if (!(this->joint_states_recieved) && this->require_encoder_data)
         {
             RCLCPP_INFO_ONCE(this->get_logger(), "Waiting for joint encoder data...");
             // RCLCPP_INFO(this->get_logger(), "Joint States Recieved: %s", this->joint_states_recieved ? "true" : "false");
@@ -440,8 +449,9 @@ void gh360::MotorHandler::move_home_callback(const std::shared_ptr<std_srvs::srv
 
 void gh360::MotorHandler::position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response)
 {
-    this->setMotorGoalPositions(request->motor_goal_positions);
     this->setPositionControlMode();
+    this->setMotorGoalPositions(request->motor_goal_positions);
+    
     
     response->motor_status = this->getMotorStatus().motors;
 
@@ -449,8 +459,9 @@ void gh360::MotorHandler::position_step_callback(const std::shared_ptr<gh360_int
 
 void gh360::MotorHandler::velocity_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorVelocityStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorVelocityStep::Response> response)
 {
+    this->setVelocityControlMode();
     this->setMotorGoalVelocities(request->motor_goal_velocities);
-    this->setVelocityControlMode();   
+       
 
     response->motor_status = this->getMotorStatus().motors;
 
@@ -474,6 +485,12 @@ void gh360::MotorHandler::delta_position_step_callback(const std::shared_ptr<gh3
 void gh360::MotorHandler::motor_goal_positions_callback(const gh360_interfaces::msg::SetMotorPositions::SharedPtr msg)
 {
     this->setMotorGoalPositions(msg->motor_goal_positions);
+}
+
+void gh360::MotorHandler::motor_goal_current_callback(const gh360_interfaces::msg::SetMotorCurrents::SharedPtr msg)
+{
+    this->setCurrentControlMode();
+    this->setMotorGoalCurrents(msg->motor_goal_currents);
 }
 
 void gh360::MotorHandler::encoder_callback(const gh360_interfaces::msg::ArmEncoderStates::SharedPtr msg)
@@ -502,7 +519,7 @@ void gh360::MotorHandler::timer_callback()
 
     if (!(this->motors_initiated))
     {
-        // RCLCPP_INFO(this->get_logger(), "Initiating Motors");
+        RCLCPP_INFO(this->get_logger(), "Initiating Motors");
         this->motors_initiated = this->initMotorPositions();
     }
     
@@ -518,6 +535,10 @@ void gh360::MotorHandler::timer_callback()
         {
             // RCLCPP_INFO(this->get_logger(), "Sending velocity command!");
             this->syncWrite(this->joints_motor_model->Goal_Velocity.size, this->joints_motor_model->Goal_Velocity.address);
+        }
+        else if (this->joints[0]->get_operating_mode() == 0)
+        {
+            this->syncWrite(this->joints_motor_model->Goal_Current.size, this->joints_motor_model->Goal_Current.address);
         }
 
     }
@@ -798,6 +819,36 @@ bool gh360::MotorHandler::setMotorGoalVelocities(std::vector<gh360_interfaces::m
     return true;
 }
 
+bool gh360::MotorHandler::setMotorGoalCurrents(std::vector<gh360_interfaces::msg::SetCurrent> motor_goal_currents)
+{
+    for (unsigned int m=0; m < motor_goal_currents.size(); m++)
+    {
+        for (unsigned int i=0; i < this->joints.size(); i++)
+        {
+            if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
+            {
+                if (soft_joint->get_right_motor_id() == motor_goal_currents[m].id) 
+                {
+                    soft_joint->set_right_motor_goal_current(motor_goal_currents[m].current);
+                }
+                else if (soft_joint->get_left_motor_id() == motor_goal_currents[m].id)
+                {
+                    soft_joint->set_left_motor_goal_current(motor_goal_currents[m].current);
+                }
+                
+            }
+            else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
+            {
+                if (motor_joint->get_motor_id() == motor_goal_currents[m].id) 
+                {
+                    motor_joint->set_motor_goal_current(motor_goal_currents[m].current);
+                }
+            }
+        }
+    }
+    return true;
+}
+
 bool gh360::MotorHandler::setDeltaMotorGoalPositions(std::vector<gh360_interfaces::msg::SetPosition> delta_motor_goal_positions)
 {
     double current_goal = 0.0;
@@ -975,7 +1026,8 @@ bool gh360::MotorHandler::syncWrite(uint8_t size, uint8_t address)
     {
         dynamixel::GroupSyncWrite groupSyncWrite(this->portHandler, this->packetHandler, address, size);
 
-        uint8_t param_goal_position[4];
+        uint8_t param_motor_goal[4];
+        // uint8_t param_motor_goal_current[2];
         int motor_goal;
         // double motor_goal_dbl;
         uint8_t motor_id;
@@ -994,13 +1046,22 @@ bool gh360::MotorHandler::syncWrite(uint8_t size, uint8_t address)
                 // }
 
                 // motor_goal_pos = soft_joint->get_right_motor_goal_position_int();
+                if (size == 2)
+                {
+                    param_motor_goal[0] = DXL_LOBYTE(motor_goal);
+                    param_motor_goal[1] = DXL_HIBYTE(motor_goal);
+                    param_motor_goal[2] = 0;
+                    param_motor_goal[3] = 0;
+                }
+                else if (size == 4)
+                {
+                    param_motor_goal[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal));
+                    param_motor_goal[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal));
+                    param_motor_goal[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal));
+                    param_motor_goal[3] = DXL_HIBYTE(DXL_HIWORD(motor_goal));
+                }
 
-                param_goal_position[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal));
-                param_goal_position[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal));
-                param_goal_position[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal));
-                param_goal_position[3] = DXL_HIBYTE(DXL_HIWORD(motor_goal));
-
-                comm_result = groupSyncWrite.addParam(motor_id, param_goal_position);
+                comm_result = groupSyncWrite.addParam(motor_id, param_motor_goal);
                 if (comm_result != true)
                 {
                     // fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed", motor_id);
@@ -1011,12 +1072,27 @@ bool gh360::MotorHandler::syncWrite(uint8_t size, uint8_t address)
                 motor_id = soft_joint->get_left_motor_id();
                 // motor_goal_pos = soft_joint->get_left_motor_goal_position_int();
                 motor_goal = soft_joint->get_left_motor_goal_int(address);
-                param_goal_position[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal));
-                param_goal_position[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal));
-                param_goal_position[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal));
-                param_goal_position[3] = DXL_HIBYTE(DXL_HIWORD(motor_goal));
+                // param_motor_goal[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal));
+                // param_motor_goal[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal));
+                // param_motor_goal[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal));
+                // param_motor_goal[3] = DXL_HIBYTE(DXL_HIWORD(motor_goal));
 
-                comm_result = groupSyncWrite.addParam(motor_id, param_goal_position);
+                if (size == 2)
+                {
+                    param_motor_goal[0] = DXL_LOBYTE(motor_goal);
+                    param_motor_goal[1] = DXL_HIBYTE(motor_goal);
+                    param_motor_goal[2] = 0;
+                    param_motor_goal[3] = 0;
+                }
+                else if (size == 4)
+                {
+                    param_motor_goal[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal));
+                    param_motor_goal[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal));
+                    param_motor_goal[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal));
+                    param_motor_goal[3] = DXL_HIBYTE(DXL_HIWORD(motor_goal));
+                }
+
+                comm_result = groupSyncWrite.addParam(motor_id, param_motor_goal);
                 if (comm_result != true)
                 {
                     // fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed", motor_id);
@@ -1031,12 +1107,27 @@ bool gh360::MotorHandler::syncWrite(uint8_t size, uint8_t address)
                 // motor_goal_pos = motor_joint->get_motor_goal_position_int();
                 motor_goal = motor_joint->get_motor_goal_int(address);
 
-                param_goal_position[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal));
-                param_goal_position[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal));
-                param_goal_position[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal));
-                param_goal_position[3] = DXL_HIBYTE(DXL_HIWORD(motor_goal));
+                // param_motor_goal[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal));
+                // param_motor_goal[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal));
+                // param_motor_goal[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal));
+                // param_motor_goal[3] = DXL_HIBYTE(DXL_HIWORD(motor_goal));
 
-                comm_result = groupSyncWrite.addParam(motor_id, param_goal_position);
+                if (size == 2)
+                {
+                    param_motor_goal[0] = DXL_LOBYTE(motor_goal);
+                    param_motor_goal[1] = DXL_HIBYTE(motor_goal);
+                    param_motor_goal[2] = 0;
+                    param_motor_goal[3] = 0;
+                }
+                else if (size == 4)
+                {
+                    param_motor_goal[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal));
+                    param_motor_goal[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal));
+                    param_motor_goal[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal));
+                    param_motor_goal[3] = DXL_HIBYTE(DXL_HIWORD(motor_goal));
+                }
+
+                comm_result = groupSyncWrite.addParam(motor_id, param_motor_goal);
                 if (comm_result != true)
                 {
                     // fprintf(stderr, "[ID:%03d] groupSyncWrite addparam failed", motor_id);
@@ -1380,6 +1471,32 @@ bool gh360::MotorHandler::setVelocityControlMode()
             this->setOperatingMode(motor_joint,1);
             this->setTorqueEnable(motor_joint,1);
             motor_joint->set_motor_goal_velocity(0.0);
+        }
+    }
+
+    return true;
+}
+
+bool gh360::MotorHandler::setCurrentControlMode()
+{
+    if (this->joints[0]->get_operating_mode() == 0) return true;
+
+    for (unsigned int i=0; i < this->joints.size(); i++)
+    {            
+        if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
+        {
+            this->setTorqueEnable(soft_joint,0);
+            this->setOperatingMode(soft_joint,0);
+            this->setTorqueEnable(soft_joint,1);
+            soft_joint->set_right_motor_goal_current(0.0);
+            soft_joint->set_left_motor_goal_current(0.0);
+        }
+        else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
+        {
+            this->setTorqueEnable(motor_joint,0);
+            this->setOperatingMode(motor_joint,0);
+            this->setTorqueEnable(motor_joint,1);
+            motor_joint->set_motor_goal_current(0.0);
         }
     }
 

@@ -70,6 +70,11 @@ void MotorJoint::set_motor_goal_velocity(double goal_vel)
     this->motor_goal_velocity = this->calc_set_motor_goal_vel(goal_vel, this->movement_direction);
 }
 
+void MotorJoint::set_motor_goal_current(double goal_current)
+{
+    this->motor_goal_current = this->calc_set_motor_goal_current(goal_current, this->movement_direction);
+}
+
 void MotorJoint::set_motor_status(int data, uint8_t address)
 {
     if (address == this->motor_model->Present_Position.address) 

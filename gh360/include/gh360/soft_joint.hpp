@@ -34,6 +34,8 @@ class SoftJoint: public Joint
         void set_left_motor_goal_position(double goal_pos);
         void set_right_motor_goal_velocity(double goal_vel);
         void set_left_motor_goal_velocity(double goal_vel);
+        void set_right_motor_goal_current(double goal_current);
+        void set_left_motor_goal_current(double goal_current);
         void set_right_motor_status(int data, uint8_t address);
         void set_left_motor_status(int data, uint8_t address);
         void set_right_reference_current(double data);

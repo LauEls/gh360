@@ -25,6 +25,7 @@ class MotorJoint: public Joint
         void set_motor_present_position(int position);
         void set_motor_goal_position(double goal_pos);
         void set_motor_goal_velocity(double goal_vel);
+        void set_motor_goal_current(double goal_current);
         void set_torque_enabled(bool torque);
         void set_motor_status(int data, uint8_t address);
         void set_offset(double offset);
