@@ -32,12 +32,16 @@ class SoftJoint: public Joint
         void set_left_motor_present_position(int position);
         void set_right_motor_goal_position(double goal_pos);
         void set_left_motor_goal_position(double goal_pos);
+        void set_right_motor_goal_velocity(double goal_vel);
+        void set_left_motor_goal_velocity(double goal_vel);
         void set_right_motor_status(int data, uint8_t address);
         void set_left_motor_status(int data, uint8_t address);
         void set_right_reference_current(double data);
         void set_left_reference_current(double data);
         void set_right_reference_position(double data);
         void set_left_reference_position(double data);
+        void set_right_torque_enabled(bool torque);
+        void set_left_torque_enabled(bool torque);
         void set_reference_joint_angle(double data);
         void set_initialize(bool init);
 
@@ -74,6 +78,8 @@ class SoftJoint: public Joint
         double get_left_reference_current();
         double get_right_reference_position();
         double get_left_reference_position();
+        bool get_right_torque_enabled();
+        bool get_left_torque_enabled();
         double get_reference_joint_angle();
         bool get_initialize();
         double get_right_offset();
@@ -121,6 +127,8 @@ class SoftJoint: public Joint
         
         bool right_motor_init_pos = true;
         bool left_motor_init_pos = true;
+        bool right_motor_torque_enabled = false;
+        bool left_motor_torque_enabled = false;
         bool initialize = true;
 
         

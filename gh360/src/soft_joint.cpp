@@ -68,6 +68,16 @@ void SoftJoint::set_left_motor_model(gh360::MotorDictionary* motor_model)
     this->left_motor_model = motor_model;
 }
 
+void SoftJoint::set_right_torque_enabled(bool torque)
+{
+    this->right_motor_torque_enabled = torque;
+}
+
+void SoftJoint::set_left_torque_enabled(bool torque)
+{
+    this->left_motor_torque_enabled = torque;
+}
+
 void SoftJoint::set_right_motor_present_position(int position)
 {
     // double motor_pos = position * (2*M_PI/4096);
@@ -104,6 +114,16 @@ void SoftJoint::set_left_motor_goal_position(double goal_pos)
 {
     // this->left_motor_goal_position = (goal_pos - this->left_offset) * this->left_movement_direction;
     this->left_motor_goal_position = this->calc_set_motor_goal_pos(goal_pos, this->left_offset, this->left_movement_direction);
+}
+
+void SoftJoint::set_right_motor_goal_velocity(double goal_vel)
+{
+    this->right_motor_goal_velocity = this->calc_set_motor_goal_vel(goal_vel, this->right_movement_direction);
+}
+
+void SoftJoint::set_left_motor_goal_velocity(double goal_vel)
+{
+    this->left_motor_goal_velocity = this->calc_set_motor_goal_vel(goal_vel, this->left_movement_direction);
 }
 
 void SoftJoint::set_right_motor_status(int data, uint8_t address)
@@ -443,6 +463,16 @@ double SoftJoint::get_right_reference_position()
 double SoftJoint::get_left_reference_position()
 {
     return this->left_reference_position;
+}
+
+bool SoftJoint::get_right_torque_enabled()
+{
+    return this->right_motor_torque_enabled;
+}
+
+bool SoftJoint::get_left_torque_enabled()
+{
+    return this->left_motor_torque_enabled;
 }
 
 double SoftJoint::get_reference_joint_angle()

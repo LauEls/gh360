@@ -24,6 +24,8 @@ class MotorJoint: public Joint
         void set_motor_model(gh360::MotorDictionary* motor_model);
         void set_motor_present_position(int position);
         void set_motor_goal_position(double goal_pos);
+        void set_motor_goal_velocity(double goal_vel);
+        void set_torque_enabled(bool torque);
         void set_motor_status(int data, uint8_t address);
         void set_offset(double offset);
 
@@ -43,6 +45,7 @@ class MotorJoint: public Joint
         int get_motor_goal_position_int();
         double get_motor_goal(uint8_t address);
         int get_motor_goal_int(uint8_t address);
+        bool get_torque_enabled();
 
     private:
         std::string joint_type;
@@ -65,6 +68,7 @@ class MotorJoint: public Joint
         double offset;
 
         bool motor_init_pos = true;
+        bool motor_torque_enabled = false;
 
 
 };

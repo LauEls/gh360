@@ -14,7 +14,9 @@
 #include "gh360_interfaces/msg/motor_status.hpp"
 #include "gh360_interfaces/msg/set_motor_positions.hpp"
 #include "gh360_interfaces/msg/set_position.hpp"
+#include "gh360_interfaces/msg/set_velocity.hpp"
 #include "gh360_interfaces/srv/motor_position_step.hpp"
+#include "gh360_interfaces/srv/motor_velocity_step.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "gh360_interfaces/msg/arm_encoder_states.hpp"
 // #include <DynamixelWorkbench.h>
@@ -49,6 +51,8 @@ namespace gh360
             bool openPortsAndSetBaudrate();
             MotorDictionary* getMotorModel(int motor_id);
             bool setOperatingMode(Joint* joint, int value);
+            bool setPositionControlMode();
+            bool setVelocityControlMode();
             bool setTorqueEnable(Joint* joint, int value);
             bool setVelocityProfile(Joint* joint, double value);
             bool setAccelerationProfile(Joint* joint, double value);
@@ -60,6 +64,7 @@ namespace gh360
             // bool readPresentTemperature();
             // bool writeGoalPosition();
             bool setMotorGoalPositions(std::vector<gh360_interfaces::msg::SetPosition> motor_goal_positions);
+            bool setMotorGoalVelocities(std::vector<gh360_interfaces::msg::SetVelocity> motor_goal_velocities);
             bool setDeltaMotorGoalPositions(std::vector<gh360_interfaces::msg::SetPosition> delta_motor_goal_positions);
             gh360_interfaces::msg::PortStatus getMotorStatus();
             bool syncRead(uint8_t size, uint8_t address);
@@ -73,8 +78,10 @@ namespace gh360
             void timer_callback();
             void motor_goal_positions_callback(const gh360_interfaces::msg::SetMotorPositions::SharedPtr msg);
             void position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
+            void velocity_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorVelocityStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorVelocityStep::Response> response);
             void delta_position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
             void set_torque_callback(const std::shared_ptr<std_srvs::srv::SetBool::Request> request, std::shared_ptr<std_srvs::srv::SetBool::Response> response);
+            void move_home_callback(const std::shared_ptr<std_srvs::srv::SetBool::Request> request, std::shared_ptr<std_srvs::srv::SetBool::Response> response);
             void encoder_callback(const gh360_interfaces::msg::ArmEncoderStates::SharedPtr msg);
 
             dynamixel::PortHandler * portHandler;
@@ -88,6 +95,7 @@ namespace gh360
             MotorDictionary* joints_motor_model;
             bool joint_states_recieved = false;
             bool motors_initiated = false;
+            bool emergency_stop = false;
             int init_state = 0;
             // std::vector<double> init_reference_current, init_reference_position;
             std::vector<int> init_motor_side;
@@ -96,8 +104,10 @@ namespace gh360
             rclcpp::Publisher<gh360_interfaces::msg::PortStatus>::SharedPtr motor_state_publisher_;
             rclcpp::Subscription<gh360_interfaces::msg::SetMotorPositions>::SharedPtr motor_goal_positions_subscriber_;
             rclcpp::Service<gh360_interfaces::srv::MotorPositionStep>::SharedPtr position_step_service_;
+            rclcpp::Service<gh360_interfaces::srv::MotorVelocityStep>::SharedPtr velocity_step_service_;
             rclcpp::Service<gh360_interfaces::srv::MotorPositionStep>::SharedPtr delta_position_step_service_;
             rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_torque_service_;
+            rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr move_home_service_;
             rclcpp::Subscription<gh360_interfaces::msg::ArmEncoderStates>::SharedPtr encoder_subscriber_;
 
             std::vector<std::string> joint_names;

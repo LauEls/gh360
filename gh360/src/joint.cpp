@@ -12,6 +12,7 @@ double Joint::positionIntToDouble(int data)
 
 double Joint::velocityIntToDouble(int data)
 {
+    //Transform motor velocity from int to rad/s
     double value;
 
     value = data * 0.229 * 0.10472;
@@ -46,6 +47,7 @@ int Joint::positionDoubleToInt(double value)
 
 int Joint::velocityDoubleToInt(double value)
 {
+    //Transform motor velocity from rad/s to int
     int data;
 
     data = value / 0.229 / 0.10472;
@@ -72,6 +74,12 @@ double Joint::calc_set_motor_goal_pos(double goal_pos_adjusted, double offset, i
 {
     double goal_pos_raw = (goal_pos_adjusted + offset) * movement_direction;
     return goal_pos_raw;
+}
+
+double Joint::calc_set_motor_goal_vel(double goal_vel, int movement_direction)
+{
+    double goal_vel_raw = goal_vel * movement_direction;
+    return goal_vel_raw;
 }
 
 double Joint::calc_get_motor_pos(double present_pos_raw, double offset, int movement_direction)
@@ -107,6 +115,11 @@ double Joint::get_motor_init_pos()
     return this->motor_init_pos;
 }
 
+int Joint::get_operating_mode()
+{
+    return this->operating_mode;
+}
+
 void Joint::set_min_joint_angle(double min_joint_angle)
 {
     this->min_joint_angle = min_joint_angle;
@@ -120,4 +133,9 @@ void Joint::set_max_joint_angle(double max_joint_angle)
 void Joint::set_motor_init_pos(double init_pos)
 {
     this->motor_init_pos = init_pos;
+}
+
+void Joint::set_operating_mode(int operating_mode)
+{
+    this->operating_mode = operating_mode;
 }

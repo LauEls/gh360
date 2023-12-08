@@ -4,7 +4,7 @@ import io
 import subprocess
 import signal
 
-from PIL import Image
+from PIL import Image, ImageDraw
 from StreamDeck.DeviceManager import DeviceManager
 from StreamDeck.Devices.StreamDeck import DialEventType, TouchscreenEventType
 
@@ -18,6 +18,10 @@ class StreamDeckGH360Control:
         self.bridge_process = subprocess.Popen('', shell=True, executable="/bin/bash")
         self.gh360_process = subprocess.Popen('', shell=True, executable="/bin/bash")
         self.monitor_process = subprocess.Popen('', shell=True, executable="/bin/bash")
+        self.gym_example_process = subprocess.Popen('', shell=True, executable="/bin/bash")
+        self.shoulder_move_home_process = subprocess.Popen('', shell=True, executable="/bin/bash")
+        self.upperarm_move_home_process = subprocess.Popen('', shell=True, executable="/bin/bash")
+        self.lowerarm_move_home_process = subprocess.Popen('', shell=True, executable="/bin/bash")
 
         # image for idle state
         img = Image.new('RGB', (120, 120), color='black')
@@ -36,6 +40,109 @@ class StreamDeckGH360Control:
         img_byte_arr = io.BytesIO()
         img.save(img_byte_arr, format='JPEG')
         self.img_pressed_bytes = img_byte_arr.getvalue()
+
+        #image stop sign
+        img = Image.new('RGB', (120, 120), color='black')
+        img1 = ImageDraw.Draw(img)
+        img1.rectangle([30,45,90,75], fill="white", outline="white") 
+        self.stop_icon = Image.open(os.path.join(self.asset_path, 'stop_sign_v2.png')).resize((80, 80))
+        img.paste(self.stop_icon, (20, 20), self.stop_icon)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_stop_bytes = img_byte_arr.getvalue()
+
+        #image build icon
+        img = Image.new('RGB', (120, 120), color='black')
+        self.build_icon = Image.open(os.path.join(self.asset_path, 'build_icon.png')).resize((80, 80))
+        img.paste(self.build_icon, (20, 20), self.build_icon)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_build_bytes = img_byte_arr.getvalue()
+
+        #image ros logo
+        img = Image.new('RGB', (120, 120), color='black')
+        self.ros_logo = Image.open(os.path.join(self.asset_path, 'ros_logo.png')).resize((80, 80))
+        img.paste(self.ros_logo, (20, 20), self.ros_logo)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_ros_bytes = img_byte_arr.getvalue()
+
+        #image home icon
+        img = Image.new('RGB', (120, 120), color='black')
+        self.home_icon = Image.open(os.path.join(self.asset_path, 'home_icon.png')).resize((80, 80))
+        img.paste(self.home_icon, (20, 20), self.home_icon)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_home_bytes = img_byte_arr.getvalue()
+
+        #image door icon
+        img = Image.new('RGB', (120, 120), color='black')
+        self.door_icon = Image.open(os.path.join(self.asset_path, 'open_door_icon.png')).resize((80, 80))
+        img.paste(self.door_icon, (20, 20), self.door_icon)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_door_bytes = img_byte_arr.getvalue()
+
+        #image gui on icon
+        img = Image.new('RGB', (120, 120), color='black')
+        self.gui_on_icon = Image.open(os.path.join(self.asset_path, 'gui_on_icon_v2.png')).resize((80, 80))
+        img.paste(self.gui_on_icon, (20, 20), self.gui_on_icon)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_gui_on_bytes = img_byte_arr.getvalue()
+
+        #image gui off icon
+        img = Image.new('RGB', (120, 120), color='black')
+        self.gui_off_icon = Image.open(os.path.join(self.asset_path, 'gui_off_icon_v2.png')).resize((80, 80))
+        img.paste(self.gui_off_icon, (20, 20), self.gui_off_icon)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_gui_off_bytes = img_byte_arr.getvalue()
+
+        #image motor off icon
+        img = Image.new('RGB', (120, 120), color='black')
+        self.motor_off_icon = Image.open(os.path.join(self.asset_path, 'motor_off_icon_v2.png')).resize((80, 80))
+        img.paste(self.motor_off_icon, (20, 20), self.motor_off_icon)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_motor_off_bytes = img_byte_arr.getvalue()
+
+        #image motor on icon
+        img = Image.new('RGB', (120, 120), color='black')
+        self.motor_on_icon = Image.open(os.path.join(self.asset_path, 'motor_on_icon.png')).resize((80, 80))
+        img.paste(self.motor_on_icon, (20, 20), self.motor_on_icon)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_motor_on_bytes = img_byte_arr.getvalue()
+
+        #image code off icon
+        img = Image.new('RGB', (120, 120), color='black')
+        self.code_off_icon = Image.open(os.path.join(self.asset_path, 'code_off_icon.png')).resize((80, 80))
+        img.paste(self.code_off_icon, (20, 20), self.code_off_icon)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_code_off_bytes = img_byte_arr.getvalue()
+
+        #image code on icon
+        img = Image.new('RGB', (120, 120), color='black')
+        self.code_on_icon = Image.open(os.path.join(self.asset_path, 'code_on_icon.png')).resize((80, 80))
+        img.paste(self.code_on_icon, (20, 20), self.code_on_icon)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_code_on_bytes = img_byte_arr.getvalue()
+
+
 
         self.key_swap = [0,0,0,0,0,0,0,0]
 
@@ -65,7 +172,22 @@ class StreamDeckGH360Control:
         self.deck.set_brightness(100)
 
         for key in range(0, self.deck.KEY_COUNT):
-            self.deck.set_key_image(key, self.img_released_bytes)
+            if key == 0:
+                self.deck.set_key_image(key, self.img_code_off_bytes)
+            elif key == 1:
+                self.deck.set_key_image(key, self.img_motor_off_bytes)
+            elif key == 2:
+                self.deck.set_key_image(key, self.img_gui_off_bytes)
+            elif key == 3: 
+                self.deck.set_key_image(key, self.img_stop_bytes)
+            elif key == 4:
+                self.deck.set_key_image(key, self.img_build_bytes)
+            elif key == 5:
+                self.deck.set_key_image(key, self.img_home_bytes)
+            elif key == 6:
+                self.deck.set_key_image(key, self.img_door_bytes)
+            #else:
+                #self.deck.set_key_image(key, self.img_released_bytes)
 
         # build an image for the touch lcd
         img = Image.new('RGB', (800, 100), 'black')
@@ -79,7 +201,7 @@ class StreamDeckGH360Control:
         img.save(img_bytes, format='JPEG')
         touchscreen_image_bytes = img_bytes.getvalue()
 
-        self.deck.set_touchscreen_image(touchscreen_image_bytes, 0, 0, 800, 100)
+        # self.deck.set_touchscreen_image(touchscreen_image_bytes, 0, 0, 800, 100)
 
     def key_change_callback(self, deck, key, key_state):
         print("Key: " + str(key) + " state: " + str(key_state))
@@ -98,34 +220,53 @@ class StreamDeckGH360Control:
                 os.killpg(os.getpgid(self.bridge_process.pid), signal.SIGINT)
                 self.bridge_process.wait()
                 print("Bridge Process closed")
-                deck.set_key_image(key, self.img_released_bytes)
+                self.deck.set_key_image(key, self.img_code_off_bytes)
             else:
-                deck.set_key_image(key, self.img_pressed_bytes)
+                self.deck.set_key_image(key, self.img_code_on_bytes)
                 self.encoder_startup()
         if key == 1 and not key_state:
             if self.gh360_process.poll() is None:
                 os.killpg(os.getpgid(self.gh360_process.pid), signal.SIGINT)
                 self.gh360_process.wait()
                 print("GH360 Process closed")
-                deck.set_key_image(key, self.img_released_bytes)
+                deck.set_key_image(key, self.img_motor_off_bytes)
             else:
-                deck.set_key_image(key, self.img_pressed_bytes)
+                deck.set_key_image(key, self.img_motor_on_bytes)
                 self.gh360_startup()
         if key == 2 and not key_state:
             if self.monitor_process.poll() is None:
                 os.killpg(os.getpgid(self.monitor_process.pid), signal.SIGINT)
                 self.monitor_process.wait()
                 print("Monitor Process closed")
-                deck.set_key_image(key, self.img_released_bytes)
+                self.deck.set_key_image(key, self.img_gui_off_bytes)
             else:
-                deck.set_key_image(key, self.img_pressed_bytes)
+                self.deck.set_key_image(key, self.img_gui_on_bytes)
                 self.gh360_monitor()
+        if key == 3 and not key_state:
+            self.motor_torque_off()
         if key == 4 and not key_state: 
             if self.colcon_process.poll() is None:
                 os.killpg(os.getpgid(self.colcon_process.pid), signal.SIGINT)
                 # self.colcon_process.wait()
             else:
                 self.colcon_build()
+        if key == 5 and not key_state: 
+            if self.shoulder_move_home_process.poll() is None:
+                os.killpg(os.getpgid(self.shoulder_move_home_process.pid), signal.SIGINT)
+            if self.upperarm_move_home_process.poll() is None:
+                os.killpg(os.getpgid(self.upperarm_move_home_process.pid), signal.SIGINT)
+            if self.lowerarm_move_home_process.poll() is None:
+                os.killpg(os.getpgid(self.lowerarm_move_home_process.pid), signal.SIGINT)
+            if self.shoulder_move_home_process.poll() is not None and self.upperarm_move_home_process.poll() is not None and self.lowerarm_move_home_process.poll() is not None:
+                self.move_to_home()
+        if key == 6 and not key_state:
+            if self.gym_example_process.poll() is None:
+                os.killpg(os.getpgid(self.gym_example_process.pid), signal.SIGINT)
+                self.gym_example_process.wait()
+                print("Gym Example Process closed")
+            else:
+                self.run_gym_example()
+
 
         # if not key_state and key_s[key] == 0:
         #     deck.set_key_image(key, img_pressed_bytes)
@@ -195,8 +336,18 @@ class StreamDeckGH360Control:
         # p.wait()
         # self.disable_deck = False
 
+    def motor_torque_off(self):
+        self.shoulder_torque_off_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; ros2 service call /shoulder/motor_set_torque std_srvs/srv/SetBool "{data: False}"', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
+        self.upperarm_torque_off_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; ros2 service call /upperarm/motor_set_torque std_srvs/srv/SetBool "{data: False}"', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
+        self.lowerarm_torque_off_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; ros2 service call /lowerarm/motor_set_torque std_srvs/srv/SetBool "{data: False}"', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
 
+    def move_to_home(self):
+        self.shoulder_move_home_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; ros2 service call /shoulder/motor_move_home std_srvs/srv/SetBool "{data: True}"', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
+        self.upperarm_move_home_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; ros2 service call /upperarm/motor_move_home std_srvs/srv/SetBool "{data: True}"', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
+        self.lowerarm_move_home_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; ros2 service call /lowerarm/motor_move_home std_srvs/srv/SetBool "{data: True}"', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
 
+    def run_gym_example(self):
+        self.gym_example_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; python ~/phd_project/ros2_gh360_ws/src/gh360/gh360_gym/example/test_real_robot.py', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
 
 
 if __name__ == "__main__":

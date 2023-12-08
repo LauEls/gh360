@@ -31,6 +31,11 @@ void MotorJoint::set_movement_direction(int movement_direction)
     this->movement_direction = movement_direction;
 }
 
+void MotorJoint::set_torque_enabled(bool torque)
+{
+    this->motor_torque_enabled = torque;
+}
+
 void MotorJoint::set_offset(double offset)
 {
     this->offset = offset;
@@ -58,6 +63,11 @@ void MotorJoint::set_motor_goal_position(double goal_pos)
 {
     // this->motor_goal_position = (goal_pos + this->offset) * this->movement_direction;
     if (-M_PI_2 < goal_pos && goal_pos < M_PI_2) this->motor_goal_position = this->calc_set_motor_goal_pos(goal_pos, this->offset, this->movement_direction);
+}
+
+void MotorJoint::set_motor_goal_velocity(double goal_vel)
+{
+    this->motor_goal_velocity = this->calc_set_motor_goal_vel(goal_vel, this->movement_direction);
 }
 
 void MotorJoint::set_motor_status(int data, uint8_t address)
@@ -127,6 +137,11 @@ int MotorJoint::get_action_id()
 int MotorJoint::get_movement_direction()
 {
     return this->movement_direction;
+}
+
+bool MotorJoint::get_torque_enabled()
+{
+    return this->motor_torque_enabled;
 }
 
 gh360::MotorDictionary* MotorJoint::get_motor_model()
