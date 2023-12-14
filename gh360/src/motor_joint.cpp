@@ -114,6 +114,11 @@ void MotorJoint::set_motor_status(int data, uint8_t address)
     
 }
 
+void MotorJoint::set_joint_angle(double new_joint_angle)
+{
+    this->joint_angle = new_joint_angle;
+}
+
 double MotorJoint::get_joint_angle()
 {
     return this->get_motor_present_position();

@@ -118,6 +118,7 @@ class DoorEnv(gym.Env):
 
         file_base_dir = '/home/laurenz/phd_project/sac/scripts/test_data/v6'
         self.motor_pos_file = os.path.join(file_base_dir, 'motor_pos.csv')
+        self.motor_vel_file = os.path.join(file_base_dir, 'motor_vel.csv')
         self.joint_pos_file = os.path.join(file_base_dir, 'joint_pos.csv')
 
         

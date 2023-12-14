@@ -23,6 +23,7 @@ find_package(dynamixel_sdk REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
+find_package(sensor_msgs REQUIRED)
 find_package(gh360_interfaces REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
@@ -40,7 +41,7 @@ add_library(gh360
   src/soft_joint.cpp
   src/motor_joint.cpp
 )
-ament_target_dependencies(gh360 "rclcpp" "std_msgs" "std_srvs" "dynamixel_sdk")
+ament_target_dependencies(gh360 "rclcpp" "sensor_msgs" "std_msgs" "std_srvs" "dynamixel_sdk")
 
 add_executable(motor_handler src/motor_handler.cpp)
 target_link_libraries(
@@ -55,6 +56,13 @@ target_link_libraries(
   gh360
 )
 ament_target_dependencies(encoder_handler rclcpp std_msgs gh360_interfaces)
+
+add_executable(joint_states src/joint_states.cpp)
+target_link_libraries(
+  joint_states
+  gh360
+)
+ament_target_dependencies(joint_states rclcpp std_msgs gh360_interfaces sensor_msgs)
 
 
 
@@ -75,6 +83,7 @@ install(
 install(TARGETS 
   motor_handler
   encoder_handler
+  joint_states
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files.
@@ -88,6 +97,25 @@ install(DIRECTORY
 config
 DESTINATION share/${PROJECT_NAME}
 )
+
+#Install mesh files
+install(DIRECTORY
+meshes
+DESTINATION share/${PROJECT_NAME}
+)
+
+#Install urdf files
+install(DIRECTORY
+urdf
+DESTINATION share/${PROJECT_NAME}
+)
+
+#Install rviz files
+install(DIRECTORY
+rviz
+DESTINATION share/${PROJECT_NAME}
+)
+
 
 ################################################################################
 # Test

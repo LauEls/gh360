@@ -1,0 +1,225 @@
+<?xml version="1.0"?>
+<robot name="multipleshapes">
+
+    <material name="blue">
+        <color rgba="0 0 0.8 1"/>
+    </material>
+    <material name="green">
+        <color rgba="0 0.8 0 1"/>
+    </material>
+    <material name="red">
+        <color rgba="0.8 0.0 0 1"/>
+    </material>
+    <material name="black">
+        <color rgba="0.2 0.2 0.2 1"/>
+    </material>
+    <material name="light_black">
+        <color rgba="0.4 0.4 0.4 1.0"/>
+  </material>
+
+    <link name="base_link" />
+    
+    <joint name="base_joint" type="fixed">
+        <parent link="base_link"/>
+        <child link="shoulder0"/>
+        <!-- <limit effort="1000.0" lower="-1.571" upper="1.571" velocity="0.5"/>-->
+        <origin rpy="1.571 0 1.571" xyz="0.0 0 0.5"/> 
+    </joint>
+
+    <link name="shoulder0">
+        <visual>
+            <geometry>
+                <!-- <cylinder length="0.6" radius="0.2"/> -->
+                <mesh filename="package://gh360/meshes/360_shoulder_0.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <origin rpy="0 0 0" xyz="0 0 0"/>
+            <material name="black" />
+        </visual>
+    </link>
+
+    <joint name="shoulder_yaw" type="revolute">
+        <axis xyz="0 1 0"/>
+        <limit effort="1000.0" lower="-1.571" upper="1.571" velocity="0.5"/>
+        <origin rpy="0 0 0" xyz="0.0 0.0 0.176"/>
+        <parent link="shoulder0"/>
+        <child link="shoulder1"/>
+    </joint>
+
+    <link name="shoulder1">
+        <visual>
+            <geometry>
+                <mesh filename="package://gh360/meshes/360_shoulder_1.stl"/>
+            </geometry>
+            <origin rpy="0 0 0" xyz="0 0 -0.176"/>
+            <material name="green" />
+        </visual>
+    </link>
+
+    <joint name="shoulder_roll" type="revolute">
+        <axis xyz="0 0 1"/>
+        <limit effort="1000.0" lower="-1.571" upper="1.571" velocity="0.5"/>
+        <origin rpy="0 0 0" xyz="0.0 0.160 0.0"/>
+        <parent link="shoulder1"/>
+        <child link="shoulder2"/>
+    </joint>
+
+    <link name="shoulder2">
+        <visual>
+            <geometry>
+                <mesh filename="package://gh360/meshes/360_shoulder_2.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <origin rpy="0 0 0" xyz="0 -0.160 -0.176"/>
+            <material name="blue" />
+        </visual>
+    </link>
+
+    <joint name="shoulder_pitch" type="revolute">
+        <axis xyz="-1 0 0"/>
+        <limit effort="1000.0" lower="0.0" upper="1.571" velocity="0.5"/>
+        <origin rpy="0 0 0" xyz="0.0 0.06 0.171"/>
+        <parent link="shoulder2"/>
+        <child link="shoulder3"/>
+    </joint>
+
+    <link name="shoulder3">
+        <visual>
+            <geometry>
+                <mesh filename="package://gh360/meshes/360_shoulder_3.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <origin rpy="0 0 0" xyz="0 -0.220 -0.347"/>
+            <material name="green" />
+        </visual>
+    </link>
+
+    <joint name="shoulder_upperarm_connect" type="fixed">
+        <parent link="shoulder3"/>
+        <child link="upperarm0"/>
+        <!-- <limit effort="1000.0" lower="-1.571" upper="1.571" velocity="0.5"/>-->
+        <!-- <origin rpy="0 0 0" xyz="0.0 0 0.0"/>  -->
+    </joint>
+
+    <link name="upperarm0">
+        <visual>
+            <geometry>
+                <mesh filename="package://gh360/meshes/360_upper_arm_0.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <origin rpy="0 0 0" xyz="0 -0.220 -0.347"/>
+            <material name="blue" />
+        </visual>
+    </link>
+
+    <joint name="upperarm_roll" type="revolute">
+        <axis xyz="0 1 0"/>
+        <limit effort="1000.0" lower="-3.0" upper="3.0" velocity="0.5"/>
+        <origin rpy="0 0 0" xyz="0.001 -0.107 -0.014"/>
+        <parent link="upperarm0"/>
+        <child link="upperarm1"/>
+    </joint>
+
+    <link name="upperarm1">
+        <visual>
+            <geometry>
+                <mesh filename="package://gh360/meshes/360_upper_arm_1.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <origin rpy="0 0 0" xyz="-0.001 -0.113 -0.333"/>
+            <material name="green" />
+        </visual>
+    </link>
+
+    <joint name="elbow" type="revolute">
+        <axis xyz="-1 0 0"/>
+        <limit effort="1000.0" lower="-0.1" upper="2.2" velocity="0.5"/>
+        <origin rpy="0 0 0" xyz="0.0 -0.168 0.040"/>
+        <parent link="upperarm1"/>
+        <child link="upperarm2"/>
+    </joint>
+
+    <link name="upperarm2">
+        <visual>
+            <geometry>
+                <mesh filename="package://gh360/meshes/360_upper_arm_2.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <origin rpy="0 0 0" xyz="-0.001 0.055 -0.373"/>
+            <material name="blue" />
+        </visual>
+    </link>
+
+    <joint name="upperarm_lowerarm_connect" type="fixed">
+        <parent link="upperarm2"/>
+        <child link="lowerarm0"/>
+        <!-- <limit effort="1000.0" lower="-1.571" upper="1.571" velocity="0.5"/>-->
+        <!-- <origin rpy="0 0 0" xyz="0.0 0 0.0"/>  -->
+    </joint>
+
+    <link name="lowerarm0">
+        <visual>
+            <geometry>
+                <mesh filename="package://gh360/meshes/360_lower_arm_0.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <origin rpy="0 0 0" xyz="-0.001 0.055 -0.373"/>
+            <material name="green" />
+        </visual>
+    </link>
+
+    <joint name="forearm_roll" type="revolute">
+        <axis xyz="0 1 0"/>
+        <limit effort="1000.0" lower="-1.571" upper="1.571" velocity="0.5"/>
+        <origin rpy="0 0 0" xyz="0.000 -0.074 -0.041"/>
+        <parent link="lowerarm0"/>
+        <child link="lowerarm1"/>
+    </joint>
+
+    <link name="lowerarm1">
+        <visual>
+            <geometry>
+                <mesh filename="package://gh360/meshes/360_lower_arm_1.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <origin rpy="0 0 0" xyz="-0.001 0.129 -0.332"/>
+            <material name="blue" />
+        </visual>
+    </link>
+
+    <joint name="wrist_pitch" type="revolute">
+        <axis xyz="-1 0 0"/>
+        <limit effort="1000.0" lower="-1.571" upper="1.571" velocity="0.5"/>
+        <origin rpy="0 0 0" xyz="0.0 -0.169 0.0"/>
+        <parent link="lowerarm1"/>
+        <child link="lowerarm2"/>
+    </joint>
+
+    <link name="lowerarm2">
+        <visual>
+            <geometry>
+                <mesh filename="package://gh360/meshes/360_lower_arm_2.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <origin rpy="0 0 0" xyz="-0.001 0.298 -0.332"/>
+            <material name="green" />
+        </visual>
+    </link>
+
+    <joint name="lowerarm_eef_connect" type="fixed">
+        <parent link="lowerarm2"/>
+        <child link="hook"/>
+        <!-- <limit effort="1000.0" lower="-1.571" upper="1.571" velocity="0.5"/>-->
+        <origin rpy="3.1415 1.5708 0" xyz="0.00 -0.037 -0.001"/> 
+    </joint>
+
+    <link name="hook">
+        <visual>
+            <geometry>
+                <mesh filename="package://gh360/meshes/gripper_hook_binary.stl" scale="0.001 0.001 0.001"/>
+            </geometry>
+            <origin rpy="0 0 0" xyz="0.0 0.0 0.0"/>
+            <material name="red" />
+        </visual>
+    </link>
+
+    
+
+   
+
+    
+
+    
+
+</robot>
