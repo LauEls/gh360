@@ -22,7 +22,8 @@ setup(
         'console_scripts': [
             'monitor = gh360_examples.monitor:main',
             'streamdeck_test = gh360_examples.test_stream_deck:main',
-            'door_monitor_control = gh360_examples.door_motor_control:main'
+            'door_monitor_control = gh360_examples.door_motor_control:main',
+            'eef_pos_in_world = gh360_examples.eef_pos_in_world:main',
         ],
     },
 )

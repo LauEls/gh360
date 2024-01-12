@@ -23,7 +23,7 @@
         <parent link="base_link"/>
         <child link="shoulder0"/>
         <!-- <limit effort="1000.0" lower="-1.571" upper="1.571" velocity="0.5"/>-->
-        <origin rpy="1.571 0 1.571" xyz="0.0 0 0.5"/> 
+        <origin rpy="1.571 0 1.571" xyz="-0.66 0.0 1.112"/> 
     </joint>
 
     <link name="shoulder0">
@@ -197,7 +197,7 @@
         </visual>
     </link>
 
-    <joint name="lowerarm_eef_connect" type="fixed">
+    <joint name="lowerarm_tool_connect" type="fixed">
         <parent link="lowerarm2"/>
         <child link="hook"/>
         <!-- <limit effort="1000.0" lower="-1.571" upper="1.571" velocity="0.5"/>-->
@@ -213,6 +213,26 @@
             <material name="red" />
         </visual>
     </link>
+
+    <joint name="tool_eef_connect" type="fixed">
+        <parent link="hook"/>
+        <child link="eef"/>
+        <!-- <limit effort="1000.0" lower="-1.571" upper="1.571" velocity="0.5"/>-->
+        <origin rpy="0.0 0.0 0" xyz="0.0 0.05 0.0"/> 
+    </joint>
+
+    <link name="eef">
+        <visual>
+            <geometry>
+                <!-- <sphere radius="0.2"/> -->
+                <sphere radius="0.01"/>
+                <!-- <mesh filename="package://gh360/meshes/gripper_hook_binary.stl" scale="0.001 0.001 0.001"/> -->
+            </geometry>
+            <material name="blue" />
+        </visual>
+    </link>
+
+    
 
     
 

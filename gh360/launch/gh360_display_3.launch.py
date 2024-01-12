@@ -86,14 +86,14 @@ def generate_launch_description():
     'robot_description': Command(['xacro ', urdf_model])}],
     arguments=[default_urdf_model_path])
   
-  gh360_joint_states_cmd = Node(
-    package='gh360',
-    executable='joint_states',
-    name='joint_states',
-    # parameters=[os.path.join(
-    #     get_package_share_directory('gh360'),
-    #     'config', 'motor_handler_config.yaml')],
-    output='screen')
+  # gh360_joint_states_cmd = Node(
+  #   package='gh360',
+  #   executable='joint_states',
+  #   name='joint_states',
+  #   # parameters=[os.path.join(
+  #   #     get_package_share_directory('gh360'),
+  #   #     'config', 'motor_handler_config.yaml')],
+  #   output='screen')
  
   # Launch RViz
   # start_rviz_cmd = Node(
@@ -119,7 +119,7 @@ def generate_launch_description():
   ld.add_action(start_joint_state_publisher_cmd)
 #   ld.add_action(start_joint_state_publisher_gui_node)
   ld.add_action(start_robot_state_publisher_cmd)
-  ld.add_action(gh360_joint_states_cmd)
+  # ld.add_action(gh360_joint_states_cmd)
   # ld.add_action(start_rviz_cmd)
  
   return ld
