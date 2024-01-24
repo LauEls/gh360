@@ -52,8 +52,8 @@ if __name__ == "__main__":
     env.reset()
 
 
-    # run_zero_actions()
-    run_recorded_actions()
+    run_zero_actions()
+    # run_recorded_actions()
 
     # env.reset()
 

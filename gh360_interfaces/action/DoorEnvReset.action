@@ -1,0 +1,10 @@
+#Request
+bool reset
+---
+# Result
+bool success
+---
+# Feedback
+int64 state
+PortStatus[] motor_states
+ArmEncoderStates encoder_states

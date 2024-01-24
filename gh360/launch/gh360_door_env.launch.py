@@ -18,12 +18,12 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360'), 'launch'), '/encoder_handler.launch.py'])
     )
 
-    # door_motor = IncludeLaunchDescription(
-    #     PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360'), 'launch'), '/door_motor.launch.py'])
-    # )
+    door_motor = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360'), 'launch'), '/door_motor.launch.py'])
+    )
     
     return LaunchDescription([
         motor_handler,
         encoder_handler,
-        # door_motor,
+        door_motor,
     ])

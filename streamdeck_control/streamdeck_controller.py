@@ -23,6 +23,9 @@ class StreamDeckGH360Control:
         self.upperarm_move_home_process = subprocess.Popen('', shell=True, executable="/bin/bash")
         self.lowerarm_move_home_process = subprocess.Popen('', shell=True, executable="/bin/bash")
 
+        self.dial_0_state = 0
+        self.dial_1_state = 0
+
         # image for idle state
         img = Image.new('RGB', (120, 120), color='black')
         self.released_icon = Image.open(os.path.join(self.asset_path, 'Released.png')).resize((80, 80))
@@ -87,6 +90,16 @@ class StreamDeckGH360Control:
         img_byte_arr = io.BytesIO()
         img.save(img_byte_arr, format='JPEG')
         self.img_door_bytes = img_byte_arr.getvalue()
+
+        #image exit icon
+
+        img = Image.new('RGB', (120, 120), color='black')
+        self.exit_icon = Image.open(os.path.join(self.asset_path, 'Exit.png')).resize((80, 80))
+        img.paste(self.exit_icon, (20, 20), self.exit_icon)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_exit_bytes = img_byte_arr.getvalue()
 
         #image gui on icon
         img = Image.new('RGB', (120, 120), color='black')
@@ -190,16 +203,25 @@ class StreamDeckGH360Control:
                 #self.deck.set_key_image(key, self.img_released_bytes)
 
         # build an image for the touch lcd
+        # img = Image.new('RGB', (800, 100), 'black')
+        # icon = Image.open(os.path.join(self.asset_path, 'Exit.png')).resize((80, 80))
+        # img.paste(icon, (690, 10), icon)
+
+        # for dial in range(0, self.deck.DIAL_COUNT - 1):
+        #     img.paste(self.released_icon, (30 + (dial * 220), 10), self.released_icon)
+
+        # img_bytes = io.BytesIO()
+        # img.save(img_bytes, format='JPEG')
+        # touchscreen_image_bytes = img_bytes.getvalue()
+
         img = Image.new('RGB', (800, 100), 'black')
-        icon = Image.open(os.path.join(self.asset_path, 'Exit.png')).resize((80, 80))
-        img.paste(icon, (690, 10), icon)
-
-        for dial in range(0, self.deck.DIAL_COUNT - 1):
-            img.paste(self.released_icon, (30 + (dial * 220), 10), self.released_icon)
-
+        img.paste(self.exit_icon, (30,10), self.exit_icon)
+        img.paste(self.exit_icon, (250,10), self.exit_icon)
+                
         img_bytes = io.BytesIO()
         img.save(img_bytes, format='JPEG')
         touchscreen_image_bytes = img_bytes.getvalue()
+        self.deck.set_touchscreen_image(touchscreen_image_bytes, 0, 0, 800, 100)
 
         # self.deck.set_touchscreen_image(touchscreen_image_bytes, 0, 0, 800, 100)
 
@@ -282,24 +304,57 @@ class StreamDeckGH360Control:
             if dial == 3 and value:
                 deck.reset()
                 deck.close()
-            else:
-                # build an image for the touch lcd
-                img = Image.new('RGB', (800, 100), 'black')
-                icon = Image.open(os.path.join(self.asset_path, 'Exit.png')).resize((80, 80))
-                img.paste(icon, (690, 10), icon)
+            # else:
+            #     # build an image for the touch lcd
+            #     img = Image.new('RGB', (800, 100), 'black')
+            #     icon = Image.open(os.path.join(self.asset_path, 'Exit.png')).resize((80, 80))
+            #     img.paste(icon, (690, 10), icon)
 
-                for k in range(0, deck.DIAL_COUNT - 1):
-                    img.paste(self.pressed_icon if (dial == k and value) else self.released_icon, (30 + (k * 220), 10),
-                            self.pressed_icon if (dial == k and value) else self.released_icon)
+            #     for k in range(0, deck.DIAL_COUNT - 1):
+            #         img.paste(self.pressed_icon if (dial == k and value) else self.released_icon, (30 + (k * 220), 10),
+            #                 self.pressed_icon if (dial == k and value) else self.released_icon)
 
-                img_byte_arr = io.BytesIO()
-                img.save(img_byte_arr, format='JPEG')
-                img_byte_arr = img_byte_arr.getvalue()
+            #     img_byte_arr = io.BytesIO()
+            #     img.save(img_byte_arr, format='JPEG')
+            #     img_byte_arr = img_byte_arr.getvalue()
 
-                deck.set_touchscreen_image(img_byte_arr, 0, 0, 800, 100)
+            #     deck.set_touchscreen_image(img_byte_arr, 0, 0, 800, 100)
         elif event == DialEventType.TURN:
-            print(f"dial {dial} turned: {value}")
+            # print(f"dial {dial} turned: {value}")
+            if dial == 0:
+                self.dial_0_state += value
+                if self.dial_0_state > 1:
+                    self.dial_0_state = 0
+                elif self.dial_0_state < 0:
+                    self.dial_0_state = 1
 
+                # print(f"dial {dial} state: {self.dial_0_state}")
+            elif dial == 1:
+                self.dial_1_state += value
+                if self.dial_1_state > 1:
+                    self.dial_1_state = 0
+                elif self.dial_1_state < 0:
+                    self.dial_1_state = 1
+
+                # print(f"dial {dial} state: {self.dial_1_state}")
+
+                
+
+            img = Image.new('RGB', (800, 100), 'black')
+            if self.dial_0_state == 0:
+                img.paste(self.exit_icon, (30,10), self.exit_icon)
+            elif self.dial_0_state == 1:
+                img.paste(self.door_icon, (30,10), self.door_icon)
+
+            if self.dial_1_state == 0:
+                img.paste(self.exit_icon, (250,10), self.exit_icon)
+            elif self.dial_1_state == 1:
+                img.paste(self.door_icon, (250,10), self.door_icon)
+                    
+            img_byte_arr = io.BytesIO()
+            img.save(img_byte_arr, format='JPEG')
+            img_byte_arr = img_byte_arr.getvalue()
+            deck.set_touchscreen_image(img_byte_arr, 0, 0, 800, 100)
 
     # callback when lcd is touched
     def touchscreen_event_callback(self, deck, evt_type, value):
@@ -316,14 +371,20 @@ class StreamDeckGH360Control:
 
     def encoder_startup(self):
         # Start encoders
-        self.encoder_process = subprocess.Popen('source ~/phd_project/gh360_ws/devel/setup.bash; roslaunch gh360_control encoder_manager.launch', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
+        if self.dial_0_state == 0:
+            self.encoder_process = subprocess.Popen('source ~/phd_project/gh360_ws/devel/setup.bash; roslaunch gh360_control encoder_manager.launch', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
+        elif self.dial_0_state == 1:
+            self.encoder_process = subprocess.Popen('source ~/phd_project/gh360_ws/devel/setup.bash; roslaunch gh360_control door_env.launch', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
 
         # Start Bridge
         self.bridge_process = subprocess.Popen('source ~/phd_project/bridge_ws/install/setup.bash; ros2 run ros1_bridge dynamic_bridge --bridge-all-topics', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
     
     def gh360_startup(self):
         # Start GH360
-        self.gh360_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; ros2 launch gh360 gh360_startup.launch.py', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
+        if self.dial_1_state == 0:
+            self.gh360_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; ros2 launch gh360 gh360_startup.launch.py', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
+        elif self.dial_1_state == 1:
+            self.gh360_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; ros2 launch gh360 gh360_door_env.launch.py', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
 
     def gh360_monitor(self):
         # Start GH360 Monitor GUI

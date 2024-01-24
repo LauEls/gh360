@@ -18,6 +18,8 @@ gh360::MotorHandler::MotorHandler()
     this->baud_rate = get_parameter("baud_rate").as_int();
     this->declare_parameter("protocol", 0);
     this->protocol = get_parameter("protocol").as_int();
+    this->declare_parameter("start_with_torque", true);
+    this->torque_start = get_parameter("start_with_torque").as_bool();
 
     this->openPortsAndSetBaudrate();
 
@@ -94,7 +96,7 @@ gh360::MotorHandler::MotorHandler()
             new_joint->set_offset(get_parameter(joint_name+".offset").as_double());
             new_joint->set_motor_model(this->getMotorModel(new_joint->get_motor_id()));
             this->setOperatingMode(new_joint, 3);
-            this->setTorqueEnable(new_joint, 1);
+            if (this->torque_start) this->setTorqueEnable(new_joint, 1);
             this->joints.push_back(new_joint);
 
             if (i == 0) motor_model_type = new_joint->get_motor_model();

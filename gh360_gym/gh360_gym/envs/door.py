@@ -9,13 +9,18 @@ from gym import spaces
 import rclpy
 from rclpy.node import Node
 
-from std_msgs.msg import String
+from std_msgs.msg import String, UInt16
 from ros2pkg.api import get_prefix_path
+from tf2_ros import TransformException
+from tf2_ros.buffer import Buffer
+from tf2_ros.transform_listener import TransformListener
+from geometry_msgs.msg import Pose
+import tf2_geometry_msgs
 # from dynamixel_sdk_custom_interfaces.msg import SetPosition
 # from DynamixelSDK.dynamixel_sdk_custom_interfaces.msg import SetPosition
 # sys.path.append('/home/laurenz/phd_project/ros2_gh360_ws/src/DynamixelSDK/dynamixel_sdk_custom_interfaces.msg')
 # from dynamixel_sdk_custom_interfaces.msg import SetPosition
-from gh360_interfaces.msg import SetMotorPositions, SetPosition, ArmEncoderStates, SetVelocity
+from gh360_interfaces.msg import SetMotorPositions, SetPosition, ArmEncoderStates, SetVelocity, PortStatus
 from gh360_interfaces.srv import MotorPositionStep, MotorVelocityStep
 
 from gh360_gym.envs.utils import SoftJoint, MotorJoint
@@ -48,12 +53,30 @@ class DoorEnv(gym.Env):
         # self.input_min = self.nums2array(input_min, self.control_dim)
         self.input_min = np.ones(self.control_dim) * input_min
 
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self.node)
+
+        self.handle_qpos = np.array([0.0])
+        self.hinge_qpos = np.array([0.0])
+
         # self.node.create_subscriber()
 
         self.node.create_subscription(
             ArmEncoderStates,
             '/encoder_status',
             self.encoder_callback,
+            10
+        )
+        self.node.create_subscription(
+            UInt16,
+            '/handle_angle',
+            self.handle_callback,
+            10
+        )
+        self.node.create_subscription(
+            PortStatus,
+            '/door/motor_status',
+            self.hinge_callback,
             10
         )
 
@@ -91,11 +114,12 @@ class DoorEnv(gym.Env):
         self.motor_msg = SetMotorPositions()
         self.internal_state = 0
 
-        low = -np.pi * np.ones(1)
-        high = np.pi * np.ones(1)
+        self.action_dim = 13
+        high = np.ones(self.action_dim)
+        low = -high  
         self.action_space = spaces.Box(low, high)
 
-        self.obs_dim = 1
+        self.obs_dim = 32
         high = np.inf*np.ones(self.obs_dim)
         low = -high
         self.observation_space = spaces.Box(low, high)
@@ -123,16 +147,31 @@ class DoorEnv(gym.Env):
 
         
         
+        
 
         
     def encoder_callback(self, msg):
-        print("recieved encoder message")
+        # print("recieved encoder message")
         for joint_msg in msg.current_joint_states:
             for joint in self.arm:
                 if joint.joint_name == joint_msg.joint_name:
                     joint.joint_velocity = joint_msg.current_vel
                     joint.joint_angle = joint_msg.current_pos
                     # gui_joint.joint_angle.config(text="Joint Angle: "+self.get_label_str(joint.current_pos))
+
+    def handle_callback(self, msg):
+        offset = 0.0
+        self.handle_qpos = np.array([(msg.data-offset)*(5.236/1023)], dtype=np.float64)
+
+    def hinge_callback(self, msg):
+        motor_pos = msg.motors[0].present_position
+        offset = 3.2505
+        max_pos = 3.548 - offset
+        hinge_angle_multi = 17.1887 / max_pos
+
+        self.hinge_qpos =   (motor_pos - offset) * hinge_angle_multi * np.pi/180
+
+        # print("Hinge qpos: "+str(self.hinge_qpos))
 
 
     def safe_to_file(self):
@@ -206,25 +245,61 @@ class DoorEnv(gym.Env):
             object-state (all the object related data from above comined in one array)
         """
         obs = []
-        obs_joint_pos = []
-        obs_joint_pos_cos = []
-        obs_joint_pos_sin = []
+        robot_joint_pos = []
+        robot_joint_pos_cos = []
+        robot_joint_pos_sin = []
+        robot_joint_vel = []
+        # robot_eef_pos = []
+        # robot_eef_quat = []
+
+        robot_gripper_qpos = []
+        robot_gripper_qvel = []
+
+        door_pos = [-0.271, 0.411, 0.908]
+        handle_pos = [-0.2161, 0.4061, 0.88251]
+        
 
         #ROBOT SPECIFIC PARAMETERS
         for joint in self.arm:
             # if type(joint) == MotorJoint:
             #     print("MotorJoint")
-            obs_joint_pos.append(joint.joint_angle)
-            obs_joint_pos_cos.append(np.cos(joint.joint_angle))
-            obs_joint_pos_sin.append(np.sin(joint.joint_angle))
+            robot_joint_pos.append(joint.joint_angle)
+            robot_joint_pos_cos.append(np.cos(joint.joint_angle))
+            robot_joint_pos_sin.append(np.sin(joint.joint_angle))
+            robot_joint_vel.append(joint.joint_velocity)
 
         #CALCUALATE FORWARD KINEMATICS TO GET EEF POS AND QUAT
+        from_frame_rel = 'eef'
+        to_frame_rel = 'base_link'
+        #Lookup the tranformation from from_frame_rel to to_frame_rel
+        try:
+            eef_pose_trans = self.tf_buffer.lookup_transform(to_frame_rel, from_frame_rel, rclpy.time.Time())
+        except TransformException as ex:
+            self.get_logger().info(
+                f'Could not transform {to_frame_rel} to {from_frame_rel}: {ex}')
+            return
+        #Tranform a Pose from from_frame_rel to to_frame_rel
+        # eef_pose = tf2_geometry_msgs.do_transform_pose(Pose(), self.trans_eef_base)
+        robot_eef_pos = np.array([eef_pose_trans.transform.translation.x, eef_pose_trans.transform.translation.y, eef_pose_trans.transform.translation.z], dtype=np.float64)
+        robot_eef_quat = np.array([eef_pose_trans.transform.rotation.x, eef_pose_trans.transform.rotation.y, eef_pose_trans.transform.rotation.z, eef_pose_trans.transform.rotation.w], dtype=np.float64)
 
 
         #ENVIRONMENT SPECIFIC PARAMETERS
+        door_pos = [-0.271, 0.411, 0.908]
+        handle_pos = [-0.2161, 0.4061, 0.88251]
+        # door_to_eef_pos = door_pos - robot_eef_pos
+        handle_to_eef_pos = handle_pos - robot_eef_pos
+        self.gripper_to_handle = handle_to_eef_pos
 
-        obs = np.array(np.float32(self.internal_state/100))
-        #print(obs)
+        hinge_qpos = np.array([0.0])
+        handle_qpos = np.array([0.0])
+        # np.copyto(handle_qpos, self.handle_qpos)
+        # np.copyto(hinge_qpos, self.hinge_qpos)
+
+
+        # obs = np.array(np.float32(self.internal_state/100))
+        obs = np.concatenate((robot_joint_pos, robot_joint_vel, robot_eef_pos, robot_eef_quat, door_pos, handle_pos, handle_to_eef_pos, hinge_qpos, handle_qpos), axis=-1)
+        # print(obs)
         return obs
 
     def _get_info(self):
@@ -279,7 +354,7 @@ class DoorEnv(gym.Env):
         obs = self._get_obs()
         info = self._get_info()
         print("finished reset")
-        return obs, info
+        return obs
     
     def set_eq_motor_goal_position(self, delta_action):
         """
@@ -395,7 +470,7 @@ class DoorEnv(gym.Env):
         Send action to the arm controller
 
         """
-        print("step execution")
+        # print("step execution")
         # self.motor_goal_req = self.set_eq_motor_goal_position(action)
         self.motor_goal_req = self.set_eq_motor_goal_velocity(action)
         zero_step = np.zeros(13)
@@ -457,6 +532,10 @@ class DoorEnv(gym.Env):
 
         return observation, reward, done, info
 
+    def check_success(self):
+        # hinge_qpos = self.sim.data.qpos[self.hinge_qpos_addr]
+        # return self.hinge_qpos < -0.3
+        return False
 
     def reward(self):
         """
@@ -467,8 +546,18 @@ class DoorEnv(gym.Env):
         # handle q pos
         # hinge q pos
         # if possible touch door handle
-        obs = self._get_obs()
-        reward = np.tanh(obs)
+        # obs = self._get_obs()
+
+        reward = 0.0
+
+        if self.check_success():
+            reward = 1.0
+        else:
+            dist = np.linalg.norm(self.gripper_to_handle)
+            reaching_reward = 0.25 * (1 - np.tanh(10.0 * dist))
+            reward += reaching_reward
+
+        # reward = np.tanh(obs)
         return reward
 
     def render(self):

@@ -4,6 +4,7 @@
     port_name: "/dev/serial/by-id/usb-FTDI_USB__-__Serial_Converter_FT4TCJHY-if00-port0"
     baud_rate: 1000000
     protocol: 2
+    start_with_torque: false
     door_joint:
       joint_type: "motor_joint"
       min_joint_angle: 0.0

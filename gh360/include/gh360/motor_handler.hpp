@@ -95,6 +95,7 @@ namespace gh360
             const char* port_name;
             int baud_rate;
             int protocol;
+            bool torque_start;
             constexpr static int motor_cnt = 2;
             bool multi_motor_models = false;
             MotorDictionary* joints_motor_model;
