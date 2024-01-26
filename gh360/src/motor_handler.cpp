@@ -1438,6 +1438,7 @@ bool gh360::MotorHandler::setPositionControlMode()
             this->setTorqueEnable(soft_joint,0);
             this->setOperatingMode(soft_joint,4);
             this->setTorqueEnable(soft_joint,1);
+            this->setVelocityProfile(soft_joint, 8.0);
             soft_joint->set_right_motor_goal_position(soft_joint->get_right_motor_present_position());
             soft_joint->set_left_motor_goal_position(soft_joint->get_left_motor_present_position());
         }
@@ -1446,6 +1447,7 @@ bool gh360::MotorHandler::setPositionControlMode()
             this->setTorqueEnable(motor_joint,0);
             this->setOperatingMode(motor_joint,3);
             this->setTorqueEnable(motor_joint,1);
+            this->setVelocityProfile(motor_joint, 8.0);
             motor_joint->set_motor_goal_position(motor_joint->get_motor_present_position());
         }
     }

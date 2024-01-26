@@ -31,6 +31,7 @@ class DoorEnv(gym.Env):
     def __init__(self,
                  input_max=1,
                  input_min=-1,
+                 stiffness_mode = "variable",
                  ):
         """
         Have a variable the defines the action size
@@ -42,7 +43,15 @@ class DoorEnv(gym.Env):
         # self.motor_publisher = self.node.create_publisher(SetPosition, '/set_position', 10)
         # self.motor_publisher = self.node.create_publisher(SetMotorPositions, "/lowerarm/set_motor_positions", 10)
 
-        self.control_dim = 13#MAYBE READ THAT OUT OF A CONFIG FILE -> should be 13 at the end
+        self.stiffness_mode = stiffness_mode
+
+        if self.stiffness_mode == "variable":
+            self.control_dim = 13#MAYBE READ THAT OUT OF A CONFIG FILE -> should be 13 at the end
+        elif self.stiffness_mode == "fixed" or stiffness_mode == "no_stiffness":
+            self.control_dim = 7
+
+        print("control dimensions: ", self.control_dim)
+
         self.control_timestep = 0.2
         self.model_timestep = 0.1
         # print("control dimensions: ",self.control_dim)
@@ -114,7 +123,7 @@ class DoorEnv(gym.Env):
         self.motor_msg = SetMotorPositions()
         self.internal_state = 0
 
-        self.action_dim = 13
+        self.action_dim = self.control_dim
         high = np.ones(self.action_dim)
         low = -high  
         self.action_space = spaces.Box(low, high)
@@ -125,30 +134,25 @@ class DoorEnv(gym.Env):
         self.observation_space = spaces.Box(low, high)
 
         self.arm = []
-        new_joint = SoftJoint(joint_name="shoulder_yaw", port_name="shoulder", id_right_motor=1, id_left_motor=2)
+        new_joint = SoftJoint(joint_name="shoulder_yaw", port_name="shoulder", id_right_motor=1, id_left_motor=2, max_pos=1.0, min_pos=-1.0)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="shoulder_roll", port_name="shoulder", id_right_motor=3, id_left_motor=4)
+        new_joint = SoftJoint(joint_name="shoulder_roll", port_name="shoulder", id_right_motor=3, id_left_motor=4, max_pos=0.5, min_pos=-0.5)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="shoulder_pitch", port_name="shoulder", id_right_motor=5, id_left_motor=6)
+        new_joint = SoftJoint(joint_name="shoulder_pitch", port_name="shoulder", id_right_motor=5, id_left_motor=6, max_pos=0.5, min_pos=0.0)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="upperarm_roll", port_name="upperarm", id_right_motor=7, id_left_motor=8)
+        new_joint = SoftJoint(joint_name="upperarm_roll", port_name="upperarm", id_right_motor=7, id_left_motor=8, max_pos=2.0, min_pos=0.0)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="elbow", port_name="upperarm", id_right_motor=10, id_left_motor=9)
+        new_joint = SoftJoint(joint_name="elbow", port_name="upperarm", id_right_motor=10, id_left_motor=9, max_pos=1.7, min_pos=0.0)
         self.arm.append(new_joint)
-        new_joint = MotorJoint(joint_name="lowerarm_roll", port_name="lowerarm", id_motor=11)
+        new_joint = MotorJoint(joint_name="lowerarm_roll", port_name="lowerarm", id_motor=11, max_pos=np.pi/2, min_pos=-np.pi/2)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="wrist_pitch", port_name="lowerarm", id_right_motor=13, id_left_motor=12)
+        new_joint = SoftJoint(joint_name="wrist_pitch", port_name="lowerarm", id_right_motor=13, id_left_motor=12, max_pos=1.4, min_pos=-1.4)
         self.arm.append(new_joint)
 
         file_base_dir = '/home/laurenz/phd_project/sac/scripts/test_data/v6'
         self.motor_pos_file = os.path.join(file_base_dir, 'motor_pos.csv')
         self.motor_vel_file = os.path.join(file_base_dir, 'motor_vel.csv')
         self.joint_pos_file = os.path.join(file_base_dir, 'joint_pos.csv')
-
-        
-        
-        
-
         
     def encoder_callback(self, msg):
         # print("recieved encoder message")
@@ -172,7 +176,6 @@ class DoorEnv(gym.Env):
         self.hinge_qpos =   (motor_pos - offset) * hinge_angle_multi * np.pi/180
 
         # print("Hinge qpos: "+str(self.hinge_qpos))
-
 
     def safe_to_file(self):
         arm_status = np.concatenate((self.shoulder_motor_states_msg.motor_status, self.upperarm_motor_states_msg.motor_status, self.lowerarm_motor_states_msg.motor_status), axis=None)
@@ -351,6 +354,43 @@ class DoorEnv(gym.Env):
 
         time.sleep(6)
 
+        action = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+
+        motor_vel_req = MotorVelocityStep.Request()
+
+        for i in range(len(self.arm)):
+            motor_vel = action[i]
+
+            if type(self.arm[i]) == SoftJoint:
+                set_motor_msg = SetVelocity()
+                set_motor_msg.id = self.arm[i].id_right_motor
+                set_motor_msg.velocity = motor_vel
+
+                motor_vel_req.motor_goal_velocities.append(set_motor_msg)
+
+                set_motor_msg = SetVelocity()
+                set_motor_msg.id = self.arm[i].id_left_motor
+                set_motor_msg.velocity = motor_vel
+
+                motor_vel_req.motor_goal_velocities.append(set_motor_msg)
+            else:
+                set_motor_msg = SetVelocity()
+                set_motor_msg.id = self.arm[i].id_motor
+                set_motor_msg.velocity = motor_vel
+
+                motor_vel_req.motor_goal_velocities.append(set_motor_msg)
+
+        shoulder_future = self.client_shoulder.call_async(motor_vel_req)
+        upperarm_future = self.client_upperarm.call_async(motor_vel_req)
+        lowerarm_future = self.client_lowerarm.call_async(motor_vel_req)
+
+        rclpy.spin_until_future_complete(self.node, shoulder_future)
+        rclpy.spin_until_future_complete(self.node, upperarm_future)
+        rclpy.spin_until_future_complete(self.node, lowerarm_future)
+        shoulder_motor_states_msg = shoulder_future.result()
+        upperarm_motor_states_msg = upperarm_future.result()
+        lowerarm_motor_states_msg = lowerarm_future.result()
+
         obs = self._get_obs()
         info = self._get_info()
         print("finished reset")
@@ -397,6 +437,8 @@ class DoorEnv(gym.Env):
             else:
                 delta_motor_pos = delta_action[motor_iter]
 
+
+
                 set_motor_msg = SetPosition()
                 set_motor_msg.id = self.arm[joint_iter].id_motor
                 set_motor_msg.position = delta_motor_pos
@@ -427,13 +469,28 @@ class DoorEnv(gym.Env):
         while motor_iter < len(delta_action):
             if type(self.arm[joint_iter]) == SoftJoint:
                 delta_eq_pos = delta_action[motor_iter]
-                delta_stiffness = delta_action[motor_iter+1]
 
-                # delta_motor_right = delta_eq_pos + delta_stiffness
-                # delta_motor_left = delta_eq_pos - delta_stiffness
+                if delta_eq_pos > 0 and self.arm[joint_iter].joint_angle >= self.arm[joint_iter].max_pos:
+                    # print("max joint pos reached")
+                    delta_eq_pos = 0.0
+                elif delta_eq_pos < 0 and self.arm[joint_iter].joint_angle <= self.arm[joint_iter].min_pos:
+                    # print("min joint pos reached")
+                    delta_eq_pos = 0.0
 
-                motor_right_velocity = delta_eq_pos / self.control_timestep
-                motor_left_velocity = delta_eq_pos / self.control_timestep
+                if self.control_dim == 13:
+                    delta_stiffness = delta_action[motor_iter+1]
+                    motor_iter += 2
+                else:
+                    delta_stiffness = 0
+                    motor_iter += 1
+
+                delta_motor_right = delta_eq_pos + delta_stiffness
+                delta_motor_left = delta_eq_pos - delta_stiffness
+
+
+
+                motor_right_velocity = delta_motor_right / self.control_timestep
+                motor_left_velocity = delta_motor_left / self.control_timestep
 
                 set_motor_msg = SetVelocity()
                 set_motor_msg.id = self.arm[joint_iter].id_right_motor
@@ -447,10 +504,21 @@ class DoorEnv(gym.Env):
 
                 motor_vel_req.motor_goal_velocities.append(set_motor_msg)
 
-                motor_iter += 2
+                
             else:
-                # delta_motor_pos = delta_action[motor_iter]
-                motor_velocity = delta_action[motor_iter] / self.control_timestep
+                delta_motor_pos = delta_action[motor_iter]
+
+                if delta_motor_pos > 0:
+                    if self.arm[joint_iter].joint_angle + delta_motor_pos > self.arm[joint_iter].max_pos:
+                        delta_motor_pos = self.arm[joint_iter].max_pos - self.arm[joint_iter].joint_angle
+                        # print("max joint pos reached")
+                else:
+                    if self.arm[joint_iter].joint_angle + delta_motor_pos < self.arm[joint_iter].min_pos:
+                        delta_motor_pos = self.arm[joint_iter].min_pos - self.arm[joint_iter].joint_angle
+                        # print("min joint pos reached")
+
+
+                motor_velocity = delta_motor_pos / self.control_timestep
 
                 set_motor_msg = SetVelocity()
                 set_motor_msg.id = self.arm[joint_iter].id_motor
@@ -472,9 +540,10 @@ class DoorEnv(gym.Env):
         """
         # print("step execution")
         # self.motor_goal_req = self.set_eq_motor_goal_position(action)
+
         self.motor_goal_req = self.set_eq_motor_goal_velocity(action)
-        zero_step = np.zeros(13)
-        zero_action_req = self.set_eq_motor_goal_position(zero_step)
+        # zero_step = np.zeros(13)
+        # zero_action_req = self.set_eq_motor_goal_position(zero_step)
 
         # print(self.motor_pos_req)
 
@@ -486,17 +555,6 @@ class DoorEnv(gym.Env):
         # for i in range(4):
             # start_2 = time.time()
             start = time.time()
-
-            # if policy_step:
-            #     # self.motor_publisher.publish(self.motor_msg)
-            #     self.shoulder_future = self.client_delta_shoulder.call_async(self.motor_pos_req)
-            #     self.upperarm_future = self.client_delta_upperarm.call_async(self.motor_pos_req)
-            #     self.lowerarm_future = self.client_delta_lowerarm.call_async(self.motor_pos_req)
-            #     policy_step = False
-            # else:
-            #     self.shoulder_future = self.client_delta_shoulder.call_async(zero_action_req)
-            #     self.upperarm_future = self.client_delta_upperarm.call_async(zero_action_req)
-            #     self.lowerarm_future = self.client_delta_lowerarm.call_async(zero_action_req)
 
             self.shoulder_future = self.client_velocity_shoulder.call_async(self.motor_goal_req)
             self.upperarm_future = self.client_velocity_upperarm.call_async(self.motor_goal_req)
@@ -523,6 +581,11 @@ class DoorEnv(gym.Env):
 
         # end = time.time()
         # print(end-start)
+                
+        for motor_status in self.lowerarm_motor_states_msg.motor_status:
+            if motor_status.motor_id == self.arm[5].id_motor:
+                self.arm[5].joint_angle = motor_status.present_position
+                self.arm[5].joint_velocity = motor_status.present_velocity
 
         observation = self._get_obs()
         reward = self.reward()
