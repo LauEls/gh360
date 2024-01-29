@@ -170,6 +170,10 @@ void SoftJoint::set_right_motor_status(int data, uint8_t address)
     {
         this->right_motor_present_temperature = data;
     }
+    else if (address == this->right_motor_model->Moving.address)
+    {
+        this->right_motor_moving = data;
+    }
     
 }
 
@@ -207,6 +211,21 @@ void SoftJoint::set_left_motor_status(int data, uint8_t address)
     {
         this->left_motor_present_temperature = data;
     }
+    else if (address == this->left_motor_model->Moving.address)
+    {
+        this->left_motor_moving = data;
+        
+    }
+}
+
+void SoftJoint::set_right_motor_safety_check(bool safety_check)
+{
+    this->right_motor_safety_check = safety_check;
+}
+
+void SoftJoint::set_left_motor_safety_check(bool safety_check)
+{
+    this->left_motor_safety_check = safety_check;
 }
 
 void SoftJoint::set_initialize(bool init)
@@ -318,6 +337,26 @@ double SoftJoint::get_right_motor_present_temperature()
 double SoftJoint::get_left_motor_present_temperature()
 {
     return this->left_motor_present_temperature;
+}
+
+bool SoftJoint::get_right_motor_moving()
+{
+    return this->right_motor_moving;
+}
+
+bool SoftJoint::get_left_motor_moving()
+{
+    return this->left_motor_moving;
+}
+
+bool SoftJoint::get_right_motor_safety_check()
+{
+    return this->right_motor_safety_check;
+}
+
+bool SoftJoint::get_left_motor_safety_check()
+{
+    return this->left_motor_safety_check;
 }
 
 double SoftJoint::get_right_motor_goal_position()

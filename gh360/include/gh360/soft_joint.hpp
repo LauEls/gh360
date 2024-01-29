@@ -46,6 +46,8 @@ class SoftJoint: public Joint
         void set_left_torque_enabled(bool torque);
         void set_reference_joint_angle(double data);
         void set_initialize(bool init);
+        void set_right_motor_safety_check(bool safety_check);
+        void set_left_motor_safety_check(bool safety_check);
 
         std::string get_joint_name();
         std::string get_joint_type();
@@ -68,6 +70,10 @@ class SoftJoint: public Joint
         double get_left_motor_present_current();
         double get_right_motor_present_temperature();
         double get_left_motor_present_temperature();
+        bool get_right_motor_moving();
+        bool get_left_motor_moving();
+        bool get_right_motor_safety_check();
+        bool get_left_motor_safety_check();
         double get_right_motor_goal_position();
         double get_left_motor_goal_position();
         int get_right_motor_goal_position_int();
@@ -120,6 +126,10 @@ class SoftJoint: public Joint
         // Motor Temperature in degrees
         double right_motor_present_temperature;
         double left_motor_present_temperature;
+        bool right_motor_moving;
+        bool left_motor_moving;
+        bool right_motor_safety_check;
+        bool left_motor_safety_check;
 
         double right_reference_current;
         double left_reference_current;

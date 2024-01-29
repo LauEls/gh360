@@ -19,6 +19,10 @@ class SoftJoint:
         self.left_motor_pos = 0.0
         self.joint_angle = 0.0
         self.joint_velocity = 0.0
+        self.right_motor_safety_check = False
+        self.left_motor_safety_check = False
+        self.right_motor_moving = False
+        self.left_motor_moving = False
 
 class MotorJoint:
     def __init__(self,
@@ -36,3 +40,5 @@ class MotorJoint:
         self.min_pos = min_pos
         self.joint_angle = 0.0
         self.joint_velocity = 0.0
+        self.motor_safety_check = False
+        self.motor_moving = False

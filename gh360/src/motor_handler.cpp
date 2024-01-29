@@ -182,7 +182,7 @@ bool gh360::MotorHandler::initMotorPositions()
                 // if ((soft_joint->get_right_motor_id() != 13) && (soft_joint->get_right_motor_id() != 10)) continue;
                 if (!(soft_joint->get_initialize())) continue;
 
-                RCLCPP_INFO(this->get_logger(), "Starting Motor Calibration!");
+                RCLCPP_INFO(this->get_logger(), "Starting Motor Calibration: "+soft_joint->get_joint_name());
                 // this->setVelocityProfile(soft_joint, 10.0);
 
                 right_present_position = soft_joint->get_right_motor_present_position();
@@ -240,7 +240,7 @@ bool gh360::MotorHandler::initMotorPositions()
                 // if ((soft_joint->get_right_motor_id() != 13) && (soft_joint->get_right_motor_id() != 10)) continue;
                 if (!(soft_joint->get_initialize())) continue;
 
-                RCLCPP_INFO(this->get_logger(), "Ajusting cocontraction");
+                RCLCPP_INFO(this->get_logger(), "Ajusting cocontraction: "+soft_joint->get_joint_name());
 
                 right_present_position = soft_joint->get_right_motor_present_position();
                 left_present_position = soft_joint->get_left_motor_present_position();
@@ -319,7 +319,7 @@ bool gh360::MotorHandler::initMotorPositions()
         //------------------------
         //EQ POSITION CALIBARTION
         //------------------------
-        RCLCPP_INFO(this->get_logger(), "Finding base equilibrium point position...");
+        
         double right_present_position, left_present_position, present_joint_angle;
         //  left_present_current, right_present_current,
 
@@ -328,6 +328,8 @@ bool gh360::MotorHandler::initMotorPositions()
             if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i]))
             {
                 if (!(soft_joint->get_initialize())) continue;
+
+                RCLCPP_INFO(this->get_logger(), "Finding base equilibrium point position: "+soft_joint->get_joint_name());
 
                 right_present_position = soft_joint->get_right_motor_present_position();
                 left_present_position = soft_joint->get_left_motor_present_position();
@@ -517,11 +519,12 @@ void gh360::MotorHandler::timer_callback()
     this->syncRead(this->joints_motor_model->Present_Position.size, this->joints_motor_model->Present_Position.address);
     this->syncRead(this->joints_motor_model->Present_Velocity.size, this->joints_motor_model->Present_Velocity.address);
     this->syncRead(this->joints_motor_model->Present_Current.size, this->joints_motor_model->Present_Current.address);
-    this->syncRead(this->joints_motor_model->Present_Temperature.size, this->joints_motor_model->Present_Temperature.address);
+    // this->syncRead(this->joints_motor_model->Present_Temperature.size, this->joints_motor_model->Present_Temperature.address);
+    this->syncRead(this->joints_motor_model->Moving.size, this->joints_motor_model->Moving.address);
 
     if (!(this->motors_initiated))
     {
-        RCLCPP_INFO(this->get_logger(), "Initiating Motors");
+        // RCLCPP_INFO(this->get_logger(), "Initiating Motors");
         this->motors_initiated = this->initMotorPositions();
     }
     
@@ -630,7 +633,7 @@ bool gh360::MotorHandler::initMovementCheck(bool reference_current/*=false*/, bo
                 //     RCLCPP_INFO(this->get_logger(), "Joint reached max joint angle. Moving to: %f, %f", soft_joint->get_right_motor_goal_position(), soft_joint->get_left_motor_goal_position());
                 // }
             }
-            else if (soft_joint->get_joint_angle() <= soft_joint->get_min_joint_angle())
+            else if ((soft_joint->get_joint_angle() <= soft_joint->get_min_joint_angle()) && (soft_joint->get_joint_name() != "shoulder_pitch"))
             {
                 if (soft_joint->get_right_motor_goal_position() < soft_joint->get_right_motor_present_position())
                 {
@@ -700,7 +703,14 @@ bool gh360::MotorHandler::safetyCheck()
             if ((abs(soft_joint->get_right_motor_present_current()) > this->joints_motor_model->CURRENT_LIMIT) || (abs(soft_joint->get_left_motor_present_current()) > this->joints_motor_model->CURRENT_LIMIT))
             {
                 this->setTorqueEnable(soft_joint, 0);
+                soft_joint->set_right_motor_safety_check(false);
+                soft_joint->set_left_motor_safety_check(false);
                 safety_check = false;
+            }
+            else
+            {
+                soft_joint->set_right_motor_safety_check(true);
+                soft_joint->set_left_motor_safety_check(true);
             }
         }
         else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
@@ -710,7 +720,12 @@ bool gh360::MotorHandler::safetyCheck()
             if (abs(motor_joint->get_motor_present_current()) > this->joints_motor_model->CURRENT_LIMIT)
             {
                 this->setTorqueEnable(motor_joint, 0);
+                motor_joint->set_motor_safety_check(false);
                 safety_check = false;
+            }
+            else
+            {
+                motor_joint->set_motor_safety_check(true);
             }
         }
     }
@@ -733,7 +748,18 @@ gh360_interfaces::msg::PortStatus gh360::MotorHandler::getMotorStatus()
             motor_status_msg.present_velocity = soft_joint->get_right_motor_present_velocity();
             motor_status_msg.present_current = soft_joint->get_right_motor_present_current();
             motor_status_msg.present_temperature = soft_joint->get_right_motor_present_temperature();
+            motor_status_msg.safety_check = soft_joint->get_right_motor_safety_check();
+            motor_status_msg.moving = soft_joint->get_right_motor_moving();
             port_status_msg.motors.push_back(motor_status_msg);
+            // if (soft_joint->get_right_motor_moving())
+            // {
+            //     RCLCPP_INFO(this->get_logger(), "Moving: true");
+            // }
+            // else
+            // {
+            //     RCLCPP_INFO(this->get_logger(), "Moving: false");
+            // }
+            
             // response->motor_status.push_back(motor_status_msg);
 
             motor_status_msg = gh360_interfaces::msg::MotorStatus();
@@ -742,6 +768,8 @@ gh360_interfaces::msg::PortStatus gh360::MotorHandler::getMotorStatus()
             motor_status_msg.present_velocity = soft_joint->get_left_motor_present_velocity();
             motor_status_msg.present_current = soft_joint->get_left_motor_present_current();
             motor_status_msg.present_temperature = soft_joint->get_left_motor_present_temperature();
+            motor_status_msg.safety_check = soft_joint->get_left_motor_safety_check();
+            motor_status_msg.moving = soft_joint->get_left_motor_moving();
             port_status_msg.motors.push_back(motor_status_msg);
             // response->motor_status.push_back(motor_status_msg);
         }
@@ -753,6 +781,8 @@ gh360_interfaces::msg::PortStatus gh360::MotorHandler::getMotorStatus()
             motor_status_msg.present_velocity = motor_joint->get_motor_present_velocity();
             motor_status_msg.present_current = motor_joint->get_motor_present_current();
             motor_status_msg.present_temperature = motor_joint->get_motor_present_temperature();
+            motor_status_msg.safety_check = motor_joint->get_motor_safety_check();
+            motor_status_msg.moving = motor_joint->get_motor_moving();
             port_status_msg.motors.push_back(motor_status_msg);
             // response->motor_status.push_back(motor_status_msg);
         }

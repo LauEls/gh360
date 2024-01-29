@@ -111,7 +111,16 @@ void MotorJoint::set_motor_status(int data, uint8_t address)
     {
         this->motor_present_temperature = data;
     }
+    else if (address == this->motor_model->Moving.address)
+    {
+        this->motor_moving = data;
+    }
     
+}
+
+void MotorJoint::set_motor_safety_check(bool safety_check)
+{
+    this->motor_safety_check = safety_check;
 }
 
 void MotorJoint::set_joint_angle(double new_joint_angle)
@@ -180,6 +189,16 @@ double MotorJoint::get_motor_present_current()
 double MotorJoint::get_motor_present_temperature()
 {
     return this->motor_present_temperature;
+}
+
+bool MotorJoint::get_motor_moving()
+{
+    return this->motor_moving;
+}
+
+bool MotorJoint::get_motor_safety_check()
+{
+    return this->motor_safety_check;
 }
 
 double MotorJoint::get_motor_goal_position()

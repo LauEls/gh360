@@ -28,6 +28,7 @@ class MotorJoint: public Joint
         void set_motor_goal_current(double goal_current);
         void set_torque_enabled(bool torque);
         void set_motor_status(int data, uint8_t address);
+        void set_motor_safety_check(bool safety_check);
         void set_offset(double offset);
 
         std::string get_joint_name();
@@ -43,6 +44,8 @@ class MotorJoint: public Joint
         double get_motor_present_velocity();
         double get_motor_present_current();
         double get_motor_present_temperature();
+        bool get_motor_moving();
+        bool get_motor_safety_check();
         double get_motor_goal_position();
         int get_motor_goal_position_int();
         double get_motor_goal(uint8_t address);
@@ -67,6 +70,8 @@ class MotorJoint: public Joint
         double motor_goal_current;
         // Motor Temperature in degrees
         double motor_present_temperature;
+        bool motor_moving;
+        bool motor_safety_check;
         double offset;
 
         bool motor_init_pos = true;

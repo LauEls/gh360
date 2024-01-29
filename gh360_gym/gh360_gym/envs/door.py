@@ -54,6 +54,7 @@ class DoorEnv(gym.Env):
 
         self.control_timestep = 0.2
         self.model_timestep = 0.1
+        self.reseted = False
         # print("control dimensions: ",self.control_dim)
 
         # input and output max and min (allow for either explicit lists or single numbers)
@@ -86,6 +87,27 @@ class DoorEnv(gym.Env):
             PortStatus,
             '/door/motor_status',
             self.hinge_callback,
+            10
+        )
+
+        self.node.create_subscription(
+            PortStatus,
+            '/shoulder/motor_status',
+            self.motor_status_callback,
+            10
+        )
+
+        self.node.create_subscription(
+            PortStatus,
+            '/upperarm/motor_status',
+            self.motor_status_callback,
+            10
+        )
+
+        self.node.create_subscription(
+            PortStatus,
+            '/lowerarm/motor_status',
+            self.motor_status_callback,
             10
         )
 
@@ -176,6 +198,22 @@ class DoorEnv(gym.Env):
         self.hinge_qpos =   (motor_pos - offset) * hinge_angle_multi * np.pi/180
 
         # print("Hinge qpos: "+str(self.hinge_qpos))
+    
+    def motor_status_callback(self, msg):
+        # print("recieved message!")
+        for motor in msg.motors:
+            for joint in self.arm:
+                if type(joint) == SoftJoint:
+                    if joint.id_right_motor == motor.motor_id:
+                        joint.right_motor_safety_check = motor.safety_check
+                        joint.right_motor_moving = motor.moving
+                    elif joint.id_left_motor == motor.motor_id:
+                        joint.left_motor_safety_check = motor.safety_check
+                        joint.left_motor_moving = motor.moving
+                elif type(joint) == MotorJoint:
+                    if joint.id_motor == motor.motor_id:
+                        joint.motor_safety_check = motor.safety_check
+                        joint.motor_moving = motor.moving
 
     def safe_to_file(self):
         arm_status = np.concatenate((self.shoulder_motor_states_msg.motor_status, self.upperarm_motor_states_msg.motor_status, self.lowerarm_motor_states_msg.motor_status), axis=None)
@@ -310,8 +348,41 @@ class DoorEnv(gym.Env):
         Maybe motor load signals
         """
         return {"internal_state":self.internal_state}
+    
+    def robot_moving_check(self):
+        moving = False
+        for joint in self.arm:
+            if type(joint) == SoftJoint:
+                if joint.right_motor_moving or joint.left_motor_moving:
+                    moving = True
+            elif type(joint) == MotorJoint:
+                if joint.motor_moving:
+                    moving = True
+
+        return moving
+    
+    def robot_safety_check(self):
+        safety_check = True
+        for joint in self.arm:
+            if type(joint) == SoftJoint:
+                if not joint.right_motor_safety_check or not joint.left_motor_safety_check:
+                    safety_check = True
+            elif type(joint) == MotorJoint:
+                if not joint.motor_safety_check:
+                    safety_check = True
+
+        return safety_check
 
     def reset(self):
+        if self.reseted:
+            obs = self._get_obs()
+            return obs
+        
+        if not self.robot_safety_check():
+            # wait for user_input
+            input("Press Enter to continue...")
+            pass
+
         self.internal_state = 0
 
         # action = [0.0, 0.0, 4.0, 2.5, 6.28, 0.0, 0.0]
@@ -352,7 +423,21 @@ class DoorEnv(gym.Env):
         upperarm_motor_states_msg = upperarm_future.result()
         lowerarm_motor_states_msg = lowerarm_future.result()
 
-        time.sleep(6)
+        # time.sleep(6)
+        # start_time = time.time()
+        # while time.time() - start_time < 6:
+        #     rclpy.spin_once(self.node)
+        #     print(self.robot_moving_check())
+            # rclpy.spin_once(self.node)
+        
+        start_time = time.time()
+        while time.time() - start_time < 1:
+            rclpy.spin_once(self.node)
+            # print(self.robot_moving_check())
+
+        # rclpy.spin_once(self.node)
+        while self.robot_moving_check():
+            rclpy.spin_once(self.node)
 
         action = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
@@ -380,20 +465,23 @@ class DoorEnv(gym.Env):
 
                 motor_vel_req.motor_goal_velocities.append(set_motor_msg)
 
-        shoulder_future = self.client_shoulder.call_async(motor_vel_req)
-        upperarm_future = self.client_upperarm.call_async(motor_vel_req)
-        lowerarm_future = self.client_lowerarm.call_async(motor_vel_req)
+        shoulder_velocity_future = self.client_velocity_shoulder.call_async(motor_vel_req)
+        upperarm_velocity_future = self.client_velocity_upperarm.call_async(motor_vel_req)
+        lowerarm_velocity_future = self.client_velocity_lowerarm.call_async(motor_vel_req)
 
-        rclpy.spin_until_future_complete(self.node, shoulder_future)
-        rclpy.spin_until_future_complete(self.node, upperarm_future)
-        rclpy.spin_until_future_complete(self.node, lowerarm_future)
-        shoulder_motor_states_msg = shoulder_future.result()
-        upperarm_motor_states_msg = upperarm_future.result()
-        lowerarm_motor_states_msg = lowerarm_future.result()
+        rclpy.spin_until_future_complete(self.node, shoulder_velocity_future)
+        rclpy.spin_until_future_complete(self.node, upperarm_velocity_future)
+        rclpy.spin_until_future_complete(self.node, lowerarm_velocity_future)
+        shoulder_motor_states_msg = shoulder_velocity_future.result()
+        upperarm_motor_states_msg = upperarm_velocity_future.result()
+        lowerarm_motor_states_msg = lowerarm_velocity_future.result()
+
+        time.sleep(1)
 
         obs = self._get_obs()
         info = self._get_info()
         print("finished reset")
+        self.reseted = True
         return obs
     
     def set_eq_motor_goal_position(self, delta_action):
@@ -538,13 +626,14 @@ class DoorEnv(gym.Env):
         Send action to the arm controller
 
         """
+        self.reseted = False
         # print("step execution")
         # self.motor_goal_req = self.set_eq_motor_goal_position(action)
 
         self.motor_goal_req = self.set_eq_motor_goal_velocity(action)
         # zero_step = np.zeros(13)
         # zero_action_req = self.set_eq_motor_goal_position(zero_step)
-
+        # print(self.motor_goal_req)
         # print(self.motor_pos_req)
 
         policy_step = True
