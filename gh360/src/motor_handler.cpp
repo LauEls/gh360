@@ -520,7 +520,7 @@ void gh360::MotorHandler::timer_callback()
     this->syncRead(this->joints_motor_model->Present_Velocity.size, this->joints_motor_model->Present_Velocity.address);
     this->syncRead(this->joints_motor_model->Present_Current.size, this->joints_motor_model->Present_Current.address);
     // this->syncRead(this->joints_motor_model->Present_Temperature.size, this->joints_motor_model->Present_Temperature.address);
-    this->syncRead(this->joints_motor_model->Moving.size, this->joints_motor_model->Moving.address);
+    // this->syncRead(this->joints_motor_model->Moving.size, this->joints_motor_model->Moving.address);
 
     if (!(this->motors_initiated))
     {

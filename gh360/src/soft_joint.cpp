@@ -153,6 +153,14 @@ void SoftJoint::set_right_motor_status(int data, uint8_t address)
     {
         // this->right_motor_present_velocity = data * 0.229 * 0.10472;
         this->right_motor_present_velocity = velocityIntToDouble(data);
+        if (this->right_motor_present_velocity > 0.0)
+        {
+            this->right_motor_moving = true;
+        }
+        else
+        {
+            this->right_motor_moving = false;
+        }
     }
     else if (address == this->right_motor_model->Present_Current.address) 
     {
@@ -194,6 +202,14 @@ void SoftJoint::set_left_motor_status(int data, uint8_t address)
     {
         // this->left_motor_present_velocity = data * 0.229;
         this->left_motor_present_velocity = velocityIntToDouble(data);
+        if (this->left_motor_present_velocity > 0.0)
+        {
+            this->left_motor_moving = true;
+        }
+        else
+        {
+            this->left_motor_moving = false;
+        }
     }
     else if (address == this->left_motor_model->Present_Current.address) 
     {

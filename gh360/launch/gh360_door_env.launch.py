@@ -21,9 +21,17 @@ def generate_launch_description():
     door_motor = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360'), 'launch'), '/door_motor.launch.py'])
     )
+
+    handle_sensor_filter_node = Node(
+        package='gh360_examples',
+        executable='handle_sensor_filter',
+        name='handle_sensor_filter',
+        namespace='door',
+        output='screen')
     
     return LaunchDescription([
         motor_handler,
         encoder_handler,
         door_motor,
+        handle_sensor_filter_node
     ])

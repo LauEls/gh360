@@ -92,6 +92,14 @@ void MotorJoint::set_motor_status(int data, uint8_t address)
     {
         // this->motor_present_velocity = data * 0.229 * 0.10472;
         this->motor_present_velocity = this->velocityIntToDouble(data);
+        if (this->motor_present_velocity > 0.0)
+        {
+            this->motor_moving = true;
+        }
+        else
+        {
+            this->motor_moving = false;
+        }
     }
     else if (address == this->motor_model->Present_Current.address) 
     {

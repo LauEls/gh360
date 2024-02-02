@@ -9,7 +9,7 @@ from gym import spaces
 import rclpy
 from rclpy.node import Node
 
-from std_msgs.msg import String, UInt16
+from std_msgs.msg import String, UInt16, Float64
 from ros2pkg.api import get_prefix_path
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
@@ -78,8 +78,8 @@ class DoorEnv(gym.Env):
             10
         )
         self.node.create_subscription(
-            UInt16,
-            '/handle_angle',
+            Float64,
+            '/door/filtered_handle_angle',
             self.handle_callback,
             10
         )
@@ -186,16 +186,15 @@ class DoorEnv(gym.Env):
                     # gui_joint.joint_angle.config(text="Joint Angle: "+self.get_label_str(joint.current_pos))
 
     def handle_callback(self, msg):
-        offset = 0.0
-        self.handle_qpos = np.array([(msg.data-offset)*(5.236/1023)], dtype=np.float64)
+        self.handle_qpos = np.array([msg.data], dtype=np.float64)
 
     def hinge_callback(self, msg):
         motor_pos = msg.motors[0].present_position
         offset = 3.2505
         max_pos = 3.548 - offset
-        hinge_angle_multi = 17.1887 / max_pos
+        hinge_angle_multi = (17.1887*np.pi/180) / max_pos
 
-        self.hinge_qpos =   (motor_pos - offset) * hinge_angle_multi * np.pi/180
+        self.hinge_qpos =   (motor_pos - offset) * hinge_angle_multi
 
         # print("Hinge qpos: "+str(self.hinge_qpos))
     
@@ -366,10 +365,50 @@ class DoorEnv(gym.Env):
         for joint in self.arm:
             if type(joint) == SoftJoint:
                 if not joint.right_motor_safety_check or not joint.left_motor_safety_check:
-                    safety_check = True
+                    safety_check = False
+                    break
             elif type(joint) == MotorJoint:
                 if not joint.motor_safety_check:
-                    safety_check = True
+                    safety_check = False
+                    print("Forearm Roll safety check: "+str(safety_check))
+                    break
+
+        if not safety_check:
+            action = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            motor_vel_req = MotorVelocityStep.Request()
+
+            for i in range(len(self.arm)):
+                motor_vel = action[i]
+
+                if type(self.arm[i]) == SoftJoint:
+                    set_motor_msg = SetVelocity()
+                    set_motor_msg.id = self.arm[i].id_right_motor
+                    set_motor_msg.velocity = motor_vel
+
+                    motor_vel_req.motor_goal_velocities.append(set_motor_msg)
+
+                    set_motor_msg = SetVelocity()
+                    set_motor_msg.id = self.arm[i].id_left_motor
+                    set_motor_msg.velocity = motor_vel
+
+                    motor_vel_req.motor_goal_velocities.append(set_motor_msg)
+                else:
+                    set_motor_msg = SetVelocity()
+                    set_motor_msg.id = self.arm[i].id_motor
+                    set_motor_msg.velocity = motor_vel
+
+                    motor_vel_req.motor_goal_velocities.append(set_motor_msg)
+
+            shoulder_velocity_future = self.client_velocity_shoulder.call_async(motor_vel_req)
+            upperarm_velocity_future = self.client_velocity_upperarm.call_async(motor_vel_req)
+            lowerarm_velocity_future = self.client_velocity_lowerarm.call_async(motor_vel_req)
+
+            rclpy.spin_until_future_complete(self.node, shoulder_velocity_future)
+            rclpy.spin_until_future_complete(self.node, upperarm_velocity_future)
+            rclpy.spin_until_future_complete(self.node, lowerarm_velocity_future)
+            shoulder_motor_states_msg = shoulder_velocity_future.result()
+            upperarm_motor_states_msg = upperarm_velocity_future.result()
+            lowerarm_motor_states_msg = lowerarm_velocity_future.result()
 
         return safety_check
 
@@ -378,10 +417,7 @@ class DoorEnv(gym.Env):
             obs = self._get_obs()
             return obs
         
-        if not self.robot_safety_check():
-            # wait for user_input
-            input("Press Enter to continue...")
-            pass
+        
 
         self.internal_state = 0
 
@@ -438,6 +474,10 @@ class DoorEnv(gym.Env):
         # rclpy.spin_once(self.node)
         while self.robot_moving_check():
             rclpy.spin_once(self.node)
+            if not self.robot_safety_check():
+                # wait for user_input
+                input("Press Enter to continue...")
+                pass
 
         action = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
@@ -626,6 +666,10 @@ class DoorEnv(gym.Env):
         Send action to the arm controller
 
         """
+        if not self.robot_safety_check():
+            # wait for user_input
+            input("Press Enter to continue...")
+            pass
         self.reseted = False
         # print("step execution")
         # self.motor_goal_req = self.set_eq_motor_goal_position(action)
@@ -687,7 +731,8 @@ class DoorEnv(gym.Env):
     def check_success(self):
         # hinge_qpos = self.sim.data.qpos[self.hinge_qpos_addr]
         # return self.hinge_qpos < -0.3
-        return False
+        print("hinge qpos: "+str(self.hinge_qpos))
+        return np.abs(self.hinge_qpos) > 0.3
 
     def reward(self):
         """
@@ -708,6 +753,9 @@ class DoorEnv(gym.Env):
             dist = np.linalg.norm(self.gripper_to_handle)
             reaching_reward = 0.25 * (1 - np.tanh(10.0 * dist))
             reward += reaching_reward
+
+            # handle_qpos = self.sim.data.qpos[self.handle_qpos_addr]
+            reward += np.clip(0.25 * np.abs(self.handle_qpos / 0.54), 0, 0.25)
 
         # reward = np.tanh(obs)
         return reward
