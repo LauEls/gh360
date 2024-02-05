@@ -7,6 +7,7 @@ class SoftJoint:
                  id_left_motor,
                  max_pos,
                  min_pos,
+                 max_current
                  ):
 
         self.joint_name = joint_name
@@ -15,8 +16,12 @@ class SoftJoint:
         self.id_left_motor = id_left_motor
         self.max_pos = max_pos
         self.min_pos = min_pos
+        self.max_current = max_current
+        self.min_current = -max_current
         self.right_motor_pos = 0.0
         self.left_motor_pos = 0.0
+        self.right_motor_current = 0.0
+        self.left_motor_current = 0.0
         self.joint_angle = 0.0
         self.joint_velocity = 0.0
         self.right_motor_safety_check = False
@@ -30,7 +35,8 @@ class MotorJoint:
                  port_name,
                  id_motor,
                  max_pos,
-                 min_pos
+                 min_pos,
+                 max_current
                  ):
 
         self.joint_name = joint_name
@@ -38,6 +44,9 @@ class MotorJoint:
         self.id_motor = id_motor
         self.max_pos = max_pos
         self.min_pos = min_pos
+        self.max_current = max_current
+        self.min_current = -max_current
+        self.motor_current = 0.0
         self.joint_angle = 0.0
         self.joint_velocity = 0.0
         self.motor_safety_check = False

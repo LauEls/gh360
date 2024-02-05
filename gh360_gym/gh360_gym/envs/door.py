@@ -156,19 +156,19 @@ class DoorEnv(gym.Env):
         self.observation_space = spaces.Box(low, high)
 
         self.arm = []
-        new_joint = SoftJoint(joint_name="shoulder_yaw", port_name="shoulder", id_right_motor=1, id_left_motor=2, max_pos=1.0, min_pos=-1.0)
+        new_joint = SoftJoint(joint_name="shoulder_yaw", port_name="shoulder", id_right_motor=1, id_left_motor=2, max_pos=1.0, min_pos=-1.0, max_current=3000)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="shoulder_roll", port_name="shoulder", id_right_motor=3, id_left_motor=4, max_pos=0.5, min_pos=-0.5)
+        new_joint = SoftJoint(joint_name="shoulder_roll", port_name="shoulder", id_right_motor=3, id_left_motor=4, max_pos=0.5, min_pos=-0.5, max_current=3000)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="shoulder_pitch", port_name="shoulder", id_right_motor=5, id_left_motor=6, max_pos=0.5, min_pos=0.0)
+        new_joint = SoftJoint(joint_name="shoulder_pitch", port_name="shoulder", id_right_motor=5, id_left_motor=6, max_pos=0.5, min_pos=0.0, max_current=3000)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="upperarm_roll", port_name="upperarm", id_right_motor=7, id_left_motor=8, max_pos=2.0, min_pos=0.0)
+        new_joint = SoftJoint(joint_name="upperarm_roll", port_name="upperarm", id_right_motor=7, id_left_motor=8, max_pos=2.0, min_pos=0.0, max_current=3000)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="elbow", port_name="upperarm", id_right_motor=10, id_left_motor=9, max_pos=1.7, min_pos=0.0)
+        new_joint = SoftJoint(joint_name="elbow", port_name="upperarm", id_right_motor=10, id_left_motor=9, max_pos=1.7, min_pos=0.0, max_current=3000)
         self.arm.append(new_joint)
-        new_joint = MotorJoint(joint_name="lowerarm_roll", port_name="lowerarm", id_motor=11, max_pos=np.pi/2, min_pos=-np.pi/2)
+        new_joint = MotorJoint(joint_name="lowerarm_roll", port_name="lowerarm", id_motor=11, max_pos=np.pi/2, min_pos=-np.pi/2, max_current=1500)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="wrist_pitch", port_name="lowerarm", id_right_motor=13, id_left_motor=12, max_pos=1.4, min_pos=-1.4)
+        new_joint = SoftJoint(joint_name="wrist_pitch", port_name="lowerarm", id_right_motor=13, id_left_motor=12, max_pos=1.4, min_pos=-1.4, max_current=1500)
         self.arm.append(new_joint)
 
         file_base_dir = '/home/laurenz/phd_project/sac/scripts/test_data/v6'
@@ -186,7 +186,7 @@ class DoorEnv(gym.Env):
                     # gui_joint.joint_angle.config(text="Joint Angle: "+self.get_label_str(joint.current_pos))
 
     def handle_callback(self, msg):
-        self.handle_qpos = np.array([msg.data], dtype=np.float64)
+        self.handle_qpos = np.clip(np.array([msg.data], dtype=np.float64),0.0,np.pi/2)
 
     def hinge_callback(self, msg):
         motor_pos = msg.motors[0].present_position
@@ -206,13 +206,16 @@ class DoorEnv(gym.Env):
                     if joint.id_right_motor == motor.motor_id:
                         joint.right_motor_safety_check = motor.safety_check
                         joint.right_motor_moving = motor.moving
+                        joint.right_motor_current = motor.present_current
                     elif joint.id_left_motor == motor.motor_id:
                         joint.left_motor_safety_check = motor.safety_check
                         joint.left_motor_moving = motor.moving
+                        joint.left_motor_current = motor.present_current
                 elif type(joint) == MotorJoint:
                     if joint.id_motor == motor.motor_id:
                         joint.motor_safety_check = motor.safety_check
                         joint.motor_moving = motor.moving
+                        joint.motor_current = motor.present_current
 
     def safe_to_file(self):
         arm_status = np.concatenate((self.shoulder_motor_states_msg.motor_status, self.upperarm_motor_states_msg.motor_status, self.lowerarm_motor_states_msg.motor_status), axis=None)
@@ -295,8 +298,8 @@ class DoorEnv(gym.Env):
         robot_gripper_qpos = []
         robot_gripper_qvel = []
 
-        door_pos = [-0.271, 0.411, 0.908]
-        handle_pos = [-0.2161, 0.4061, 0.88251]
+        door_pos = [-0.2300001, 0.46023886, 1.08]
+        handle_pos = [-0.14994089, 0.40230259, 1.0534252]
         
 
         #ROBOT SPECIFIC PARAMETERS
@@ -325,8 +328,8 @@ class DoorEnv(gym.Env):
 
 
         #ENVIRONMENT SPECIFIC PARAMETERS
-        door_pos = [-0.271, 0.411, 0.908]
-        handle_pos = [-0.2161, 0.4061, 0.88251]
+        door_pos = [-0.31498644, 0.41614122, 0.95572559]
+        handle_pos = [-0.23080879, 0.36672512, 0.87658621]
         # door_to_eef_pos = door_pos - robot_eef_pos
         handle_to_eef_pos = handle_pos - robot_eef_pos
         self.gripper_to_handle = handle_to_eef_pos
@@ -604,6 +607,10 @@ class DoorEnv(gym.Env):
                 elif delta_eq_pos < 0 and self.arm[joint_iter].joint_angle <= self.arm[joint_iter].min_pos:
                     # print("min joint pos reached")
                     delta_eq_pos = 0.0
+                elif delta_eq_pos > 0 and (self.arm[joint_iter].right_motor_current >= self.arm[joint_iter].max_current or self.arm[joint_iter].left_motor_current >= self.arm[joint_iter].max_current):
+                    delta_eq_pos = 0.0
+                elif delta_eq_pos < 0 and (self.arm[joint_iter].right_motor_current <= self.arm[joint_iter].min_current or self.arm[joint_iter].left_motor_current <= self.arm[joint_iter].min_current):
+                    delta_eq_pos = 0.0
 
                 if self.control_dim == 13:
                     delta_stiffness = delta_action[motor_iter+1]
@@ -731,7 +738,7 @@ class DoorEnv(gym.Env):
     def check_success(self):
         # hinge_qpos = self.sim.data.qpos[self.hinge_qpos_addr]
         # return self.hinge_qpos < -0.3
-        print("hinge qpos: "+str(self.hinge_qpos))
+        #print("hinge qpos: "+str(self.hinge_qpos))
         return np.abs(self.hinge_qpos) > 0.3
 
     def reward(self):

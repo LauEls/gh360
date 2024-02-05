@@ -36,7 +36,7 @@ class HandleSensorFilter(Node):
         self.motor_status = msg.motors[0]
 
     def timer_callback(self):
-        self.filtered_handle_angle.data = (234.31-np.median(self.data_buffer)*(300/1023))*np.pi/180
+        self.filtered_handle_angle.data = (234.31-np.median(self.data_buffer)*(300/1023))*np.pi/180 - 0.1536
         # print("Median: "+str(np.median(self.data_buffer)*(300/1023)))
         # print("Mean: "+str(np.mean(self.data_buffer)*(300/1023)))
         self.publisher_.publish(self.filtered_handle_angle)
