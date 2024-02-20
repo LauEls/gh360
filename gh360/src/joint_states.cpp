@@ -12,7 +12,7 @@ gh360::JointStates::JointStates()
     new_joint->set_joint_angle(0.0);
     this->joints.push_back(new_joint);
     new_joint = new SoftJoint();
-    new_joint->set_joint_name("shouler_roll");
+    new_joint->set_joint_name("shoulder_roll");
     new_joint->set_joint_angle(0.0);
     this->joints.push_back(new_joint);
     new_joint = new SoftJoint();

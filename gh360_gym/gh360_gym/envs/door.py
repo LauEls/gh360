@@ -156,19 +156,19 @@ class DoorEnv(gym.Env):
         self.observation_space = spaces.Box(low, high)
 
         self.arm = []
-        new_joint = SoftJoint(joint_name="shoulder_yaw", port_name="shoulder", id_right_motor=1, id_left_motor=2, max_pos=1.0, min_pos=-1.0, max_current=3000)
+        new_joint = SoftJoint(joint_name="shoulder_yaw", port_name="shoulder", id_right_motor=1, id_left_motor=2, max_pos=1.0, min_pos=-1.0, max_current=1000)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="shoulder_roll", port_name="shoulder", id_right_motor=3, id_left_motor=4, max_pos=0.5, min_pos=-0.5, max_current=3000)
+        new_joint = SoftJoint(joint_name="shoulder_roll", port_name="shoulder", id_right_motor=3, id_left_motor=4, max_pos=1.2, min_pos=-1.2, max_current=1000)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="shoulder_pitch", port_name="shoulder", id_right_motor=5, id_left_motor=6, max_pos=0.5, min_pos=0.0, max_current=3000)
+        new_joint = SoftJoint(joint_name="shoulder_pitch", port_name="shoulder", id_right_motor=5, id_left_motor=6, max_pos=1.0, min_pos=0.0, max_current=1000)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="upperarm_roll", port_name="upperarm", id_right_motor=7, id_left_motor=8, max_pos=2.0, min_pos=0.0, max_current=3000)
+        new_joint = SoftJoint(joint_name="upperarm_roll", port_name="upperarm", id_right_motor=7, id_left_motor=8, max_pos=2.5, min_pos=0.0, max_current=1000)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="elbow", port_name="upperarm", id_right_motor=10, id_left_motor=9, max_pos=1.7, min_pos=0.0, max_current=3000)
+        new_joint = SoftJoint(joint_name="elbow", port_name="upperarm", id_right_motor=10, id_left_motor=9, max_pos=1.7, min_pos=0.0, max_current=1000)
         self.arm.append(new_joint)
-        new_joint = MotorJoint(joint_name="lowerarm_roll", port_name="lowerarm", id_motor=11, max_pos=np.pi/2, min_pos=-np.pi/2, max_current=1500)
+        new_joint = MotorJoint(joint_name="lowerarm_roll", port_name="lowerarm", id_motor=11, max_pos=np.pi/2, min_pos=-np.pi/2, max_current=1000)
         self.arm.append(new_joint)
-        new_joint = SoftJoint(joint_name="wrist_pitch", port_name="lowerarm", id_right_motor=13, id_left_motor=12, max_pos=1.4, min_pos=-1.4, max_current=1500)
+        new_joint = SoftJoint(joint_name="wrist_pitch", port_name="lowerarm", id_right_motor=13, id_left_motor=12, max_pos=1.4, min_pos=-1.4, max_current=1000)
         self.arm.append(new_joint)
 
         file_base_dir = '/home/laurenz/phd_project/sac/scripts/test_data/v6'
@@ -298,8 +298,10 @@ class DoorEnv(gym.Env):
         robot_gripper_qpos = []
         robot_gripper_qvel = []
 
-        door_pos = [-0.2300001, 0.46023886, 1.08]
-        handle_pos = [-0.14994089, 0.40230259, 1.0534252]
+        #from sim: door_pos = [-0.2300001, 0.46023886, 1.08]
+        door_pos = [-0.31, 0.46, 1.08]
+        #in sim: handle_pos = [-0.14994089, 0.40230259, 1.0534252]
+        handle_pos = [-0.15, 0.4, 1.05]
         
 
         #ROBOT SPECIFIC PARAMETERS
@@ -425,7 +427,7 @@ class DoorEnv(gym.Env):
         self.internal_state = 0
 
         # action = [0.0, 0.0, 4.0, 2.5, 6.28, 0.0, 0.0]
-        action = [0.0, 0.7854, 4.0, 2.5, 6.28, 0.0, 0.0]
+        action = [0.0, 0.0, 4.0, 2.5, 6.28, 0.0, 0.0]
 
         motor_pos_req = MotorPositionStep.Request()
 
@@ -640,17 +642,21 @@ class DoorEnv(gym.Env):
                 motor_vel_req.motor_goal_velocities.append(set_motor_msg)
 
                 
-            else:
+            elif type(self.arm[joint_iter]) == MotorJoint:
                 delta_motor_pos = delta_action[motor_iter]
 
                 if delta_motor_pos > 0:
                     if self.arm[joint_iter].joint_angle + delta_motor_pos > self.arm[joint_iter].max_pos:
                         delta_motor_pos = self.arm[joint_iter].max_pos - self.arm[joint_iter].joint_angle
                         # print("max joint pos reached")
+                    if self.arm[joint_iter].motor_current >= self.arm[joint_iter].max_current:
+                        delta_motor_pos = 0.0
                 else:
                     if self.arm[joint_iter].joint_angle + delta_motor_pos < self.arm[joint_iter].min_pos:
                         delta_motor_pos = self.arm[joint_iter].min_pos - self.arm[joint_iter].joint_angle
                         # print("min joint pos reached")
+                    if self.arm[joint_iter].motor_current <= self.arm[joint_iter].min_current:
+                        delta_motor_pos = 0.0
 
 
                 motor_velocity = delta_motor_pos / self.control_timestep

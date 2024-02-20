@@ -64,10 +64,10 @@ class EEFPos(Node):
         #     self.marker_id_pub.publish(marker_id_msg)
         eef_pos = np.array([eef_pose_trans.transform.translation.x, eef_pose_trans.transform.translation.y, eef_pose_trans.transform.translation.z], dtype=np.float64)
         eef_quat = np.array([eef_pose_trans.transform.rotation.x, eef_pose_trans.transform.rotation.y, eef_pose_trans.transform.rotation.z, eef_pose_trans.transform.rotation.w], dtype=np.float64)
-        self.get_logger().info("EEF Pos in base_link frame: "+str(eef_pos))
-        self.get_logger().info("EEF Quat in base_link frame: "+str(eef_quat))
-        self.get_logger().info("EEF Pos in base_link frame: "+str(eef_pose_trans.transform.translation))
-        self.get_logger().info("EEF Quat in base_link frame: "+str(eef_pose_trans.transform.rotation))
+        self.get_logger().info("EEF Pos: "+str(eef_pos))
+        # self.get_logger().info("EEF Quat in base_link frame: "+str(eef_quat))
+        # self.get_logger().info("EEF Pos in base_link frame: "+str(eef_pose_trans.transform.translation))
+        # self.get_logger().info("EEF Quat in base_link frame: "+str(eef_pose_trans.transform.rotation))
 
 def main(args=None):
     rclpy.init(args=args)
