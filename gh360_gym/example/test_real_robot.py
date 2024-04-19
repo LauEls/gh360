@@ -23,7 +23,8 @@ def run_recorded_actions():
 # env.reset()
 
 def run_zero_actions():
-    motor_action = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    # motor_action = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+    motor_action = np.zeros(7)
     inc = 0.01
     cnt = 0
     done = False
@@ -34,7 +35,7 @@ def run_zero_actions():
         # if (motor_action[0] > np.pi*6):
         #     break
         obs, reward, done, info = env.step(motor_action)
-
+        print("obs: ", obs)
         cnt += 1
 
         if cnt > 50: break
@@ -47,7 +48,8 @@ def run_zero_actions():
 
 if __name__ == "__main__":
 
-    env = gym.make('gh360_gym/Door-v0')
+    # env = gym.make('gh360_gym/Door-v0')
+    env = gym.make('gh360_gym/TrajectoryFollowing-v0', stiffness_mode="no_stiffness",)
     
     env.reset()
 

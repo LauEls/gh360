@@ -13,6 +13,9 @@ class StreamDeckGH360Control:
     def __init__(self):
         self.asset_path = '/home/laurenz/python-elgato-streamdeck/src/Assets'
         self.disable_deck = False
+
+        
+       
         self.colcon_process = subprocess.Popen('', shell=True, executable="/bin/bash")
         self.encoder_process = subprocess.Popen('', shell=True, executable="/bin/bash")
         self.bridge_process = subprocess.Popen('', shell=True, executable="/bin/bash")
@@ -225,6 +228,28 @@ class StreamDeckGH360Control:
 
         # self.deck.set_touchscreen_image(touchscreen_image_bytes, 0, 0, 800, 100)
 
+    def closeStreamDeck(self):
+        self.processes = []
+        self.processes.append(self.colcon_process)
+        self.processes.append(self.encoder_process)
+        self.processes.append(self.bridge_process)
+        self.processes.append(self.gh360_process)
+        self.processes.append(self.monitor_process)
+        self.processes.append(self.gym_example_process)
+        self.processes.append(self.shoulder_move_home_process)
+        self.processes.append(self.upperarm_move_home_process)
+        self.processes.append(self.lowerarm_move_home_process)
+
+        for process in self.processes:
+            if process.poll() is None:
+                os.killpg(os.getpgid(process.pid), signal.SIGINT)
+                process.wait()
+                print("Process closed")
+            else:
+                print("Process already closed")
+        self.deck.reset()
+        self.deck.close()
+    
     def key_change_callback(self, deck, key, key_state):
         print("Key: " + str(key) + " state: " + str(key_state))
         # if not key_state and self.key_swap[key] == 0:
@@ -302,8 +327,10 @@ class StreamDeckGH360Control:
         if event == DialEventType.PUSH:
             print(f"dial pushed: {dial} state: {value}")
             if dial == 3 and value:
-                deck.reset()
-                deck.close()
+                self.closeStreamDeck()
+                pass
+                # deck.reset()
+                # deck.close()
             # else:
             #     # build an image for the touch lcd
             #     img = Image.new('RGB', (800, 100), 'black')
@@ -413,7 +440,8 @@ class StreamDeckGH360Control:
 
 if __name__ == "__main__":
     stream_deck_control = StreamDeckGH360Control()
-
+    # stream_deck_control = StreamDeckGH360Control()
+    # signal.signal(signal.SIGINT, stream_deck_control.closeStreamDeck)
     # Wait until all application threads have terminated (for this example,
     # this is when all deck handles are closed).
     for t in threading.enumerate():
@@ -421,5 +449,14 @@ if __name__ == "__main__":
             t.join()
         except RuntimeError:
             pass
+            # print("Deleting stream deck control")
+            # stream_deck_control.closeStreamDeck()
+        except KeyboardInterrupt:
+            print("Deleting stream deck control")
+            stream_deck_control.closeStreamDeck()
+        except:
+            pass
+
+    
 
 

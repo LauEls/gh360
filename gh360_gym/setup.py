@@ -25,8 +25,6 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            # 'door_env = gh360_gym.envs.door:main',
-            'talker = gh360_gym.envs.test_pub:main',
         ],
     },
 )

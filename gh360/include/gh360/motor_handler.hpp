@@ -14,6 +14,7 @@
 #include "gh360_interfaces/msg/motor_status.hpp"
 #include "gh360_interfaces/msg/set_motor_positions.hpp"
 #include "gh360_interfaces/msg/set_motor_currents.hpp"
+#include "gh360_interfaces/msg/set_motor_velocities.hpp"
 #include "gh360_interfaces/msg/set_position.hpp"
 #include "gh360_interfaces/msg/set_velocity.hpp"
 #include "gh360_interfaces/msg/set_current.hpp"
@@ -82,6 +83,7 @@ namespace gh360
             void timer_callback();
             void motor_goal_positions_callback(const gh360_interfaces::msg::SetMotorPositions::SharedPtr msg);
             void motor_goal_current_callback(const gh360_interfaces::msg::SetMotorCurrents::SharedPtr msg);
+            void motor_goal_velocity_callback(const gh360_interfaces::msg::SetMotorVelocities::SharedPtr msg);
             void position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
             void velocity_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorVelocityStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorVelocityStep::Response> response);
             void delta_position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
@@ -117,6 +119,7 @@ namespace gh360
             rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr move_home_service_;
             rclcpp::Subscription<gh360_interfaces::msg::ArmEncoderStates>::SharedPtr encoder_subscriber_;
             rclcpp::Subscription<gh360_interfaces::msg::SetMotorCurrents>::SharedPtr motor_goal_currents_subscriber_;
+            rclcpp::Subscription<gh360_interfaces::msg::SetMotorVelocities>::SharedPtr motor_goal_velocities_subscriber_;
 
             std::vector<std::string> joint_names;
             std::vector<Joint*> joints;

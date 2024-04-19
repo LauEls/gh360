@@ -25,6 +25,9 @@ setup(
             'door_monitor_control = gh360_examples.door_motor_control:main',
             'eef_pos_in_world = gh360_examples.eef_pos_in_world:main',
             'handle_sensor_filter = gh360_examples.handle_sensor_filter:main',
+            'tendon_model_generator = gh360_examples.tendon_model:main',
+            'real_time_plot = gh360_examples.real_time_plot:main',
+            'point_vis = gh360_examples.point_vis:main',
         ],
     },
 )

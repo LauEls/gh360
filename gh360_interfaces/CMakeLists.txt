@@ -31,6 +31,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/SetVelocity.msg"
   "msg/SetCurrent.msg"
   "msg/SetMotorPositions.msg"
+  "msg/SetMotorVelocities.msg"
   "msg/SetMotorCurrents.msg"
   "msg/JointEncoderState.msg"
   "msg/ArmEncoderStates.msg"

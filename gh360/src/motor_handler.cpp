@@ -129,6 +129,7 @@ gh360::MotorHandler::MotorHandler()
     this->move_home_service_ = this->create_service<std_srvs::srv::SetBool>("motor_move_home", std::bind(&gh360::MotorHandler::move_home_callback, this, std::placeholders::_1, std::placeholders::_2));
     
     this->motor_goal_currents_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorCurrents>("motor_goal_current", 10, std::bind(&gh360::MotorHandler::motor_goal_current_callback, this, std::placeholders::_1));
+    this->motor_goal_velocities_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorVelocities>("motor_goal_velocity", 10, std::bind(&gh360::MotorHandler::motor_goal_velocity_callback, this, std::placeholders::_1));
    
 }
 
@@ -473,12 +474,13 @@ void gh360::MotorHandler::velocity_step_callback(const std::shared_ptr<gh360_int
 
 void gh360::MotorHandler::delta_position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response)
 {
-    
+    RCLCPP_INFO(this->get_logger(), "Delta Positio Step Callback!");
     //calculate the velocity needed to do a certain rotation in 0.2 seconds
-
+    
     //have to set motors into velocity control mode
     //during velocity control mode, does it still keep track of multiturn positions????
     //when sync writing to the motors use operating mode to change what is written
+    this->setPositionControlMode();
     this->setDeltaMotorGoalPositions(request->motor_goal_positions);
     //setDeltaGoalVelocities();
 
@@ -495,6 +497,12 @@ void gh360::MotorHandler::motor_goal_current_callback(const gh360_interfaces::ms
 {
     this->setCurrentControlMode();
     this->setMotorGoalCurrents(msg->motor_goal_currents);
+}
+
+void gh360::MotorHandler::motor_goal_velocity_callback(const gh360_interfaces::msg::SetMotorVelocities::SharedPtr msg)
+{
+    this->setVelocityControlMode();
+    this->setMotorGoalVelocities(msg->motor_goal_velocities);
 }
 
 void gh360::MotorHandler::encoder_callback(const gh360_interfaces::msg::ArmEncoderStates::SharedPtr msg)

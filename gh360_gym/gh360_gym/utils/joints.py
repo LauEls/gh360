@@ -1,3 +1,4 @@
+import numpy as np
 
 class SoftJoint:
     def __init__(self,
@@ -28,6 +29,9 @@ class SoftJoint:
         self.left_motor_safety_check = False
         self.right_motor_moving = False
         self.left_motor_moving = False
+
+        self.window_size = 99
+        self.joint_vel_list = np.zeros(self.window_size, dtype=float)
 
 class MotorJoint:
     def __init__(self,

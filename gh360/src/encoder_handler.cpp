@@ -29,6 +29,7 @@ gh360::EncoderHandler::EncoderHandler()
             this->shoulder_offsets.push_back(get_parameter(this->joint_names[i]+".offset").as_double());
             this->shoulder_inverters.push_back(get_parameter(this->joint_names[i]+".inverter").as_int());
             this->shoulder_joint_angles.push_back(0.0);
+            this->shoulder_prev_joint_angles.push_back(0.0);
             this->shoulder_joint_vels.push_back(0.0);
         }
         else if (port_name == "upperarm")
@@ -38,6 +39,7 @@ gh360::EncoderHandler::EncoderHandler()
             this->upperarm_offsets.push_back(get_parameter(this->joint_names[i]+".offset").as_double());
             this->upperarm_inverters.push_back(get_parameter(this->joint_names[i]+".inverter").as_int());
             this->upperarm_joint_angles.push_back(0.0);
+            this->upperarm_prev_joint_angles.push_back(0.0);
             this->upperarm_joint_vels.push_back(0.0);
         }
         else if (port_name == "lowerarm")
@@ -47,6 +49,7 @@ gh360::EncoderHandler::EncoderHandler()
             this->lowerarm_offsets.push_back(get_parameter(this->joint_names[i]+".offset").as_double());
             this->lowerarm_inverters.push_back(get_parameter(this->joint_names[i]+".inverter").as_int());
             this->lowerarm_joint_angles.push_back(0.0);
+            this->lowerarm_prev_joint_angles.push_back(0.0);
             this->lowerarm_joint_vels.push_back(0.0);
         }
         else
@@ -57,7 +60,7 @@ gh360::EncoderHandler::EncoderHandler()
 
     // publisher definition
     this->encoder_state_publisher_ = this->create_publisher<gh360_interfaces::msg::ArmEncoderStates>("encoder_status", 10);
-    this->timer_ = this->create_wall_timer(100ms, std::bind(&gh360::EncoderHandler::timer_callback, this));
+    this->timer_ = this->create_wall_timer(10ms, std::bind(&gh360::EncoderHandler::timer_callback, this));
 
 
 }
@@ -91,10 +94,14 @@ void gh360::EncoderHandler::shoulder_encoder_callback(const std_msgs::msg::Strin
     for (uint i=0; i<this->shoulder_joint_names.size(); i++)
     {
         new_joint_angle = joint_angles[this->shoulder_port_ids[i]-1] * this->shoulder_inverters[i] - this->shoulder_offsets[i] ;
-        new_joint_vel = (new_joint_angle - this->shoulder_joint_angles[i]) / elapsed_seconds.count()    ;
+        new_joint_vel = (new_joint_angle - this->shoulder_joint_angles[i]) / elapsed_seconds.count();
+
+        // RCLCPP_INFO(this->get_logger(), "elapsed seconds: %f", elapsed_seconds.count());
+        
 
         this->shoulder_joint_angles[i] = new_joint_angle;
         this->shoulder_joint_vels[i] = new_joint_vel;
+        // this->shoulder_joint_vels[i] += this->alpha*(new_joint_vel-this->shoulder_joint_vels[i]);
     }
     
     if (!(this->shoulder_data_recieved)) this->shoulder_data_recieved = true;
@@ -130,6 +137,7 @@ void gh360::EncoderHandler::upperarm_encoder_callback(const std_msgs::msg::Strin
 
         this->upperarm_joint_angles[i] = new_joint_angle;
         this->upperarm_joint_vels[i] = new_joint_vel;
+        // this->upperarm_joint_vels[i] += this->alpha*(new_joint_vel-this->upperarm_joint_vels[i]);
     }
 
     if (!(this->upperarm_data_recieved)) this->upperarm_data_recieved = true;
@@ -165,6 +173,7 @@ void gh360::EncoderHandler::lowerarm_encoder_callback(const std_msgs::msg::Strin
 
         this->lowerarm_joint_angles[i] = new_joint_angle;
         this->lowerarm_joint_vels[i] = new_joint_vel;
+        // this->lowerarm_joint_vels[i] += this->alpha*(new_joint_vel-this->lowerarm_joint_vels[i]);
     }
 
     if (!(this->lowerarm_data_recieved)) this->lowerarm_data_recieved = true;
@@ -196,12 +205,31 @@ void gh360::EncoderHandler::timer_callback()
         gh360_interfaces::msg::ArmEncoderStates arm_encoder_msg = gh360_interfaces::msg::ArmEncoderStates();
         gh360_interfaces::msg::JointEncoderState joint_encoder_msg;
 
+        std::chrono::time_point<std::chrono::system_clock> current_time = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_seconds;
+        float new_vel;
+
+        //check if lowerarm_prev_time is on it's default init value
+        if (this->prev_time == std::chrono::time_point<std::chrono::system_clock>())
+        {
+            this->prev_time = current_time;
+        }
+        else
+        {
+            elapsed_seconds = current_time - this->prev_time;
+            this->prev_time = current_time;
+        }
+
         for (uint i=0; i<this->shoulder_joint_names.size(); i++)
         {
             joint_encoder_msg = gh360_interfaces::msg::JointEncoderState();
             joint_encoder_msg.joint_name = this->shoulder_joint_names[i];
             joint_encoder_msg.current_pos = this->shoulder_joint_angles[i];
+            new_vel = (this->shoulder_joint_angles[i] - this->shoulder_prev_joint_angles[i]) / elapsed_seconds.count();
+            this->shoulder_joint_vels[i] += this->alpha*(new_vel-this->shoulder_joint_vels[i]);
+            // joint_encoder_msg.current_vel = (this->shoulder_joint_angles[i] - this->shoulder_prev_joint_angles[i]) / elapsed_seconds.count();
             joint_encoder_msg.current_vel = this->shoulder_joint_vels[i];
+            this->shoulder_prev_joint_angles[i] = this->shoulder_joint_angles[i];
             
             arm_encoder_msg.current_joint_states.push_back(joint_encoder_msg);
         }
@@ -211,8 +239,12 @@ void gh360::EncoderHandler::timer_callback()
             joint_encoder_msg = gh360_interfaces::msg::JointEncoderState();
             joint_encoder_msg.joint_name = this->upperarm_joint_names[i];
             joint_encoder_msg.current_pos = this->upperarm_joint_angles[i];
+            new_vel = (this->upperarm_joint_angles[i] - this->upperarm_prev_joint_angles[i]) / elapsed_seconds.count();
+            this->upperarm_joint_vels[i] += this->alpha*(new_vel-this->upperarm_joint_vels[i]);
+            // joint_encoder_msg.current_vel = (this->upperarm_joint_angles[i] - this->upperarm_prev_joint_angles[i]) / elapsed_seconds.count();
             joint_encoder_msg.current_vel = this->upperarm_joint_vels[i];
-            
+            this->upperarm_prev_joint_angles[i] = this->upperarm_joint_angles[i];
+
             arm_encoder_msg.current_joint_states.push_back(joint_encoder_msg);
         }
 
@@ -221,8 +253,12 @@ void gh360::EncoderHandler::timer_callback()
             joint_encoder_msg = gh360_interfaces::msg::JointEncoderState();
             joint_encoder_msg.joint_name = this->lowerarm_joint_names[i];
             joint_encoder_msg.current_pos = this->lowerarm_joint_angles[i];
+            new_vel = (this->lowerarm_joint_angles[i] - this->lowerarm_prev_joint_angles[i]) / elapsed_seconds.count();
+            this->lowerarm_joint_vels[i] += this->alpha*(new_vel-this->lowerarm_joint_vels[i]);
+            // joint_encoder_msg.current_vel = (this->lowerarm_joint_angles[i] - this->lowerarm_prev_joint_angles[i]) / elapsed_seconds.count();
             joint_encoder_msg.current_vel = this->lowerarm_joint_vels[i];
-            
+            this->lowerarm_prev_joint_angles[i] = this->lowerarm_joint_angles[i];
+
             arm_encoder_msg.current_joint_states.push_back(joint_encoder_msg);
         }
 

@@ -4,4 +4,8 @@ register(
     id="gh360_gym/Door-v0",
     entry_point="gh360_gym.envs:DoorEnv",
 )
+register(
+    id="gh360_gym/TrajectoryFollowing-v0",
+    entry_point="gh360_gym.envs:TrajectoryFollowingEnv",
+)
 

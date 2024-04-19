@@ -62,7 +62,7 @@ class MotorJoint: public Joint
         // Motor Position in rad
         double motor_present_position;
         double motor_goal_position;
-        // Motor Velocity in rpm
+        // Motor Velocity in rad/s
         double motor_present_velocity;
         double motor_goal_velocity;
         // Motor Current in mA
