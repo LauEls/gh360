@@ -128,6 +128,7 @@ gh360::MotorHandler::MotorHandler()
     this->set_torque_service_ = this->create_service<std_srvs::srv::SetBool>("motor_set_torque", std::bind(&gh360::MotorHandler::set_torque_callback, this, std::placeholders::_1, std::placeholders::_2));
     this->move_home_service_ = this->create_service<std_srvs::srv::SetBool>("motor_move_home", std::bind(&gh360::MotorHandler::move_home_callback, this, std::placeholders::_1, std::placeholders::_2));
     
+    this->motor_goal_positions_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorPositions>("motor_goal_position", 10, std::bind(&gh360::MotorHandler::motor_goal_positions_callback, this, std::placeholders::_1));
     this->motor_goal_currents_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorCurrents>("motor_goal_current", 10, std::bind(&gh360::MotorHandler::motor_goal_current_callback, this, std::placeholders::_1));
     this->motor_goal_velocities_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorVelocities>("motor_goal_velocity", 10, std::bind(&gh360::MotorHandler::motor_goal_velocity_callback, this, std::placeholders::_1));
    
@@ -490,6 +491,7 @@ void gh360::MotorHandler::delta_position_step_callback(const std::shared_ptr<gh3
 
 void gh360::MotorHandler::motor_goal_positions_callback(const gh360_interfaces::msg::SetMotorPositions::SharedPtr msg)
 {
+    this->setPositionControlMode();
     this->setMotorGoalPositions(msg->motor_goal_positions);
 }
 

@@ -25,6 +25,9 @@ find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(gh360_interfaces REQUIRED)
+find_package(orocos_kdl REQUIRED)
+find_package(urdf REQUIRED)
+find_package(kdl_parser REQUIRED)
 # uncomment the following section in order to fill in
 # further dependencies manually.
 # find_package(<dependency> REQUIRED)
@@ -41,7 +44,7 @@ add_library(gh360
   src/soft_joint.cpp
   src/motor_joint.cpp
 )
-ament_target_dependencies(gh360 "rclcpp" "sensor_msgs" "std_msgs" "std_srvs" "dynamixel_sdk")
+ament_target_dependencies(gh360 "rclcpp" "sensor_msgs" "std_msgs" "std_srvs" "dynamixel_sdk" "orocos_kdl" "kdl_parser")
 
 add_executable(motor_handler src/motor_handler.cpp)
 target_link_libraries(
@@ -64,7 +67,19 @@ target_link_libraries(
 )
 ament_target_dependencies(joint_states rclcpp std_msgs gh360_interfaces sensor_msgs)
 
+add_executable(inverse_jacobian src/inverse_jacobian.cpp)
+target_link_libraries(
+  inverse_jacobian
+  gh360
+)
+ament_target_dependencies(inverse_jacobian rclcpp std_msgs gh360_interfaces orocos_kdl kdl_parser)
 
+add_executable(teleop_rviz src/teleop_rviz.cpp)
+target_link_libraries(
+  teleop_rviz
+  gh360
+)
+ament_target_dependencies(teleop_rviz rclcpp std_msgs gh360_interfaces)
 
 ################################################################################
 # Install
@@ -84,6 +99,8 @@ install(TARGETS
   motor_handler
   encoder_handler
   joint_states
+  inverse_jacobian
+  teleop_rviz
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files.

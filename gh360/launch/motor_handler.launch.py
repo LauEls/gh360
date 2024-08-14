@@ -56,11 +56,11 @@ def generate_launch_description():
         output='screen')
     
     start_joint_state_publisher_cmd = Node(
-    # condition=UnlessCondition(gui),
-    package='joint_state_publisher',
-    executable='joint_state_publisher',
-    name='joint_state_publisher',
-    parameters=[{'source_list': ['gh360_joint_states']}])
+        # condition=UnlessCondition(gui),
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+        name='joint_state_publisher',
+        parameters=[{'source_list': ['gh360_joint_states']}])
  
 #   # A GUI to manipulate the joint state values
 #   start_joint_state_publisher_gui_node = Node(

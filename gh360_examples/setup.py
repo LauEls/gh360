@@ -1,4 +1,6 @@
-from setuptools import setup
+from setuptools import setup, find_packages
+import os
+import sys
 
 package_name = 'gh360_examples'
 
@@ -17,7 +19,7 @@ setup(
     maintainer_email='laurenz.elstner@gmail.com',
     description='TODO: Package description',
     license='TODO: License declaration',
-    tests_require=['pytest'],
+    # tests_require=['pytest'],
     entry_points={
         'console_scripts': [
             'monitor = gh360_examples.monitor:main',
@@ -28,6 +30,7 @@ setup(
             'tendon_model_generator = gh360_examples.tendon_model:main',
             'real_time_plot = gh360_examples.real_time_plot:main',
             'point_vis = gh360_examples.point_vis:main',
+            'spacemouse = gh360_examples.spacemouse:main',
         ],
     },
 )

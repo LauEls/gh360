@@ -35,6 +35,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/SetMotorCurrents.msg"
   "msg/JointEncoderState.msg"
   "msg/ArmEncoderStates.msg"
+  "msg/SpaceMouse.msg"
   "srv/MotorPositionStep.srv"
   "srv/MotorVelocityStep.srv"
   "srv/TestService.srv"

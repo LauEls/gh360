@@ -38,7 +38,6 @@ class TrajectoryFollowingEnv(gym.Env):
                  ):
         """
         Have a variable the defines the action size
-
         """
         rclpy.init(args=None)
         self.node = rclpy.create_node(self.__class__.__name__)

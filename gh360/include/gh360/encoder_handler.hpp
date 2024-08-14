@@ -23,10 +23,6 @@ namespace gh360
             EncoderHandler();
             virtual ~EncoderHandler();
 
-
-
-
-
         private:
             void timer_callback();
             void shoulder_encoder_callback(const std_msgs::msg::String::SharedPtr msg);
