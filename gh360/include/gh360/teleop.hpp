@@ -51,7 +51,10 @@ namespace gh360
             gh360_interfaces::msg::SetMotorPositions init_motor_msg;
             gh360_interfaces::msg::PortStatus motor_status;
             std::vector<double> init_motor_pos;
+            std::vector<double> jnt_to_motor_scaler;
             bool init_flag;
+            int init_state;
+            double max_motor_vel;
     };
 }
 

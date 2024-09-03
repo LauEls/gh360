@@ -62,7 +62,8 @@ void MotorJoint::set_motor_present_position(int position)
 void MotorJoint::set_motor_goal_position(double goal_pos)
 {
     // this->motor_goal_position = (goal_pos + this->offset) * this->movement_direction;
-    if (-M_PI_2 < goal_pos && goal_pos < M_PI_2) this->motor_goal_position = this->calc_set_motor_goal_pos(goal_pos, this->offset, this->movement_direction);
+    // if (-M_PI_2 < goal_pos && goal_pos < M_PI_2) 
+    this->motor_goal_position = this->calc_set_motor_goal_pos(goal_pos, this->offset, this->movement_direction);
 }
 
 void MotorJoint::set_motor_goal_velocity(double goal_vel)

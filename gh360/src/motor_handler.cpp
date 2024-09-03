@@ -404,7 +404,9 @@ void gh360::MotorHandler::set_torque_callback(const std::shared_ptr<std_srvs::sr
     int set_torque;
     if (request->data == true)
     {
+        // RCLCPP_INFO(this->get_logger(), "Got motor toqure on message!");
         set_torque = 1;
+        this->emergency_stop = false;
     }
     else
     {
@@ -491,6 +493,7 @@ void gh360::MotorHandler::delta_position_step_callback(const std::shared_ptr<gh3
 
 void gh360::MotorHandler::motor_goal_positions_callback(const gh360_interfaces::msg::SetMotorPositions::SharedPtr msg)
 {
+    // RCLCPP_INFO(this->get_logger(), "Motor goal position subscriber msg received!: %f", msg->motor_goal_positions[0].position);
     this->setPositionControlMode();
     this->setMotorGoalPositions(msg->motor_goal_positions);
 }
@@ -544,6 +547,18 @@ void gh360::MotorHandler::timer_callback()
         if (this->joints[0]->get_operating_mode() == 3 || this->joints[0]->get_operating_mode() == 4)
         {
             // RCLCPP_INFO(this->get_logger(), "Sending position command!");
+            for (unsigned int i=0; i < this->joints.size(); i++)
+            {
+                if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
+                {
+                    // if (motor_joint->get_motor_id() == 31)
+                    // {
+                    //     // RCLCPP_INFO(this->get_logger(), "Motor ID: %i", motor_joint->get_motor_model()->ID);
+                    //     RCLCPP_INFO(this->get_logger(), "Goal Position: %f", motor_joint->get_motor_goal_position());
+                    // }
+                    this->syncWrite(motor_joint->get_motor_model()->Goal_Position.size, motor_joint->get_motor_model()->Goal_Position.address);
+                }
+            }
             this->syncWrite(this->joints_motor_model->Goal_Position.size, this->joints_motor_model->Goal_Position.address);
         }
         else if (this->joints[0]->get_operating_mode() == 1)
@@ -821,6 +836,8 @@ bool gh360::MotorHandler::setMotorGoalPositions(std::vector<gh360_interfaces::ms
             }
             else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
             {
+                // RCLCPP_INFO(this->get_logger(), "Motor ID: %i", motor_joint->get_motor_id());
+                // RCLCPP_INFO(this->get_logger(), "Motor ID from message: %i", motor_goal_positions[m].id);
                 if (motor_joint->get_motor_id() == motor_goal_positions[m].id) 
                 {
                     motor_joint->set_motor_goal_position(motor_goal_positions[m].position);

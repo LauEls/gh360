@@ -51,6 +51,18 @@ def generate_launch_description():
         executable='robot_state_publisher',
         parameters=[{'robot_description': robot_description_raw}]
     )
+
+    camera_frame_cmd = Node(
+        package='gh360_examples',
+        executable='camera_frame',
+        name='camera_frame'
+    )
+
+    door_handle_pose_cmd = Node(
+        package='gh360_examples',
+        executable='door_handle_pose',
+        name='door_handle_pose'
+    )
     
     start_rviz_cmd = Node(
         package='rviz2',
@@ -66,6 +78,8 @@ def generate_launch_description():
         teleop_rviz_cmd,
         start_joint_state_publisher_cmd,
         start_robot_state_publisher_cmd,
+        camera_frame_cmd,
+        door_handle_pose_cmd,
         space_mouse_cmd
 
     ])

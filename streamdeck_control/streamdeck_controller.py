@@ -25,9 +25,13 @@ class StreamDeckGH360Control:
         self.shoulder_move_home_process = subprocess.Popen('', shell=True, executable="/bin/bash")
         self.upperarm_move_home_process = subprocess.Popen('', shell=True, executable="/bin/bash")
         self.lowerarm_move_home_process = subprocess.Popen('', shell=True, executable="/bin/bash")
+        self.record_teleop_data_process = subprocess.Popen('', shell=True, executable="/bin/bash")
+        self.play_teleop_data_process = subprocess.Popen('', shell=True, executable="/bin/bash")
+        self.run_teleop_process = subprocess.Popen('', shell=True, executable="/bin/bash")
+        self.door_control_process = subprocess.Popen('', shell=True, executable="/bin/bash")
 
         self.dial_0_state = 0
-        self.dial_1_state = 0
+        # self.dial_1_state = 0
 
         # image for idle state
         img = Image.new('RGB', (120, 120), color='black')
@@ -158,7 +162,45 @@ class StreamDeckGH360Control:
         img.save(img_byte_arr, format='JPEG')
         self.img_code_on_bytes = img_byte_arr.getvalue()
 
+        #image record icon
+        img = Image.new('RGB', (120, 120), color='black')
+        self.record_icon = Image.open(os.path.join(self.asset_path, 'record_icon.png')).resize((80, 80))
+        img.paste(self.record_icon, (20, 20), self.record_icon)
 
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_record_bytes = img_byte_arr.getvalue()
+
+        #image stop record icon
+        img = Image.new('RGB', (120, 120), color='black')
+        img1 = ImageDraw.Draw(img)
+        img1.rectangle([30,45,90,75], fill="white", outline="white") 
+        self.stop_record_icon = Image.open(os.path.join(self.asset_path, 'stop_record_icon.png')).resize((80, 80))
+        img.paste(self.stop_record_icon, (20, 20), self.stop_record_icon)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_stop_record_bytes = img_byte_arr.getvalue()
+
+        #image play icon
+        img = Image.new('RGB', (120, 120), color='black')
+        img1 = ImageDraw.Draw(img)
+        img1.rectangle([30,45,90,75], fill="white", outline="white") 
+        self.play_icon = Image.open(os.path.join(self.asset_path, 'play_icon.png')).resize((80, 80))
+        img.paste(self.play_icon, (20, 20), self.play_icon)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_play_bytes = img_byte_arr.getvalue()
+
+        #image spacemouse icon
+        img = Image.new('RGB', (120, 120), color='black')
+        self.spacemouse_icon = Image.open(os.path.join(self.asset_path, 'spacemouse_icon_3.png')).resize((80, 80))
+        img.paste(self.spacemouse_icon, (20, 20), self.spacemouse_icon)
+
+        img_byte_arr = io.BytesIO()
+        img.save(img_byte_arr, format='JPEG')
+        self.img_spacemouse_bytes = img_byte_arr.getvalue()
 
         self.key_swap = [0,0,0,0,0,0,0,0]
 
@@ -201,7 +243,9 @@ class StreamDeckGH360Control:
             elif key == 5:
                 self.deck.set_key_image(key, self.img_home_bytes)
             elif key == 6:
-                self.deck.set_key_image(key, self.img_door_bytes)
+                self.deck.set_key_image(key, self.img_spacemouse_bytes)
+            elif key == 7:
+                self.deck.set_key_image(key, self.img_record_bytes)
             #else:
                 #self.deck.set_key_image(key, self.img_released_bytes)
 
@@ -219,7 +263,7 @@ class StreamDeckGH360Control:
 
         img = Image.new('RGB', (800, 100), 'black')
         img.paste(self.exit_icon, (30,10), self.exit_icon)
-        img.paste(self.exit_icon, (250,10), self.exit_icon)
+        # img.paste(self.exit_icon, (250,10), self.exit_icon)
                 
         img_bytes = io.BytesIO()
         img.save(img_bytes, format='JPEG')
@@ -239,6 +283,11 @@ class StreamDeckGH360Control:
         self.processes.append(self.shoulder_move_home_process)
         self.processes.append(self.upperarm_move_home_process)
         self.processes.append(self.lowerarm_move_home_process)
+        self.processes.append(self.record_teleop_data_process)
+        self.processes.append(self.play_teleop_data_process)
+        self.processes.append(self.run_teleop_process)
+        self.processes.append(self.door_control_process)
+
 
         for process in self.processes:
             if process.poll() is None:
@@ -307,12 +356,30 @@ class StreamDeckGH360Control:
             if self.shoulder_move_home_process.poll() is not None and self.upperarm_move_home_process.poll() is not None and self.lowerarm_move_home_process.poll() is not None:
                 self.move_to_home()
         if key == 6 and not key_state:
-            if self.gym_example_process.poll() is None:
-                os.killpg(os.getpgid(self.gym_example_process.pid), signal.SIGINT)
-                self.gym_example_process.wait()
-                print("Gym Example Process closed")
-            else:
-                self.run_gym_example()
+            # if self.gym_example_process.poll() is None:
+            #     os.killpg(os.getpgid(self.gym_example_process.pid), signal.SIGINT)
+            #     self.gym_example_process.wait()
+            #     print("Gym Example Process closed")
+            # else:
+            #     self.run_gym_example()
+            process_closed = False
+            if self.run_teleop_process.poll() is None:
+                os.killpg(os.getpgid(self.run_teleop_process.pid), signal.SIGINT)
+                self.run_teleop_process.wait()
+                process_closed = True
+                # print("Gym Example Process closed")
+            if self.dial_0_state == 1:
+                if self.door_control_process.poll() is None:
+                    os.killpg(os.getpgid(self.door_control_process.pid), signal.SIGINT)
+                    self.door_control_process.wait()
+                    process_closed = True
+                if self.door_control_process.poll() is not None and self.run_teleop_process.poll() is not None and not process_closed:
+                    self.run_teleop()
+            elif self.dial_0_state == 0:
+                if self.run_teleop_process.poll() is not None and not process_closed:
+                    self.run_teleop()
+        if key == 7 and not key_state:
+            pass
 
 
         # if not key_state and key_s[key] == 0:
@@ -356,12 +423,12 @@ class StreamDeckGH360Control:
                     self.dial_0_state = 1
 
                 # print(f"dial {dial} state: {self.dial_0_state}")
-            elif dial == 1:
-                self.dial_1_state += value
-                if self.dial_1_state > 1:
-                    self.dial_1_state = 0
-                elif self.dial_1_state < 0:
-                    self.dial_1_state = 1
+            # elif dial == 1:
+            #     self.dial_1_state += value
+            #     if self.dial_1_state > 1:
+            #         self.dial_1_state = 0
+            #     elif self.dial_1_state < 0:
+            #         self.dial_1_state = 1
 
                 # print(f"dial {dial} state: {self.dial_1_state}")
 
@@ -373,10 +440,10 @@ class StreamDeckGH360Control:
             elif self.dial_0_state == 1:
                 img.paste(self.door_icon, (30,10), self.door_icon)
 
-            if self.dial_1_state == 0:
-                img.paste(self.exit_icon, (250,10), self.exit_icon)
-            elif self.dial_1_state == 1:
-                img.paste(self.door_icon, (250,10), self.door_icon)
+            # if self.dial_1_state == 0:
+            #     img.paste(self.exit_icon, (250,10), self.exit_icon)
+            # elif self.dial_1_state == 1:
+            #     img.paste(self.door_icon, (250,10), self.door_icon)
                     
             img_byte_arr = io.BytesIO()
             img.save(img_byte_arr, format='JPEG')
@@ -408,9 +475,9 @@ class StreamDeckGH360Control:
     
     def gh360_startup(self):
         # Start GH360
-        if self.dial_1_state == 0:
+        if self.dial_0_state == 0:
             self.gh360_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; ros2 launch gh360 gh360_startup.launch.py', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
-        elif self.dial_1_state == 1:
+        elif self.dial_0_state == 1:
             self.gh360_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; ros2 launch gh360 gh360_door_env.launch.py', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
 
     def gh360_monitor(self):
@@ -437,6 +504,16 @@ class StreamDeckGH360Control:
     def run_gym_example(self):
         self.gym_example_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; python ~/phd_project/ros2_gh360_ws/src/gh360/gh360_gym/example/test_real_robot.py', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
 
+    def run_teleop(self):
+        self.run_teleop_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; ros2 launch gh360 spacemouse_teleop.launch.py', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
+        if self.dial_0_state == 1:
+            self.door_control_process = subprocess.Popen('source ~/phd_project/robosuite_venv/bin/activate; source ~/phd_project/ros2_gh360_ws/install/setup.bash; ros2 run gh360_examples door_motor_control', shell=True, executable="/bin/bash", preexec_fn=os.setsid)
+
+    def record_teleop_data(self):
+        pass
+
+    def play_teleop_data(self):
+        pass
 
 if __name__ == "__main__":
     stream_deck_control = StreamDeckGH360Control()

@@ -34,7 +34,7 @@ gh360::InverseJacobian::InverseJacobian()
     // }
     
     kdl_tree.getChain("base_link", this->tcp_link_name, this->chain);
-    RCLCPP_INFO(this->get_logger(),std::to_string(this->chain.getNrOfJoints()));
+    // RCLCPP_INFO(this->get_logger(),std::to_string(this->chain.getNrOfJoints()));
     this->num_joints = this->chain.getNrOfJoints();
 
     this->fk_solver = new KDL::ChainFkSolverPos_recursive(this->chain);
@@ -49,8 +49,8 @@ gh360::InverseJacobian::InverseJacobian()
             this->joint_vel_msg.name.push_back(this->chain.getSegment(i).getJoint().getName());
             this->joint_vel_msg.velocity.push_back(0.0);
             this->joint_vel_msg.position.push_back(0.0);
-            RCLCPP_INFO(this->get_logger(),this->chain.getSegment(i).getJoint().getName());
-            RCLCPP_INFO(this->get_logger(),this->chain.getSegment(i).getJoint().getTypeName());
+            // RCLCPP_INFO(this->get_logger(),this->chain.getSegment(i).getJoint().getName());
+            // RCLCPP_INFO(this->get_logger(),this->chain.getSegment(i).getJoint().getTypeName());
         }
     }
     // if (this->robot_name == "panda") {
@@ -71,7 +71,7 @@ gh360::InverseJacobian::InverseJacobian()
     this->joint_position_subscriber_ = this->create_subscription<sensor_msgs::msg::JointState>(joint_position_topic, 10, std::bind(&gh360::InverseJacobian::joint_position_callback, this, std::placeholders::_1));
 
     
-    RCLCPP_INFO(this->get_logger(),std::to_string(sizeof(this->current_joint_pos.position)/sizeof(int)));
+    // RCLCPP_INFO(this->get_logger(),std::to_string(sizeof(this->current_joint_pos.position)/sizeof(int)));
 
     this->joint_velocity_publisher_ = this->create_publisher<sensor_msgs::msg::JointState>("/inverse_jacobian", 10);
     
@@ -103,14 +103,16 @@ void gh360::InverseJacobian::timer_callback()
     KDL::JntArray q_current(this->num_joints);
     KDL::JntArray new_q(this->num_joints);
 
+    // RCLCPP_INFO(this->get_logger(),std::to_string(sizeof(this->current_joint_pos.position)/sizeof(this->current_joint_pos.position[0])));
+
     for (int i = 0; i < this->num_joints; i++) {
         q_current(i) = this->current_joint_pos.position[i];
         // RCLCPP_INFO(this->get_logger(),std::to_string(q_current(i)));
     }
 
     // q_current = this->joint_vel_msg.position;
-    float translation_scale = 0.001;
-    float rotation_scale = 0.005;
+    float translation_scale = 0.1;
+    float rotation_scale = 0.5;
     // KDL::Vector pos_vel(-this->desired_velocity.linear.z*translation_scale,
     //             this->desired_velocity.linear.y*translation_scale,
     //             this->desired_velocity.linear.x*translation_scale);
@@ -120,9 +122,9 @@ void gh360::InverseJacobian::timer_callback()
     // KDL::Vector rot_vel(-this->desired_velocity.angular.z*translation_scale,        
     //             this->desired_velocity.angular.y*translation_scale,
     //             this->desired_velocity.angular.x*translation_scale);
-    KDL::Vector rot_vel(this->desired_velocity.angular.x*rotation_scale,
-                this->desired_velocity.angular.y*rotation_scale,
-                this->desired_velocity.angular.z*rotation_scale);
+    KDL::Vector rot_vel(-this->desired_velocity.angular.y*rotation_scale,
+                this->desired_velocity.angular.x*rotation_scale,
+                -this->desired_velocity.angular.z*rotation_scale);
     KDL::Twist T_desired = KDL::Twist(pos_vel, rot_vel);
 
     KDL::Frame F_current;
@@ -132,7 +134,7 @@ void gh360::InverseJacobian::timer_callback()
         assert(false);
     }
 
-    KDL::Frame F_at_hand = F_current;
+    // KDL::Frame F_at_hand = F_current;
     // F_at_hand.M = KDL::Rotation::Identity();
     // T_desired = F_at_hand * T_desired;
 

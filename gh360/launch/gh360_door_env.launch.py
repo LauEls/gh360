@@ -22,6 +22,10 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360'), 'launch'), '/door_motor.launch.py'])
     )
 
+    camera_handler = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360'), 'launch'), '/camera_handler.launch.py'])
+    )
+
     handle_sensor_filter_node = Node(
         package='gh360_examples',
         executable='handle_sensor_filter',
@@ -33,5 +37,6 @@ def generate_launch_description():
         motor_handler,
         encoder_handler,
         door_motor,
+        camera_handler,
         handle_sensor_filter_node
     ])

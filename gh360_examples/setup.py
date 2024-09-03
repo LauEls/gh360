@@ -24,13 +24,16 @@ setup(
         'console_scripts': [
             'monitor = gh360_examples.monitor:main',
             'streamdeck_test = gh360_examples.test_stream_deck:main',
-            'door_monitor_control = gh360_examples.door_motor_control:main',
+            'door_motor_control = gh360_examples.door_motor_control:main',
             'eef_pos_in_world = gh360_examples.eef_pos_in_world:main',
             'handle_sensor_filter = gh360_examples.handle_sensor_filter:main',
             'tendon_model_generator = gh360_examples.tendon_model:main',
             'real_time_plot = gh360_examples.real_time_plot:main',
             'point_vis = gh360_examples.point_vis:main',
             'spacemouse = gh360_examples.spacemouse:main',
+            'camera_vis = gh360_examples.camera_vis:main',
+            'camera_frame = gh360_examples.camera_frame:main',
+            'door_handle_pose = gh360_examples.door_handle_pose:main',
         ],
     },
 )

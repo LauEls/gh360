@@ -81,6 +81,13 @@ target_link_libraries(
 )
 ament_target_dependencies(teleop_rviz rclcpp std_msgs gh360_interfaces)
 
+add_executable(teleop src/teleop.cpp)
+target_link_libraries(
+  teleop
+  gh360
+)
+ament_target_dependencies(teleop rclcpp std_msgs gh360_interfaces)
+
 ################################################################################
 # Install
 ################################################################################
@@ -101,6 +108,7 @@ install(TARGETS
   joint_states
   inverse_jacobian
   teleop_rviz
+  teleop
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files.

@@ -13,7 +13,7 @@
     shoulder_pitch:
       port_name: "upperarm"
       port_id: 1
-      offset: 0.0476
+      offset: 0.1076
       inverter: -1
     upperarm_roll:
       port_name: "upperarm"
