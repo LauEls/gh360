@@ -101,35 +101,6 @@ class DoorHandlePose(Node):
                 t_door.transform.translation.y = -0.19
                 self.tf_broadcaster.sendTransform(t_door)
 
-            
-        # zero_pose = Pose()
-        # from_frame_rel = 'eef'
-        # to_frame_rel = 'base_link'
-        # marker_id_msg = Int64()
-
-        # #Lookup the tranformation from from_frame_rel to to_frame_rel
-        # try:
-        #     eef_pose_trans = self.tf_buffer.lookup_transform(to_frame_rel, from_frame_rel, rclpy.time.Time())
-        # except TransformException as ex:
-        #     self.get_logger().info(
-        #         f'Could not transform {to_frame_rel} to {from_frame_rel}: {ex}')
-        #     return
-
-        # #Tranform a Pose from from_frame_rel to to_frame_rel
-        # # eef_base_pose = tf2_geometry_msgs.do_transform_pose(zero_pose, self.trans_eef_base)
-        # # eef_pose = tf2_geometry_msgs.do_transform_pose(Pose(), self.trans_eef_base)
-
-        # # if self.marker_id != 1000:
-        # #     self.marker_map_pose_pub.publish(marker_map_pose)
-        # #     marker_id_msg.data = self.marker_id
-        # #     self.marker_id_pub.publish(marker_id_msg)
-        # eef_pos = np.array([eef_pose_trans.transform.translation.x, eef_pose_trans.transform.translation.y, eef_pose_trans.transform.translation.z], dtype=np.float64)
-        # eef_quat = np.array([eef_pose_trans.transform.rotation.x, eef_pose_trans.transform.rotation.y, eef_pose_trans.transform.rotation.z, eef_pose_trans.transform.rotation.w], dtype=np.float64)
-        # self.get_logger().info("EEF Pos: "+str(eef_pos))
-        # # self.get_logger().info("EEF Quat in base_link frame: "+str(eef_quat))
-        # # self.get_logger().info("EEF Pos in base_link frame: "+str(eef_pose_trans.transform.translation))
-        # # self.get_logger().info("EEF Quat in base_link frame: "+str(eef_pose_trans.transform.rotation))
-
 def main(args=None):
     rclpy.init(args=args)
 

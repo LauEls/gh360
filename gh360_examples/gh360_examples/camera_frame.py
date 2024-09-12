@@ -17,6 +17,7 @@ class CameraFrameBroadcaster(Node):
         rot.append([7.415938757451997e-15,	0.9063077885970263,	-0.42261825839446004])
         rot.append([-0.9063077885970263,	0.1802399555017374,	0.3830222218690612])
         sci_rot = Rotation.from_matrix(rot)
+        Rotation.from_euler('xyz', [0, 0, 0], degrees=True)
         sci_quat = sci_rot.as_quat()
         quat = Quaternion(x=sci_quat[0], y=sci_quat[1], z=sci_quat[2], w=sci_quat[3])
         
