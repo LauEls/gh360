@@ -1,0 +1,61 @@
+rosbag2_bagfile_information:
+  version: 4
+  storage_identifier: sqlite3
+  relative_file_paths:
+    - free_move_v3_20240913-150500_replay_20240913-150607_0.db3
+  duration:
+    nanoseconds: 30116634134
+  starting_time:
+    nanoseconds_since_epoch: 1726232767849836278
+  message_count: 10204
+  topics_with_message_count:
+    - topic_metadata:
+        name: /gh360_joint_states
+        type: sensor_msgs/msg/JointState
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 302
+    - topic_metadata:
+        name: /shoulder/motor_status
+        type: gh360_interfaces/msg/PortStatus
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 303
+    - topic_metadata:
+        name: /lowerarm/motor_goal_velocity
+        type: gh360_interfaces/msg/SetMotorVelocities
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 2997
+    - topic_metadata:
+        name: /lowerarm/motor_status
+        type: gh360_interfaces/msg/PortStatus
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 303
+    - topic_metadata:
+        name: /shoulder/motor_goal_velocity
+        type: gh360_interfaces/msg/SetMotorVelocities
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 2997
+    - topic_metadata:
+        name: /spacemouse
+        type: gh360_interfaces/msg/SpaceMouse
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 0
+    - topic_metadata:
+        name: /upperarm/motor_goal_velocity
+        type: gh360_interfaces/msg/SetMotorVelocities
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 3000
+    - topic_metadata:
+        name: /upperarm/motor_status
+        type: gh360_interfaces/msg/PortStatus
+        serialization_format: cdr
+        offered_qos_profiles: ""
+      message_count: 302
+  compression_format: ""
+  compression_mode: ""

@@ -134,12 +134,25 @@ void MotorJoint::set_motor_safety_check(bool safety_check)
 
 void MotorJoint::set_joint_angle(double new_joint_angle)
 {
+    // this->joint_angle = new_joint_angle;
+    // this->motor_present_position = new_joint_angle;
     this->joint_angle = new_joint_angle;
+}
+
+void MotorJoint::set_joint_velocity(double new_joint_velocity)
+{
+    // this->motor_present_velocity = new_joint_velocity;
+    this->joint_velocity = new_joint_velocity;
 }
 
 double MotorJoint::get_joint_angle()
 {
     return this->get_motor_present_position();
+}
+
+double MotorJoint::get_joint_velocity()
+{
+    return this->get_motor_present_velocity();
 }
 
 std::string MotorJoint::get_joint_name()

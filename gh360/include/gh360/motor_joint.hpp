@@ -34,7 +34,9 @@ class MotorJoint: public Joint
         std::string get_joint_name();
         std::string get_joint_type();
         double get_joint_angle();
+        double get_joint_velocity();
         void set_joint_angle(double new_joint_angle);
+        void set_joint_velocity(double new_joint_velocity);
 
         int get_motor_id();
         int get_action_id();

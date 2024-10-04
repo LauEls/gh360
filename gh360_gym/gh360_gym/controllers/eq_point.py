@@ -3,6 +3,7 @@ from gh360_gym.utils.joints import MotorJoint, SoftJoint
 from gh360_gym.utils.motor_interfaces import generate_velocities_msg, generate_positions_msg
 from gh360_interfaces.srv import MotorPositionStep, MotorVelocityStep
 from gh360_interfaces.msg import SetMotorPositions, SetPosition, ArmEncoderStates, SetVelocity, PortStatus
+from std_msgs.msg import Bool
 
 import numpy as np
 import time
@@ -29,6 +30,8 @@ class EqPointController(BaseController):
 
         self.input_max = np.ones(self.control_dim) * input_max
         self.input_min = np.ones(self.control_dim) * input_min
+
+        self.last_time = 0
 
         self.reseted = False
 
@@ -137,9 +140,11 @@ class EqPointController(BaseController):
         """
         Translate action to motor movements for equilibrium point control
         """
+        if self.last_time == 0:
+            self.last_time = time.time()
         assert len(delta_action) == self.control_dim, "Delta torque must be equal to the robot's joint dimension space!"
 
-        delta_action = np.clip(delta_action, self.input_min, self.input_max)
+        # delta_action = np.clip(delta_action, self.input_min, self.input_max)
         delta_action = delta_action/10
 
         joint_iter = 0
@@ -157,10 +162,10 @@ class EqPointController(BaseController):
                 elif delta_eq_pos < 0 and self.arm[joint_iter].joint_angle <= self.arm[joint_iter].min_pos:
                     # print("min joint pos reached")
                     delta_eq_pos = 0.0
-                elif delta_eq_pos > 0 and (self.arm[joint_iter].right_motor_current >= self.arm[joint_iter].max_current or self.arm[joint_iter].left_motor_current >= self.arm[joint_iter].max_current):
-                    delta_eq_pos = 0.0
-                elif delta_eq_pos < 0 and (self.arm[joint_iter].right_motor_current <= self.arm[joint_iter].min_current or self.arm[joint_iter].left_motor_current <= self.arm[joint_iter].min_current):
-                    delta_eq_pos = 0.0
+                # elif delta_eq_pos > 0 and (self.arm[joint_iter].right_motor_current >= self.arm[joint_iter].max_current or self.arm[joint_iter].left_motor_current >= self.arm[joint_iter].max_current):
+                #     delta_eq_pos = 0.0
+                # elif delta_eq_pos < 0 and (self.arm[joint_iter].right_motor_current <= self.arm[joint_iter].min_current or self.arm[joint_iter].left_motor_current <= self.arm[joint_iter].min_current):
+                #     delta_eq_pos = 0.0
 
                 if self.control_dim == 13:
                     delta_stiffness = delta_action[motor_iter+1]
@@ -209,9 +214,9 @@ class EqPointController(BaseController):
             joint_iter += 1
 
         if self.motor_controller == "velocity":
-            motor_req = generate_velocities_msg(self.arm, motor_goal)
+            motor_msg = generate_velocities_msg(self.arm, motor_goal)
         elif self.motor_controller == "position":
-            motor_req = generate_positions_msg(self.arm, motor_goal)
+            motor_msg = generate_positions_msg(self.arm, motor_goal)
 
         if not self.robot_safety_check():
             # wait for user_input
@@ -219,18 +224,25 @@ class EqPointController(BaseController):
             pass
         self.reseted = False
 
-        start = time.time()
+        
 
-        if self.motor_controller == "velocity":
-            self.shoulder_future = self.client_velocity_shoulder.call_async(motor_req)
-            self.upperarm_future = self.client_velocity_upperarm.call_async(motor_req)
-            self.lowerarm_future = self.client_velocity_lowerarm.call_async(motor_req)
-        elif self.motor_controller == "position":
-            self.shoulder_future = self.client_delta_shoulder.call_async(motor_req)
-            self.upperarm_future = self.client_delta_upperarm.call_async(motor_req)
-            self.lowerarm_future = self.client_delta_lowerarm.call_async(motor_req)
-            print("sending position request")
+        # if self.motor_controller == "velocity":
+        #     self.shoulder_future = self.client_velocity_shoulder.call_async(motor_req)
+        #     self.upperarm_future = self.client_velocity_upperarm.call_async(motor_req)
+        #     self.lowerarm_future = self.client_velocity_lowerarm.call_async(motor_req)
+        # elif self.motor_controller == "position":
+        #     self.shoulder_future = self.client_delta_shoulder.call_async(motor_req)
+        #     self.upperarm_future = self.client_delta_upperarm.call_async(motor_req)
+        #     self.lowerarm_future = self.client_delta_lowerarm.call_async(motor_req)
+        #     print("sending position request")
 
-        while (time.time() - start) < self.control_timestep:
+        msg = Bool(data=True)
+        while (time.time() - self.last_time) < self.control_timestep:
+            self.pub_goal_velocity_shoulder.publish(motor_msg)
+            self.pub_goal_velocity_upperarm.publish(motor_msg)
+            self.pub_goal_velocity_lowerarm.publish(motor_msg)
+            self.pub_step.publish(msg)
             rclpy.spin_once(self.node)
+        
+        self.last_time = time.time()
     

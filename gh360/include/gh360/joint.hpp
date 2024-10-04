@@ -12,6 +12,7 @@ class Joint
 
         std::string joint_name;
         double joint_angle;
+        double joint_velocity;
         double min_joint_angle;
         double max_joint_angle;
         double motor_init_pos;

@@ -133,7 +133,8 @@ void gh360::EncoderHandler::upperarm_encoder_callback(const std_msgs::msg::Strin
     for (uint i=0; i<this->upperarm_joint_names.size(); i++)
     {
         new_joint_angle = joint_angles[this->upperarm_port_ids[i]-1] * this->upperarm_inverters[i] - this->upperarm_offsets[i];
-        new_joint_vel = (new_joint_angle - this->upperarm_joint_angles[i]) / elapsed_seconds.count()    ;
+        // new_joint_vel = (new_joint_angle - this->upperarm_joint_angles[i]) / elapsed_seconds.count();
+        new_joint_vel = (new_joint_angle - this->upperarm_joint_angles[i]) / 0.00993;
 
         this->upperarm_joint_angles[i] = new_joint_angle;
         this->upperarm_joint_vels[i] = new_joint_vel;

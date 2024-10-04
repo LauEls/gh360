@@ -71,6 +71,7 @@ namespace gh360
             bool lowerarm_data_recieved = false;
 
             float alpha = 0.1;
+            // std::vector<double> joint_velcities;
     };   
 
 }

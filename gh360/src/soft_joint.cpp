@@ -6,6 +6,7 @@ SoftJoint::SoftJoint()
     this->joint_type = "soft_joint";
     this->right_motor_init_pos = true;
     this->left_motor_init_pos = true;
+    this->joint_velocities = std::vector<double>(10,0.0);
 }
 
 SoftJoint::~SoftJoint() 
@@ -254,9 +255,51 @@ double SoftJoint::get_joint_angle()
     return this->joint_angle;
 }
 
+double SoftJoint::get_joint_velocity()
+{
+    return this->joint_velocity;
+}
+
 void SoftJoint::set_joint_angle(double new_angle)
 {
     this->joint_angle = new_angle;
+    // this->joint_positions.push_back(new_angle);
+    // this->joint_positions.erase(this->joint_positions.begin());
+    // double vel = 0.0;
+    // for (uint i = 1; i < this->joint_positions.size(); i++)
+    // {
+    //     vel += (this->joint_positions[i] - this->joint_positions[i-1])/0.01;
+    // }
+    // this->joint_velocity = vel / this->joint_positions.size();
+}
+
+void SoftJoint::set_joint_velocity(double new_velocity, bool filter=false)
+{
+    if (filter)
+    {
+        this->joint_velocities.push_back(new_velocity);
+        this->joint_velocities.erase(this->joint_velocities.begin());
+        double vel = 0.0;
+        for (uint i = 0; i < this->joint_velocities.size(); i++)
+        {
+            vel += this->joint_velocities[i];
+        }
+        this->joint_velocity = vel / this->joint_velocities.size();
+    }
+    else
+    {
+        this->joint_velocity = new_velocity;
+    }
+    // this->joint_velocities.push_back(new_velocity);
+    // this->joint_velocities.erase(this->joint_velocities.begin());
+    // double vel = 0.0;
+    // for (uint i = 0; i < this->joint_velocities.size(); i++)
+    // {
+    //     vel += this->joint_velocities[i];
+    // }
+    // this->joint_velocity = vel / this->joint_velocities.size();
+    // // this->joint_velocity = new_velocity;
+
 }
 
 std::string SoftJoint::get_joint_name()

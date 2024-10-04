@@ -8,4 +8,8 @@ register(
     id="gh360_gym/TrajectoryFollowing-v0",
     entry_point="gh360_gym.envs:TrajectoryFollowingEnv",
 )
+register(
+    id="gh360_gym/FreeMove-v0",
+    entry_point="gh360_gym.envs:FreeMoveEnv",
+)
 

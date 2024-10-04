@@ -35,6 +35,7 @@ setup(
             'camera_frame = gh360_examples.camera_frame:main',
             'door_handle_pose = gh360_examples.door_handle_pose:main',
             'record_demos = gh360_examples.record_demos:main',
+            'pos_step_pub = gh360_examples.pos_step_pub:main',
         ],
     },
 )

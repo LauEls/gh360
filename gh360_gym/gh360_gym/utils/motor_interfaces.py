@@ -4,10 +4,13 @@ from gh360_interfaces.msg import SetVelocity, SetPosition, SetMotorPositions, Se
 
 from gh360_gym.utils.joints import SoftJoint, MotorJoint
 
-def generate_velocities_msg(arm, velocities):
+def generate_velocities_msg(arm, velocities, srv=False):
     motor_iter = 0
     joint_iter = 0
-    motor_vel_req = MotorVelocityStep.Request()
+    if srv:
+        motor_vel_req = MotorVelocityStep.Request()
+    else:
+        motor_vel_req = SetMotorVelocities()
 
     while motor_iter < len(velocities):
         if type(arm[joint_iter]) == SoftJoint:

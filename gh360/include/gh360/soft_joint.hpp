@@ -52,7 +52,10 @@ class SoftJoint: public Joint
         std::string get_joint_name();
         std::string get_joint_type();
         double get_joint_angle();
+        double get_joint_velocity();
         void set_joint_angle(double new_angle);
+        void set_joint_velocity(double new_velocity, bool filter);
+        
 
         int get_right_motor_id();
         int get_left_motor_id();
@@ -144,7 +147,7 @@ class SoftJoint: public Joint
         bool initialize = true;
 
         
-
+        std::vector<double> joint_velocities;
 
 };
 

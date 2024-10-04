@@ -87,19 +87,24 @@ class DoorHandlePose(Node):
             t_handle.header.frame_id = 'door_'+str(self.markers.marker_ids[i])
             t_handle.child_frame_id = 'handle_'+str(self.markers.marker_ids[i])
             if self.markers.marker_ids[i] == 1:
-                t_door.transform.translation.x = -0.185
-                t_door.transform.translation.y = 0.1
+                t_door.transform.translation.x = -0.21
+                t_door.transform.translation.y = 0.09
 
                 t_handle.transform.translation.x = -(0.22 - (0.14))
-                t_handle.transform.translation.y = 0.29-0.263
+                t_handle.transform.translation.y = (0.29-0.263)+0.015
                 t_handle.transform.translation.z = 0.046
 
                 self.tf_broadcaster.sendTransform(t_door)
                 self.tf_broadcaster.sendTransform(t_handle)
             elif self.markers.marker_ids[i] == 3:
-                t_door.transform.translation.x = 0.1
-                t_door.transform.translation.y = -0.19
+                t_door.transform.translation.x = 0.085
+                t_door.transform.translation.y = -0.165
+
+                t_handle.transform.translation.x = (0.29-0.263)+0.015
+                t_handle.transform.translation.y = (0.22 - (0.14))
+                t_handle.transform.translation.z = 0.046
                 self.tf_broadcaster.sendTransform(t_door)
+                self.tf_broadcaster.sendTransform(t_handle)
 
 def main(args=None):
     rclpy.init(args=args)

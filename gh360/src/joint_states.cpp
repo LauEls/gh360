@@ -10,32 +10,39 @@ gh360::JointStates::JointStates()
     SoftJoint* new_joint = new SoftJoint();
     new_joint->set_joint_name("shoulder_yaw");
     new_joint->set_joint_angle(0.0);
+    new_joint->set_joint_velocity(0.0, true);
     this->joints.push_back(new_joint);
     new_joint = new SoftJoint();
     new_joint->set_joint_name("shoulder_roll");
     new_joint->set_joint_angle(0.0);
+    new_joint->set_joint_velocity(0.0, true);
     this->joints.push_back(new_joint);
     new_joint = new SoftJoint();
     new_joint->set_joint_name("shoulder_pitch");
     new_joint->set_joint_angle(0.0);
+    new_joint->set_joint_velocity(0.0, true);
     this->joints.push_back(new_joint);
     new_joint = new SoftJoint();
     new_joint->set_joint_name("upperarm_roll");
     new_joint->set_joint_angle(0.0);
+    new_joint->set_joint_velocity(0.0, true);
     this->joints.push_back(new_joint);
     new_joint = new SoftJoint();
     new_joint->set_joint_name("elbow");
     this->joints.push_back(new_joint);
     new_joint->set_joint_angle(0.0);
+    new_joint->set_joint_velocity(0.0, true);
     // MotorJoint * new_motor_joint = new MotorJoint();
     new_joint = new SoftJoint();
     new_joint->set_joint_name("forearm_roll");
     new_joint->set_joint_angle(0.0);
+    new_joint->set_joint_velocity(0.0, false);
     // new_joint->set_motor_id(11);
     this->joints.push_back(new_joint);
     new_joint = new SoftJoint();
     new_joint->set_joint_name("wrist_pitch");
     new_joint->set_joint_angle(0.0);
+    new_joint->set_joint_velocity(0.0, true);
     this->joints.push_back(new_joint);
 
     this->encoder_subscriber_ = this->create_subscription<gh360_interfaces::msg::ArmEncoderStates>("/encoder_status", 10, std::bind(&gh360::JointStates::encoder_callback, this, std::placeholders::_1));
@@ -61,7 +68,11 @@ void gh360::JointStates::encoder_callback(const gh360_interfaces::msg::ArmEncode
         {
             if (msg->current_joint_states[s].joint_name == this->joints[j]->get_joint_name())
             {
-                if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[j])) soft_joint->set_joint_angle(msg->current_joint_states[s].current_pos);
+                if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[j])) 
+                {
+                    soft_joint->set_joint_angle(msg->current_joint_states[s].current_pos);
+                    soft_joint->set_joint_velocity(msg->current_joint_states[s].current_vel, true);
+                }
             }
         }
     }
@@ -75,9 +86,10 @@ void gh360::JointStates::lowerarm_motor_states_callback(const gh360_interfaces::
     {
         if (msg->motors[s].motor_id == 11)
         {   
-            if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[motor_joint_iter])) 
+            if (SoftJoint* motor_joint = dynamic_cast<SoftJoint*>(this->joints[motor_joint_iter])) 
             {   
-                soft_joint->set_joint_angle(msg->motors[s].present_position);
+                motor_joint->set_joint_angle(msg->motors[s].present_position);
+                motor_joint->set_joint_velocity(msg->motors[s].present_velocity, false);
             }
         }
     }
@@ -89,6 +101,7 @@ sensor_msgs::msg::JointState gh360::JointStates::create_joint_state_msg()
     sensor_msgs::msg::JointState joint_states_msg = sensor_msgs::msg::JointState();
     std::vector<std::string> names(7);
     std::vector<double> positions(7);
+    std::vector<double> velocities(7);
 
     for (unsigned int i=0; i < this->joints.size(); i++)
     {
@@ -96,15 +109,18 @@ sensor_msgs::msg::JointState gh360::JointStates::create_joint_state_msg()
         {
             names[i] = soft_joint->get_joint_name();
             positions[i] = soft_joint->get_joint_angle();
+            velocities[i] = soft_joint->get_joint_velocity();
         }
         else if (MotorJoint* motor_joint = dynamic_cast<MotorJoint*>(this->joints[i]))
         {
             names[i] = motor_joint->get_joint_name();
             positions[i] = motor_joint->get_joint_angle();
+            velocities[i] = motor_joint->get_joint_velocity();
         }
     }
     joint_states_msg.name = names;
     joint_states_msg.position = positions;
+    joint_states_msg.velocity = velocities;
 
     return joint_states_msg;
 }
