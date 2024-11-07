@@ -24,6 +24,7 @@ setup(
             'step_pub_2 = gh360_demonstration.step_pub_2:main',
             'timer_test = gh360_demonstration.timer_test:main',
             'gui = gh360_demonstration.gui:main',
+            'door_env_obs = gh360_demonstration.door_env_obs:main',
         ],
     },
 )

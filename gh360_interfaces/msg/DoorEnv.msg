@@ -1,0 +1,3 @@
+geometry_msgs/Point handle_position
+float32 handle_angle
+float32 hinge_angle

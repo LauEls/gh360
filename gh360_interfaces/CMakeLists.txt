@@ -26,6 +26,7 @@ find_package(rosidl_default_generators REQUIRED)
 
 rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/MotorStatus.msg"
+  "msg/DoorEnv.msg"
   "msg/PortStatus.msg"
   "msg/SetPosition.msg"
   "msg/SetVelocity.msg"

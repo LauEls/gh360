@@ -158,10 +158,8 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
-scripts/robosuite_env_solved/demonstrations/stack/stack_demonstration_data_v1.npy
-rl_tutorials/reinforcement_learning/gym-maze/
-rl_tutorials/reinforcement_learning/td3_bc/D4RL/
-rl_tutorials/reinforcement_learning/td3_bc/TD3_BC/
-scripts/robosuite_env_solved/demonstrations/lift/lift_expert_random.npy
-scripts/robosuite_env_solved/demonstrations/lift/lift_medium_expert_with_random.npy
-scripts/robosuite_env_solved/demonstrations/stack/stack_random_no_noise_test_v2.npy
+gh360_examples/data/
+gh360_demonstration/data/
+
+
+

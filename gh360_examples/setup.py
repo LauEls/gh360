@@ -36,6 +36,8 @@ setup(
             'door_handle_pose = gh360_examples.door_handle_pose:main',
             'record_demos = gh360_examples.record_demos:main',
             'pos_step_pub = gh360_examples.pos_step_pub:main',
+            'testing_script = gh360_examples.testing_script:main',
+            'reset_robot = gh360_examples.reset_robot:main',
         ],
     },
 )

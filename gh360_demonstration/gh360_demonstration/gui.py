@@ -12,10 +12,12 @@ import subprocess
 import signal
 import rosbag2_py
 import copy
+import numpy as np
 from tkscrolledframe import ScrolledFrame
 from rclpy.serialization import deserialize_message
 
 from gh360_interfaces.msg import SpaceMouse, PortStatus, SetMotorVelocities, SetVelocity
+from gh360_demonstration.rosbag_util import ROSBagUtil, JointNames
 from sensor_msgs.msg import JointState
 from std_msgs.msg import Bool
 # may raise PackageNotFoundError
@@ -28,9 +30,11 @@ class RecordDemos(Node, TKMT.ThemedTKinterFrame):
 
         self.path_ros2_ws = '/home/laurenz/phd_project/ros2_gh360_ws'
         self.path_demo_dir = f'{self.path_ros2_ws}/src/gh360/gh360_examples/data/spacemouse_demonstrations/'
+        self.path_learning_data_dir = f'{self.path_ros2_ws}/src/gh360/gh360_demonstration/data/learning_datasets/'
         self.path_venv = '~/phd_project/robosuite_venv'
     
-        self.rosbag_reader = rosbag2_py.SequentialReader()
+        # self.rosbag_reader = rosbag2_py.SequentialReader()
+        # self.rosbag_util = ROSBagUtil()
         self.data_read = False
         self.replay_record = False
         self.step_replay = False
@@ -40,9 +44,12 @@ class RecordDemos(Node, TKMT.ThemedTKinterFrame):
         # print(_path)
         # self.AccentButton("Add Data", self.addData, row=0, col=0)
         self.notebook = self.Notebook("Test Notebook", row=0, col=0, rowspan=3, colspan=2)
-        self.tab_1 = self.notebook.addTab("Record Data")
 
-        self.tab_1.Text("Environment", row=0, col=0)
+        ###################
+        # Record Data Tab #
+        ###################
+        self.tab_1 = self.notebook.addTab("Record Data")
+        self.tab_1.Text("Environment:", row=0, col=0)
         self.env_option_menu_list = ["No Environment", "Door"]
         self.record_env = tk.StringVar(value=self.env_option_menu_list[0])
         self.tab_1.OptionMenu(self.env_option_menu_list, self.record_env, row=0, col=1)
@@ -54,9 +61,11 @@ class RecordDemos(Node, TKMT.ThemedTKinterFrame):
         self.btn_stop_rec = self.tab_1.AccentButton("Stop Recording", self.stop_record, row=2, col=1)
         self.btn_stop_rec["state"] = "disabled"
 
+        ###################
+        # Replay Data Tab #
+        ###################
         self.tab_2 = self.notebook.addTab("Replay Data")
         self.file_tree = self.parse_file_tree()
-
         self.tree_view = self.tab_2.Treeview(["File Name", "Date", "Time"], [150,120,120], 10, self.file_tree, 'files', ["name", "date", "time"], row=0, col=0, rowspan=1, colspan=2, anchor="center")
         self.btn_start_replay = self.tab_2.AccentButton("Play", lambda: self.start_replay(record=False), row=1, col=0)
         self.btn_stop_replay = self.tab_2.AccentButton("Stop", self.stop_replay, row=1, col=1)
@@ -65,71 +74,146 @@ class RecordDemos(Node, TKMT.ThemedTKinterFrame):
         self.btn_start_step_replay = self.tab_2.AccentButton("Play Steps", lambda: self.start_step_replay(gym=False), row=3, col=0, colspan=2)
         self.btn_start_step_replay = self.tab_2.AccentButton("Play Gym Steps", lambda: self.start_step_replay(gym=True), row=4, col=0, colspan=2)
 
+        ######################
+        # Visualize Data Tab #
+        ######################
         self.tab_3 = self.notebook.addTab("Visualize Data")
         self.tree_view_2 = self.tab_3.Treeview(["File Name", "Date", "Time"], [150,120,120], 10, self.file_tree, 'files', ["name", "date", "time"], row=0, col=0, rowspan=1, colspan=2, anchor="center")
         self.btn_read_data = self.tab_3.AccentButton("Read Data", self.read_data, row=1, col=0, colspan=2, rowspan=1)
-
-        
-        # self.replay_files_frame = self.tab_3.addLabelFrame("Replay Files", row=2, col=0)
-        self.replay_files_frame = self.tab_3.addLabelFrame("Replay Files", row=2, col=0)
-        vscrollbar = ttk.Scrollbar(self.replay_files_frame.master, orient=VERTICAL)
-        vscrollbar.pack(fill=Y, side=RIGHT, expand=FALSE)
-        self.replay_file_canvas = tk.Canvas(self.replay_files_frame.master, height=300, highlightthickness=0, bd=0, yscrollcommand=vscrollbar.set)
+        self.replay_files_frame = self.tab_3.addLabelFrame("Replay Files", row=3, col=0)
+        replay_file_vscrollbar = ttk.Scrollbar(self.replay_files_frame.master, orient=VERTICAL)
+        replay_file_vscrollbar.pack(fill=Y, side=RIGHT, expand=FALSE)
+        self.replay_file_canvas = tk.Canvas(self.replay_files_frame.master, height=300, highlightthickness=0, bd=0, yscrollcommand=replay_file_vscrollbar.set)
         self.replay_file_canvas.pack(side=LEFT, fill=BOTH, expand=TRUE)
-        vscrollbar.config(command=self.replay_file_canvas.yview)
-        # self.replay_files_frame.widgets.widgetlist[0].addLabelFrame("Interior", row=0, col=0)
+        replay_file_vscrollbar.config(command=self.replay_file_canvas.yview)
         self.replay_files_interior = tk.Frame(self.replay_file_canvas)
-        self.replay_files_interior.bind("<Configure>", self._configure_interior)
-        self.replay_file_canvas.bind("<Configure>", self._configure_canvas)
-        self.replay_file_canvas.bind_all("<Button-4>", lambda event, scroll=-1: self._on_mousehwheel(event, scroll))
-        self.replay_file_canvas.bind_all("<Button-5>", lambda event, scroll=1: self._on_mousehwheel(event, scroll))
-        self.interior_id = self.replay_file_canvas.create_window(0, 0, window=self.replay_files_interior, anchor=NW)
-        # self.replay_files_interior.grid(row=0, column=0)
-        # button = ttk.Checkbutton(self.replay_files_interior, text="Original Recording")
-        # button.grid(row=0, column=0)
-        # self.Checkbutton()
-        # self.replay_files_frame.widgets.widgetlist.append(self.replay_files_interior)
-        # self.replay_files_interior.bind('<Configure>', self._configure_interior)
-        # self.rp
+        self.replay_file_interior_id = self.replay_file_canvas.create_window(0, 0, window=self.replay_files_interior, anchor=NW)
+        self.replay_files_interior.bind("<Configure>", 
+            lambda event, canvas=self.replay_file_canvas, interior_frame=self.replay_files_interior: 
+            self._configure_interior(event, canvas, interior_frame)
+        )
+        self.replay_file_canvas.bind("<Configure>", 
+            lambda event, canvas=self.replay_file_canvas, interior_frame=self.replay_files_interior, interior_id=self.replay_file_interior_id: 
+            self._configure_canvas(event, canvas, interior_frame, interior_id)
+        )
+        self.replay_file_canvas.bind_all("<Button-4>", 
+            lambda event, scroll=-1, canvas=self.replay_file_canvas: 
+            self._on_mousehwheel(event, canvas, scroll)
+        )
+        self.replay_file_canvas.bind_all("<Button-5>", 
+            lambda event, scroll=1, canvas=self.replay_file_canvas: 
+            self._on_mousehwheel(event, canvas, scroll)
+        )
         
         self.replay_files_frame
         self.cbtn_replay_var = []
         self.cbtn_replay = []        
-
-        self.vis_data_options = ["Motor 1 Position", "Motor 2 Position", "Motor 3 Position", "Motor 4 Position", 
-                                 "Motor 5 Position", "Motor 6 Position", "Motor 7 Position", "Motor 8 Position", 
-                                 "Motor 9 Position", "Motor 10 Position", "Motor 11 Position", "Motor 12 Position", 
-                                 "Motor 13 Position", "Motor 1 Goal Velocity", "Motor 2 Goal Velocity", "Motor 3 Goal Velocity",
-                                 "Motor 4 Goal Velocity", "Motor 5 Goal Velocity", "Motor 6 Goal Velocity", "Motor 7 Goal Velocity",
-                                 "Motor 8 Goal Velocity", "Motor 9 Goal Velocity", "Motor 10 Goal Velocity", "Motor 11 Goal Velocity",
-                                 "Motor 12 Goal Velocity", "Motor 13 Goal Velocity", "Shoulder Yaw Position", "Shoulder Roll Position", 
-                                 "Shoulder Pitch Position", "Upperarm Roll Position", "Elbow Position", "Lowerarm Roll Position", 
-                                 "Wrist Pitch Position"]
+        self.vis_data_options = ["Motor Position", "Motor Velocity", "Motor Goal Velocity", "Joint Position", "Joint Velocity"]
+        self.vis_data_options_2 = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"]
         self.vis_data_var = tk.StringVar(value=self.vis_data_options[0])
-        self.vis_data_var.trace_add("write", self.vis_data_changed)
+        self.vis_data_var_2 = tk.StringVar(value=self.vis_data_options_2[0])
         self.tab_3.OptionMenu(self.vis_data_options, self.vis_data_var, row=1, col=2)
+        self.option_submenu = self.tab_3.OptionMenu(self.vis_data_options_2, self.vis_data_var_2, row=2, col=2)
+        self.vis_data_var.trace_add("write", self.vis_data_changed)
+        self.vis_data_var_2.trace_add("write", self.vis_data_2_changed)
         self.graphframe = self.tab_3.addLabelFrame("Data Plot", row=0, col=2)
         self.canvas, fig, self.ax, background, self.accent = self.graphframe.matplotlibFrame("Graph Frame Test")
+
+        ######################################
+        # Generate Demonstration Dataset Tab #
+        ######################################
+        self.tab_4 = self.notebook.addTab("Generate Demonstration Dataset")
+        self.tab_4.Text("Environment:", row=0, col=0)
+        self.demo_env = tk.StringVar(value=self.env_option_menu_list[0])
+        self.tab_4.OptionMenu(self.env_option_menu_list, self.demo_env, row=0, col=1)
+        self.demo_env.trace_add("write", self.update_recordings)
+        self.recordings_frame = self.tab_4.addLabelFrame("Recordings", row=1, col=0, colspan=2)
+        recordings_vscrollbar = ttk.Scrollbar(self.recordings_frame.master, orient=VERTICAL)
+        recordings_vscrollbar.pack(fill=Y, side=RIGHT, expand=FALSE)
+        self.recordings_canvas = tk.Canvas(self.recordings_frame.master, height=300, highlightthickness=0, bd=0, yscrollcommand=recordings_vscrollbar.set)
+        self.recordings_canvas.pack(side=LEFT, fill=BOTH, expand=TRUE)
+        recordings_vscrollbar.config(command=self.recordings_canvas.yview)
+        self.recordings_interior = tk.Frame(self.recordings_canvas)
+        self.recordings_interior_id = self.recordings_canvas.create_window(0, 0, window=self.recordings_interior, anchor=NW)
+        self.recordings_interior.bind("<Configure>", 
+            lambda event, canvas=self.recordings_canvas, interior_frame=self.recordings_interior: 
+            self._configure_interior(event, canvas, interior_frame)
+        )
+        self.recordings_canvas.bind("<Configure>", 
+            lambda event, canvas=self.recordings_canvas, interior_frame=self.recordings_interior, interior_id=self.recordings_interior_id: 
+            self._configure_canvas(event, canvas, interior_frame, interior_id)
+        )
+        self.recordings_canvas.bind_all("<Button-4>", 
+            lambda event, scroll=-1, canvas=self.recordings_canvas: 
+            self._on_mousehwheel(event, canvas, scroll)
+        )
+        self.recordings_canvas.bind_all("<Button-5>", 
+            lambda event, scroll=1, canvas=self.recordings_canvas: 
+            self._on_mousehwheel(event, canvas, scroll)
+        )
+        self.cbtn_recordings_var = []
+        self.cbtn_recordings = [] 
+        self.dataset_filename = tk.StringVar(value="")
+        self.tab_4.Text("File Name:", row=3, col=0)
+        self.tab_4.Entry(self.dataset_filename, row=3, col=1)
+        self.btn_gen_demos = self.tab_4.AccentButton("Generate Dataset", self.generate_demonstration_dataset, row=4, col=0, colspan=2)
+
+        # self.learning_datasets_frame = self.tab_4.addLabelFrame("Demonstration Datasets", row=1, col=3, colspan=2)
+        # self.learning_datasets_interior = self.ScrollableFrame(self.learning_datasets_frame.master)
+        # self.btn_gen_demos = self.tab_4.AccentButton("Generate Random Demonstrations", self.update_learning_datasets, row=4, col=0, colspan=2)
+
 
         self.notebook.notebook.bind("<<NotebookTabChanged>>", self.tab_changed)
         
         self.run()
 
-    def _on_mousehwheel(self, event, scroll):
-        self.replay_file_canvas.yview_scroll(scroll, "units")
+    def ScrollableFrame(self, master, height= 300):
+        vscrollbar = ttk.Scrollbar(master, orient=VERTICAL)
+        vscrollbar.pack(fill=Y, side=RIGHT, expand=FALSE)
+        canvas = tk.Canvas(master, height=height, highlightthickness=0, bd=0, yscrollcommand=vscrollbar.set)
+        canvas.pack(side=LEFT, fill=BOTH, expand=TRUE)
+        vscrollbar.config(command=canvas.yview)
+        interior = tk.Frame(canvas)
+        interior_id = canvas.create_window(0, 0, window=interior, anchor=NW)
 
-    def _on_mousehwheel_down(self, event):
-        self.replay_file_canvas.yview_scroll(1, "units")
+        interior.bind("<Configure>", 
+            lambda event, canvas=canvas, interior_frame=interior: 
+            self._configure_interior(event, canvas, interior_frame)
+        )
+        canvas.bind("<Configure>", 
+            lambda event, canvas=canvas, interior_frame=interior, interior_id=interior_id: 
+            self._configure_canvas(event, canvas, interior_frame, interior_id)
+        )
+        canvas.bind_all("<Button-4>", 
+            lambda event, scroll=-1, canvas=canvas: 
+            self._on_mousehwheel(event, canvas, scroll)
+        )
+        canvas.bind_all("<Button-5>", 
+            lambda event, scroll=1, canvas=canvas: 
+            self._on_mousehwheel(event, canvas, scroll)
+        )
+        
+        return interior
+    
 
-    def _configure_interior(self, event):
-        size = (self.replay_files_interior.winfo_reqwidth(), self.replay_files_interior.winfo_reqheight())
-        self.replay_file_canvas.config(scrollregion="0 0 %s %s" % size)
-        if self.replay_files_interior.winfo_reqwidth() != self.replay_file_canvas.winfo_width():
-            self.replay_file_canvas.config(width=self.replay_files_interior.winfo_reqwidth())
+    def _on_mousehwheel(self, event, canvas, scroll):
+        canvas.yview_scroll(scroll, "units")
 
-    def _configure_canvas(self, event):
-        if self.replay_files_interior.winfo_reqwidth() != self.replay_file_canvas.winfo_width():
-            self.replay_file_canvas.itemconfigure(self.interior_id, width=self.replay_file_canvas.winfo_width())
+    def _configure_interior(self, event, canvas, interior_frame):
+        size = (interior_frame.winfo_reqwidth(), interior_frame.winfo_reqheight())
+        canvas.config(scrollregion="0 0 %s %s" % size)
+        if interior_frame.winfo_reqwidth() != canvas.winfo_width():
+            canvas.config(width=interior_frame.winfo_reqwidth())
+        self.recordings_canvas.update_idletasks()
+
+    def _configure_canvas(self, event, canvas, interior_frame, interior_id):
+        if interior_frame.winfo_reqwidth() != canvas.winfo_width():
+            canvas.itemconfigure(interior_id, width=canvas.winfo_width())
+        self.recordings_canvas.update_idletasks()
+        
+    
+
+
 
     def parse_file_tree(self):
         file_tree = []
@@ -174,44 +258,52 @@ class RecordDemos(Node, TKMT.ThemedTKinterFrame):
         pady_value = 2
         self.cbtn_replay_var = []
         self.cbtn_replay_var.append(tk.BooleanVar(value=True))
-        self.cbtn_replay_var.append(tk.BooleanVar(value=False))
+        # self.cbtn_replay_var.append(tk.BooleanVar(value=False))
         self.cbtn_replay = []
         # self.cbtn_replay.append(self.replay_files_interior.Checkbutton("Original Recording", self.cbtn_replay_var[0], command=self.draw_graph))
-        button = ttk.Checkbutton(self.replay_files_interior, text="Original Recording", variable=self.cbtn_replay_var[0], command=self.draw_graph).pack(padx=padx_value, pady=pady_value, anchor="w")
+        c_btn = ttk.Checkbutton(self.replay_files_interior, text="Original Recording", variable=self.cbtn_replay_var[0], command=self.draw_graph)
+        c_btn.pack(padx=padx_value, pady=pady_value, anchor="w")
         # self.replay_files_frame.widgets.widgetlist.append(button)
-        self.cbtn_replay.append(button)
+        self.cbtn_replay.append(c_btn)
         # self.cbtn_replay.append(self.replay_files_frame.Checkbutton("Steps", self.cbtn_replay_var[1], command=self.draw_graph))
-        button = ttk.Checkbutton(self.replay_files_interior, text="Steps", variable=self.cbtn_replay_var[1], command=self.draw_graph).pack(padx=padx_value, pady=pady_value, anchor="w")
-        # self.replay_files_frame.widgets.widgetlist.append(button)
-        # button.grid(row=1, column=0)
-        self.cbtn_replay.append(button)
+        # c_btn = ttk.Checkbutton(self.replay_files_interior, text="Steps", variable=self.cbtn_replay_var[1], command=self.draw_graph)
+        # c_btn.pack(padx=padx_value, pady=pady_value, anchor="w")
+        # # self.replay_files_frame.widgets.widgetlist.append(button)
+        # # button.grid(row=1, column=0)
+        # self.cbtn_replay.append(c_btn)
 
         replay_bags = []
 
         for root, dirs, files in os.walk(self.path_demo_dir):
             for dir in dirs:
                 if re.search(bagname, dir) and re.search('replay', dir):
-                    print(f"Found: {dir}")
+                    # print(f"Found: {dir}")
                     replay_bags.append(dir)
                     self.cbtn_replay_var.append(tk.BooleanVar(value=False))
                     # self.cbtn_replay.append(self.replay_files_frame.Checkbutton(f"Replay {dir[-15:]}", self.cbtn_replay_var[-1], command=self.draw_graph))
                     name, date, time = self.filename_to_name_date_time(dir[-20:])
                     # print(f"Name: {name}, Date: {date}, Time: {time}")
-                    self.cbtn_replay.append(ttk.Checkbutton(self.replay_files_interior, text=f"Replay - {date} {time}", variable=self.cbtn_replay_var[-1], command=self.draw_graph).pack(padx=padx_value, pady=pady_value, anchor="w"))
+                    c_btn = ttk.Checkbutton(self.replay_files_interior, text=f"Replay - {date} {time}", variable=self.cbtn_replay_var[-1], command=self.draw_graph)
+                    c_btn.pack(padx=padx_value, pady=pady_value, anchor="w")
+                    self.cbtn_replay.append(c_btn)
                 elif re.search(bagname, dir) and re.search('gym_step', dir):
-                    print(f"Found: {dir}")
+                    # print(f"Found: {dir}")
                     replay_bags.append(dir)
                     self.cbtn_replay_var.append(tk.BooleanVar(value=False))
                     # self.cbtn_replay.append(self.replay_files_frame.Checkbutton(f"Gym Step Replay {dir[-15:]}", self.cbtn_replay_var[-1], command=self.draw_graph))
                     name, date, time = self.filename_to_name_date_time(dir[-20:])
-                    self.cbtn_replay.append(ttk.Checkbutton(self.replay_files_interior, text=f"Gym Step Replay - {date} {time}", variable=self.cbtn_replay_var[-1], command=self.draw_graph).pack(padx=padx_value, pady=pady_value, anchor="w"))
+                    c_btn = ttk.Checkbutton(self.replay_files_interior, text=f"Gym Step Replay - {date} {time}", variable=self.cbtn_replay_var[-1], command=self.draw_graph)
+                    c_btn.pack(padx=padx_value, pady=pady_value, anchor="w")
+                    self.cbtn_replay.append(c_btn)
                 elif re.search(bagname, dir) and re.search('step', dir):
-                    print(f"Found: {dir}")
+                    # print(f"Found: {dir}")
                     replay_bags.append(dir)
                     self.cbtn_replay_var.append(tk.BooleanVar(value=False))
                     # self.cbtn_replay.append(self.replay_files_frame.Checkbutton(f"Step Replay {dir[-15:]}", self.cbtn_replay_var[-1], command=self.draw_graph))
                     name, date, time = self.filename_to_name_date_time(dir[-20:])
-                    self.cbtn_replay.append(ttk.Checkbutton(self.replay_files_interior, text=f"Step Replay - {date} {time}", variable=self.cbtn_replay_var[-1], command=self.draw_graph).pack(padx=padx_value, pady=pady_value, anchor="w"))
+                    c_btn = ttk.Checkbutton(self.replay_files_interior, text=f"Step Replay - {date} {time}", variable=self.cbtn_replay_var[-1], command=self.draw_graph)
+                    c_btn.pack(padx=padx_value, pady=pady_value, anchor="w")
+                    self.cbtn_replay.append(c_btn)
 
         return replay_bags
 
@@ -225,80 +317,167 @@ class RecordDemos(Node, TKMT.ThemedTKinterFrame):
 
         if tab_text == "Visualize Data":
             self.update_treeview(self.tree_view_2)
-            pass
+            
+        if tab_text == "Generate Demonstration Dataset":
+            self.file_tree = self.parse_file_tree()
+            self.update_recordings()
 
-    def read_bag(self, rosbag_uri):
-        storage_options = rosbag2_py._storage.StorageOptions(
-            uri=rosbag_uri,
-            storage_id='sqlite3')
-        converter_options = rosbag2_py._storage.ConverterOptions('', '')
-        self.rosbag_reader.open(storage_options, converter_options)
+    def cancel_gen_demos(self):
+        if self.gen_random_paths_process.poll() is None:
+            os.killpg(os.getpgid(self.gen_random_paths_process.pid), signal.SIGINT)
+            self.gen_random_paths_process.wait()
 
-        bag_data = {}
+        self.btn_cancel_gen_demos.destroy()
+            
+    def generate_demonstration_dataset(self):
+        save_file_name = self.dataset_filename.get()
+        if not self.check_file_name(save_file_name):
+            return
+        
+        if self.demo_env.get() == "No Environment":
+            env = "no_env"
+        elif self.demo_env.get() == "Door":
+            env = "door"
+        
+        paths = []
+        max_current = np.zeros(13)
+        for i, cbtn_var in enumerate(self.cbtn_recordings_var):
+            if cbtn_var.get():
+                split_string = self.cbtn_recordings[i]['text'].split(' ')
+                name = split_string[0]
+                date = split_string[2]
+                time = split_string[3]
+                rosbag_name = self.name_date_time_to_filename(name, date, time)
+                
+                rosbag_uri = f'{self.path_demo_dir}{env}/{rosbag_name}'
+                new_bag = ROSBagUtil(rosbag_uri)
+                for j in range(13):
+                    # print(f"Motor Current Shape: {nmotor_current.shape}")
+                    motor_current = [obj.data for obj in new_bag.motor_currents[f"motor_{j+1}"]]
+                    new_max_current = np.max(np.abs(motor_current))
+                    if new_max_current > max_current[j]:
+                        max_current[j] = new_max_current
+                new_paths = new_bag.generate_demonstration_set()
+                paths.append(new_paths)
 
-        bag_data["motor_positions"] = {}
-        bag_data["motor_velocities"] = {}
-        bag_data["motor_goal_velocities"] = {}
-        for i in range(1, 14):
-            bag_data["motor_positions"][f"motor_{i}"] = []
-            bag_data["motor_velocities"][f"motor_{i}"] = []
-            bag_data["motor_goal_velocities"][f"motor_{i}"] = []
-        bag_data["joint_positions"] = {}
-        bag_data["joint_positions"]["shoulder_yaw"] = []
-        bag_data["joint_positions"]["shoulder_roll"] = []
-        bag_data["joint_positions"]["shoulder_pitch"] = []
-        bag_data["joint_positions"]["upperarm_roll"] = []
-        bag_data["joint_positions"]["elbow"] = []
-        bag_data["joint_positions"]["lowerarm_roll"] = []
-        bag_data["joint_positions"]["wrist_pitch"] = []
-        bag_data["gym_stepping"] = []
-        bag_data["time"] = {}
-        bag_data["time"]["joint_positions"] = []
-        bag_data["time"]["shoulder_motors"] = []
-        bag_data["time"]["upperarm_motors"] = []
-        bag_data["time"]["lowerarm_motors"] = []
-        bag_data["time"]["shoulder_motor_goal_velocities"] = []
-        bag_data["time"]["upperarm_motor_goal_velocities"] = []
-        bag_data["time"]["lowerarm_motor_goal_velocities"] = []
-        bag_data["time"]["gym_stepping"] = []
-        while self.rosbag_reader.has_next():
-            topic, msg, t = self.rosbag_reader.read_next()
+        max_current_reduced = np.zeros(7)
+        for i in range(7):
+            if i*2 == 10:
+                max_current_reduced[i] = max_current[10]
+            elif i*2 == 12:
+                max_current_reduced[i] = np.max([max_current[11], max_current[12]])
+            else:
+                max_current_reduced[i] = np.max([max_current[i*2], max_current[i*2+1]])
+        print(f"Max currents: {max_current}")
+        print(f"Max currents reduced: {max_current_reduced}")
 
-            if topic.endswith("motor_status"):
-                msg_dec = deserialize_message(msg, PortStatus)
-                for motor in msg_dec.motors:
-                    if motor.motor_id < 14:
-                        bag_data["motor_positions"][f"motor_{motor.motor_id}"].append(motor.present_position)
-                        bag_data["motor_velocities"][f"motor_{motor.motor_id}"].append(motor.present_velocity)
-                port = topic.split("/")[1]
-                bag_data["time"][f"{port}_motors"].append(t)
-            elif topic.endswith("motor_goal_velocity"):
-                msg_dec = deserialize_message(msg, SetMotorVelocities)
-                port = topic.split("/")[1]
-                # print(f"Message: {msg_dec}")
-                for motor_vel in msg_dec.motor_goal_velocities:
-                    # print(f"Motor {motor_vel.id} Goal Velocity: {motor_vel.velocity}")
-                    # if motor_vel.id < 14:
-                    if (port == "shoulder" and motor_vel.id < 7) or (port == "upperarm" and 6 < motor_vel.id < 11) or (port == "lowerarm" and 10 < motor_vel.id < 14):
-                        bag_data["motor_goal_velocities"][f"motor_{motor_vel.id}"].append(motor_vel.velocity)
-                # print(f"Port: {port}")
-                bag_data["time"][f"{port}_motor_goal_velocities"].append(t)
-            elif topic == "/gh360_joint_states":
-                msg_dec = deserialize_message(msg, JointState)
-                bag_data["joint_positions"]["shoulder_yaw"].append(msg_dec.position[0])
-                bag_data["joint_positions"]["shoulder_roll"].append(msg_dec.position[1])
-                bag_data["joint_positions"]["shoulder_pitch"].append(msg_dec.position[2])
-                bag_data["joint_positions"]["upperarm_roll"].append(msg_dec.position[3])
-                bag_data["joint_positions"]["elbow"].append(msg_dec.position[4])
-                bag_data["joint_positions"]["lowerarm_roll"].append(msg_dec.position[5])
-                bag_data["joint_positions"]["wrist_pitch"].append(msg_dec.position[6])
-                bag_data["time"]["joint_positions"].append(t)
-            elif topic == "/gym_stepping":
-                msg_dec = deserialize_message(msg, Bool)
-                bag_data["gym_stepping"].append(msg_dec.data)
-                bag_data["time"]["gym_stepping"].append(t)
+        paths = np.array(paths, dtype=object)
+        print(f"Paths Shape: {paths.shape}")
+        path_lengths = np.array([])
+        max_action = np.zeros(7)
+        min_action = np.ones(7)*1000
+        max_joint_pos = np.zeros(7)
+        min_joint_pos = np.ones(7)*1000
+        # max_current = np.zeros(7)
+        for i, path in enumerate(paths):
+            path_lengths = np.append(path_lengths, path['actions'].shape[0])
+            new_max_action = np.amax(path['actions'], axis=0)
+            new_min_action = np.amin(path['actions'], axis=0)
+            new_max_joint_pos = np.amax(path['observations'][:, 7:14], axis=0)
+            new_min_joint_pos = np.amin(path['observations'][:, 7:14], axis=0)
+            for j in range(7):
+                if new_max_action[j] > max_action[j]:
+                    max_action[j] = new_max_action[j]
+                if new_min_action[j] < min_action[j]:
+                    min_action[j] = new_min_action[j]
+            for j in range(7):
+                if new_max_joint_pos[j] > max_joint_pos[j]:
+                    max_joint_pos[j] = new_max_joint_pos[j]
+                if new_min_joint_pos[j] < min_joint_pos[j]:
+                    min_joint_pos[j] = new_min_joint_pos[j]
+            
+            print(f"Subpath {i} Shape: {path['actions'].shape[0]}")
+        
+        print(f"Max: {max_action}")
+        print(f"Min: {min_action}")
+        print(f"Max Joint Pos: {max_joint_pos}")
+        print(f"Min Joint Pos: {min_joint_pos}")
+        max_joint_pos = max_joint_pos + 0.1
+        min_joint_pos = min_joint_pos - 0.1
+        max_action = max_action + 0.1
+        min_action = min_action - 0.1
+        episode_length = int(np.max(path_lengths))
+        num_steps = int(np.sum(path_lengths))
 
-        return bag_data
+        print(f"Episode Length: {episode_length}")
+        print(f"Num Steps: {num_steps}")
+
+        # num_steps = 938
+        # episode_length = 64
+        # save_file_name = "reach_handle_v4"
+        # max_action = np.array([0.73132122, 0.63249396, 1.04867809, 0.82074198, 1.23940366, 0.73069696, 0.89224023])
+        # min_action = np.array([-0.6797611, -0.46385764, -0.64722833,-0.40239734, -0.53581053, -0.49964198, -0.83811197])
+        # max_joint_pos = np.array([0.24625256, 0.0, 0.34377382, 1.6515779, 1.93695643, 0.08437629, 0.22024793])
+        # min_joint_pos = np.array([-0.11346592, -0.41125246, 0.0, 0.0, 0.0, -0.67034226, -0.74194147])
+        # max_current_reduced = np.array([638.4, 739.2, 675.36, 705.6, 534.24, 151.2, 544.32])
+        
+        # self.btn_cancel_gen_demos = self.tab_4.AccentButton("Cancel", self.cancel_gen_demos, row=5, col=0, colspan=2)
+
+        # pre_command = f'source {self.path_venv}/bin/activate; source {self.path_ros2_ws}/install/setup.bash;'
+        # arguments = f'--num_steps {num_steps} --episode_length {episode_length} --save_file_name {save_file_name} --input_max "{max_action.tolist()}" --input_min "{min_action.tolist()}" --joint_max_pos "{max_joint_pos.tolist()}" --joint_min_pos "{min_joint_pos.tolist()}" --max_current "{max_current_reduced.tolist()}"'
+        # process_command = f"{pre_command} python {self.path_ros2_ws}/src/gh360/gh360_demonstration/gh360_demonstration/gen_random_paths.py {arguments}"
+        # self.gen_random_paths_process = subprocess.Popen(process_command, shell=True, executable="/bin/bash", preexec_fn=os.setsid)
+
+        # self.gen_random_paths_process.wait()
+
+        # self.btn_cancel_gen_demos.destroy()
+
+        # save_file_path = os.path.join(self.path_learning_data_dir, env, save_file_name)
+        # np.save(save_file_path, paths)
+                
+
+    def update_recordings(self, *args):
+        # print("Update Recordings")
+        padx_value = 10
+        pady_value = 2
+
+        for cbtn in self.cbtn_recordings:
+                cbtn.destroy()
+
+        self.cbtn_recordings_var = []
+        self.cbtn_recordings = []
+
+        # self.cbtn_recordings_var.append(tk.BooleanVar(value=True))
+        # c_btn = ttk.Checkbutton(self.recordings_interior, text="Original Recording asdf asdf asdf sadf asdf asd asd", variable=self.cbtn_recordings_var[0])
+        # c_btn.pack(padx=padx_value, pady=pady_value, anchor="w")
+        # self.cbtn_recordings.append(c_btn)
+
+        # self.cbtn_recordings_var.append(tk.BooleanVar(value=True))
+        # c_btn = ttk.Checkbutton(self.recordings_interior, text="Original Recording", variable=self.cbtn_recordings_var[0])
+        # c_btn.pack(padx=padx_value, pady=pady_value, anchor="w")
+        # self.cbtn_recordings.append(c_btn)
+
+        if self.demo_env.get() == "No Environment":
+            env_name = "no_env"
+        elif self.demo_env.get() == "Door":
+            env_name = "door"
+
+        for env in self.file_tree:
+            if env["name"] == env_name:
+                for file in env["files"]:
+                    self.cbtn_recordings_var.append(tk.BooleanVar(value=False))
+                    name = file["name"]
+                    date = file["date"]
+                    time = file["time"]
+                    c_btn = ttk.Checkbutton(self.recordings_interior, text=f"{name} - {date} {time}", variable=self.cbtn_recordings_var[-1],)
+                    c_btn.pack(padx=padx_value, pady=pady_value, anchor="w")
+                    self.cbtn_recordings.append(c_btn)
+            # for file in env["files"]:
+            #     tv.insert(parent_cntr, "end", cntr, text=file["name"], values=(file["date"], file["time"]))
+            #     cntr += 1
+
+    def update_learning_datasets(self):
+        pass
 
     def read_data(self):
         if self.tree_view_2.item(self.tree_view_2.selection())["values"] == "":
@@ -316,11 +495,13 @@ class RecordDemos(Node, TKMT.ThemedTKinterFrame):
         rosbag_uri = f'{self.path_demo_dir}{env}/{rosbag_name}'
 
         self.bag_data = []
-        original_bag_data = self.read_bag(rosbag_uri)
-        # self.bag_data.append(original_bag_data)
-        filtered_og_bag_data = self.filter_bag_data(copy.deepcopy(original_bag_data))        
-        self.bag_data.append(filtered_og_bag_data)
-        self.bag_data.append(self.generate_step_data(original_bag_data))
+        original_bag = ROSBagUtil(rosbag_uri)
+        # original_bag_data = 
+        # original_bag_data = self.read_bag(rosbag_uri)
+        # # self.bag_data.append(original_bag_data)
+        # filtered_og_bag_data = self.filter_bag_data(copy.deepcopy(original_bag_data))        
+        self.bag_data.append(original_bag)
+        # self.bag_data.append(self.generate_step_data(original_bag_data))
 
         # print(f"Goal Velocitiy length: {len(self.bag_data[0]['motor_goal_velocities']['motor_1'])}")
         # print(f"Shoulder Velocity time length: {len(self.bag_data[0]['time']['shoulder_motor_goal_velocities'])}")
@@ -331,251 +512,74 @@ class RecordDemos(Node, TKMT.ThemedTKinterFrame):
         replay_bags = self.find_replay_files(rosbag_name)
         for bag_name in replay_bags:
             rosbag_uri = f'{self.path_demo_dir}{env}/{bag_name}'
-            new_bag_data = self.read_bag(rosbag_uri)
+            # new_bag_data = self.read_bag(rosbag_uri)
+            new_bag = ROSBagUtil(rosbag_uri)
             if re.search('gym_step', bag_name):
                 # self.bag_data.append(self.filter_gym_bag_data(new_bag_data))
-                self.bag_data.append(self.filter_bag_data(new_bag_data))
+                # self.bag_data.append(self.filter_bag_data(new_bag_data))
+                self.bag_data.append(new_bag)
             else:
-                self.bag_data.append(self.filter_bag_data(new_bag_data))
+                # self.bag_data.append(self.filter_bag_data(new_bag_data))
+                self.bag_data.append(new_bag)
 
         self.data_read = True
 
         self.draw_graph()
-
-    # def filter_gym_bag_data(self, bag_data):
-    #     start_move_time = bag_data["time"]["gym_stepping"][0]
-    #     end_move_time = bag_data["time"]["gym_stepping"][-1]
-
-    #     for i in range(1, 14):
-    #         if i < 7:
-    #             time_list_pos = bag_data["time"]["shoulder_motors"]
-    #         elif i < 11:
-    #             time_list_pos = bag_data["time"]["upperarm_motors"]
-    #         else:
-    #             time_list_pos = bag_data["time"]["lowerarm_motors"]
-
-    #         for z in range(len(time_list_pos) - 1, -1, -1):
-    #             if time_list_pos[z] < start_move_time or time_list_pos[z] > end_move_time:
-    #                 bag_data["motor_positions"][f"motor_{i}"].pop(z)
-    #                 if i == 6:
-    #                     bag_data["time"]["shoulder_motors"].pop(z)
-    #                 elif i == 10:
-    #                     bag_data["time"]["upperarm_motors"].pop(z)
-    #                 elif i == 13:
-    #                     bag_data["time"]["lowerarm_motors"].pop(z)
-
-    #     return bag_data
-
-    def filter_bag_data(self, bag_data):
-        goal_velocities = bag_data["motor_goal_velocities"]
-        start_move_time = 10e20
-        end_move_time = 0
-
-        for i in range(1, 14):
-            if i < 7:
-                time_list = bag_data["time"]["shoulder_motor_goal_velocities"]
-            elif i < 11:
-                time_list = bag_data["time"]["upperarm_motor_goal_velocities"]
-            else:
-                time_list = bag_data["time"]["lowerarm_motor_goal_velocities"]
-
-            for z, t in enumerate(time_list):
-                if goal_velocities[f"motor_{i}"][z] != 0.0 and t < start_move_time:
-                    start_move_time = t
-                    # start_move_time = time_list[z-1]
-                    break
-
-            for t in reversed(time_list):
-                z = time_list.index(t)
-                if goal_velocities[f"motor_{i}"][z] != 0.0 and t > end_move_time:
-                    end_move_time = t
-                    # end_move_time = time_list[z+1]
-                    break
-
-        for i in range(1, 14):
-            if i < 7:
-                time_list = bag_data["time"]["shoulder_motor_goal_velocities"]
-                time_list_pos = bag_data["time"]["shoulder_motors"]
-            elif i < 11:
-                time_list = bag_data["time"]["upperarm_motor_goal_velocities"]
-                time_list_pos = bag_data["time"]["upperarm_motors"]
-            else:
-                time_list = bag_data["time"]["lowerarm_motor_goal_velocities"]
-                time_list_pos = bag_data["time"]["lowerarm_motors"]
-
-            for z in range(len(time_list) - 1, -1, -1):
-                if time_list[z] < start_move_time or time_list[z] > end_move_time:
-                    # bag["time"][time_list].pop(i)
-                    bag_data["motor_goal_velocities"][f"motor_{i}"].pop(z)
-                    if i == 6:
-                        bag_data["time"]["shoulder_motor_goal_velocities"].pop(z)
-                    elif i == 10:
-                        bag_data["time"]["upperarm_motor_goal_velocities"].pop(z)
-                    elif i == 13:
-                        bag_data["time"]["lowerarm_motor_goal_velocities"].pop(z)
-
-            for z in range(len(time_list_pos) - 1, -1, -1):
-                if time_list_pos[z] < start_move_time or time_list_pos[z] > end_move_time:
-                    bag_data["motor_positions"][f"motor_{i}"].pop(z)
-                    if i == 6:
-                        bag_data["time"]["shoulder_motors"].pop(z)
-                    elif i == 10:
-                        bag_data["time"]["upperarm_motors"].pop(z)
-                    elif i == 13:
-                        bag_data["time"]["lowerarm_motors"].pop(z)
-            
-        time_list = bag_data["time"]["joint_positions"]
-        for z in range(len(time_list)-1, -1, -1):
-            if time_list[z] < start_move_time or time_list[z] > end_move_time:
-                bag_data["joint_positions"]["shoulder_yaw"].pop(z)
-                bag_data["joint_positions"]["shoulder_roll"].pop(z)
-                bag_data["joint_positions"]["shoulder_pitch"].pop(z)
-                bag_data["joint_positions"]["upperarm_roll"].pop(z)
-                bag_data["joint_positions"]["elbow"].pop(z)
-                bag_data["joint_positions"]["lowerarm_roll"].pop(z)
-                bag_data["joint_positions"]["wrist_pitch"].pop(z)
-                bag_data["time"]["joint_positions"].pop(z)
-
-            
-        return bag_data
-
-    def generate_step_data(self, original_bag_data):
-        bag_data = {}
-
-        bag_data["motor_positions"] = {}
-        bag_data["motor_goal_velocities"] = {}
-        for i in range(1, 14):
-            bag_data["motor_positions"][f"motor_{i}"] = []
-            bag_data["motor_goal_velocities"][f"motor_{i}"] = []
-        bag_data["joint_positions"] = {}
-        bag_data["joint_positions"]["shoulder_yaw"] = []
-        bag_data["joint_positions"]["shoulder_roll"] = []
-        bag_data["joint_positions"]["shoulder_pitch"] = []
-        bag_data["joint_positions"]["upperarm_roll"] = []
-        bag_data["joint_positions"]["elbow"] = []
-        bag_data["joint_positions"]["lowerarm_roll"] = []
-        bag_data["joint_positions"]["wrist_pitch"] = []
-        bag_data["time"] = {}
-        bag_data["time"]["joint_positions"] = []
-        bag_data["time"]["shoulder_motors"] = []
-        bag_data["time"]["upperarm_motors"] = []
-        bag_data["time"]["lowerarm_motors"] = []
-        bag_data["time"]["shoulder_motor_goal_velocities"] = []
-        bag_data["time"]["upperarm_motor_goal_velocities"] = []
-        bag_data["time"]["lowerarm_motor_goal_velocities"] = []
-        # bag_data["motor_pos_steps"] = {}
-
-        for i in range(1, 14):
-            step_cntr = 0
-            # bag_data["motor_pos_steps"][f"motor_{i}"] = []
-            
-            if i < 7:
-                timestamp = bag_data["time"]["shoulder_motors"]
-                t_list = original_bag_data["time"]["shoulder_motors"] 
-                t_list = [x - original_bag_data["time"]["shoulder_motors"][0] for x in t_list]
-            elif i < 11:
-                timestamp = bag_data["time"]["upperarm_motors"]
-                t_list = original_bag_data["time"]["upperarm_motors"]
-                t_list = [x - original_bag_data["time"]["upperarm_motors"][0] for x in t_list]
-            elif i < 14:
-                timestamp = bag_data["time"]["lowerarm_motors"]
-                t_list = original_bag_data["time"]["lowerarm_motors"]
-                t_list = [x - original_bag_data["time"]["lowerarm_motors"][0] for x in t_list]
-
-            # t_init = bag_data[f"motor_{i}_time"][0]
-            for z, t in enumerate(t_list):
-                # t = t - t_init
-
-                if t >= step_cntr*200e6:
-                    # pos_steps[f"motor_{i}_pos_step"].append(bag_data[f"motor_{i}_position"][z])
-                    bag_data["motor_positions"][f"motor_{i}"].append((original_bag_data[f"motor_positions"][f"motor_{i}"][z]))
-                    # bag_data["motor_goal_velocities"][f"motor_{i}"].append((original_bag_data[f"motor_goal_velocities"][f"motor_{i}"][z]))
-                    if i == 1 or i == 7 or i == 11:
-                        timestamp.append(t)
-                    # if t == 0:
-                    #     prev_pos = bag_data[f"motor_{i}_position"][0]
-                    # else:
-                    #     # vel_steps[f"motor_{i}_vel_step"].append((bag_data[f"motor_{i}_position"][z] - prev_pos)/0.05)
-                    #     pos_diff = (bag_data[f"motor_{i}_position"][z] - prev_pos)*10
-                    #     motor_steps.append(pos_diff)
-                    #     # motor_steps.append((pos_diff/2))
-                    #     # motor_steps.append((pos_diff/2))
-                    #     prev_pos = bag_data[f"motor_{i}_position"][z]
-
-                    step_cntr += 1
-
-            # pos_steps.append(motor_steps)
-
-        return bag_data
         
-
     def draw_graph(self):
         self.ax.clear()
         for z in range(len(self.cbtn_replay_var)):
             if self.cbtn_replay_var[z].get():
                 bag_data = self.bag_data[z]
-                for i in range(1, 14):
-                    if self.vis_data_var.get() == f"Motor {i} Position":
-                        print(f"Motor {i} Positions:")
-                        # data = self.bag_data[z]
-                        data = bag_data["motor_positions"][f"motor_{i}"]
-                        if i < 7:
-                            t = bag_data["time"]["shoulder_motors"] 
-                            t = [x - bag_data["time"]["shoulder_motors"][0] for x in t]
-                        elif i < 11:
-                            t = bag_data["time"]["upperarm_motors"]
-                            t = [x - bag_data["time"]["upperarm_motors"][0] for x in t]
-                        else:
-                            t = bag_data["time"]["lowerarm_motors"]
-                            t = [x - bag_data["time"]["lowerarm_motors"][0] for x in t]
-                    elif self.vis_data_var.get() == f"Motor {i} Goal Velocity":
-                        print(f"Motor {i} Goal Velocities:")
-                        data = bag_data["motor_goal_velocities"][f"motor_{i}"]
-                        if i < 7:
-                            t = bag_data["time"]["shoulder_motor_goal_velocities"]
-                            t = [x - bag_data["time"]["shoulder_motor_goal_velocities"][0] for x in t]
-                        elif i < 11:
-                            t = bag_data["time"]["upperarm_motor_goal_velocities"]
-                            t = [x - bag_data["time"]["upperarm_motor_goal_velocities"][0] for x in t]
-                        else:
-                            t = bag_data["time"]["lowerarm_motor_goal_velocities"]
-                            t = [x - bag_data["time"]["lowerarm_motor_goal_velocities"][0] for x in t]
-                    elif self.vis_data_var.get() == "Shoulder Yaw Position":
-                        data = bag_data["joint_positions"]["shoulder_yaw"]
-                        t = bag_data["time"]["joint_positions"]
-                        t = [x - bag_data["time"]["joint_positions"][0] for x in t]
-                    elif self.vis_data_var.get() == "Shoulder Roll Position":
-                        data = bag_data["joint_positions"]["shoulder_roll"]
-                        t = bag_data["time"]["joint_positions"]
-                        t = [x - bag_data["time"]["joint_positions"][0] for x in t]
-                    elif self.vis_data_var.get() == "Shoulder Pitch Position":
-                        data = bag_data["joint_positions"]["shoulder_pitch"]
-                        t = bag_data["time"]["joint_positions"]
-                        t = [x - bag_data["time"]["joint_positions"][0] for x in t]
-                    elif self.vis_data_var.get() == "Upperarm Roll Position":
-                        data = bag_data["joint_positions"]["upperarm_roll"]
-                        t = bag_data["time"]["joint_positions"]
-                        t = [x - bag_data["time"]["joint_positions"][0] for x in t]
-                    elif self.vis_data_var.get() == "Elbow Position":
-                        data = bag_data["joint_positions"]["elbow"]
-                        t = bag_data["time"]["joint_positions"]
-                        t = [x - bag_data["time"]["joint_positions"][0] for x in t]
-                    elif self.vis_data_var.get() == "Lowerarm Roll Position":
-                        data = bag_data["joint_positions"]["lowerarm_roll"]
-                        t = bag_data["time"]["joint_positions"]
-                        t = [x - bag_data["time"]["joint_positions"][0] for x in t]
-                    elif self.vis_data_var.get() == "Wrist Pitch Position":
-                        data = bag_data["joint_positions"]["wrist_pitch"]
-                        t = bag_data["time"]["joint_positions"]
-                        t = [x - bag_data["time"]["joint_positions"][0] for x in t]
+                bag_selected_data = []
+                data = []
+                t = []
+                if self.vis_data_var.get() == "Motor Position":
+                    # print(f"Motor {self.vis_data_var_2.get()} Positions")
+                    bag_selected_data = bag_data.motor_positions[f"motor_{self.vis_data_var_2.get()}"]
+                elif self.vis_data_var.get() == "Motor Velocity":
+                    # print(f"Motor {self.vis_data_var_2.get()} Velocities")
+                    bag_selected_data = bag_data.motor_velocities[f"motor_{self.vis_data_var_2.get()}"]
+                elif self.vis_data_var.get() == "Motor Goal Velocity":
+                    # print(f"Motor {self.vis_data_var_2.get()} Goal Velocities")
+                    bag_selected_data = bag_data.motor_goal_velocities[f"motor_{self.vis_data_var_2.get()}"]
+                elif "Joint" in self.vis_data_var.get():
+                    joint_name = self.vis_data_var_2.get().upper().replace(" ", "")
+                    joint_id = JointNames[joint_name].value
+                    if self.vis_data_var.get() == "Joint Position":
+                        # print(f"Joint {joint_name} Positions")
+                        bag_selected_data = bag_data.joint_positions[f"joint_{joint_id}"]
+                    elif self.vis_data_var.get() == "Joint Velocity":
+                        # print(f"Joint {joint_name} Velocities")
+                        bag_selected_data = bag_data.joint_velocities[f"joint_{joint_id}"]
+
+                for msg in bag_selected_data:
+                    data.append(msg.data)
+                    t.append(msg.time - bag_selected_data[0].time)
                 
                 self.ax.plot(t, data, label=f"Replay {z}")
 
         self.canvas.draw()
 
     def vis_data_changed(self, *args):
+        if "Motor" in self.vis_data_var.get():
+            # print("Motor Selected")
+            self.vis_data_options_2 = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12", "13"]
+        else:
+            self.vis_data_options_2 = ["Shoulder Yaw", "Shoulder Roll", "Shoulder Pitch", "Upperarm Roll", "Elbow", "Forearm Roll", "Wrist Pitch"]
+
+        self.option_submenu.set_menu(self.vis_data_options_2[0], *self.vis_data_options_2)
+
         if self.data_read == False:
             return
+        # print("vis_data_changed")
+        
+        self.draw_graph()
+
+    def vis_data_2_changed(self, *args):
+        if self.data_read == False:
+            return
+        # print("vis_data_changed")
         self.draw_graph()
         
 
@@ -666,36 +670,40 @@ class RecordDemos(Node, TKMT.ThemedTKinterFrame):
 
     def start_record_process(self, env, rosbag_name):
         pre_command = f'source {self.path_venv}/bin/activate; source {self.path_ros2_ws}/install/setup.bash;'
-        topics = []
-        topics.append("/spacemouse")
-        topics.append("/shoulder/motor_goal_velocity")
-        topics.append("/upperarm/motor_goal_velocity")
-        topics.append("/lowerarm/motor_goal_velocity")
-        topics.append("/shoulder/motor_status")
-        topics.append("/upperarm/motor_status")
-        topics.append("/lowerarm/motor_status")
-        topics.append("/gh360_joint_states")
-        topics.append("/gym_stepping")
         
         process_command = f'{pre_command} ros2 bag record -o {self.path_demo_dir}{env}/{rosbag_name}'
-        # process_command = f'{pre_command} ros2 bag record -a'
-        # for topic in topics:
-        #     process_command += f' {topic}'
         process_command += ' -a'
         record_process = subprocess.Popen(process_command, shell=True, executable="/bin/bash", preexec_fn=os.setsid)
 
         return record_process
-
-    def start_record(self):
+    
+    def check_file_name(self, filename):
         invalid_chars = r'[#%&{}$!+=`<>:"/\\|?*\0\s]'
     
         # If the filename contains any invalid characters, return False
-        if re.search(invalid_chars, self.record_filename.get()):
+        if re.search(invalid_chars, filename):
             self.get_logger().error("Please enter a valid file name")
-            return 
-        if self.record_filename.get() == "":
+            return False
+        if filename == "":
             self.get_logger().error("Please enter a file name")
+            return False
+        
+        return True
+
+    def start_record(self):
+        # invalid_chars = r'[#%&{}$!+=`<>:"/\\|?*\0\s]'
+    
+        # # If the filename contains any invalid characters, return False
+        # if re.search(invalid_chars, self.record_filename.get()):
+        #     self.get_logger().error("Please enter a valid file name")
+        #     return 
+        # if self.record_filename.get() == "":
+        #     self.get_logger().error("Please enter a file name")
+        #     return
+
+        if not self.check_file_name(self.record_filename.get()):
             return
+
         if self.record_env.get() == "No Environment":
             env = "no_env"
         elif self.record_env.get() == "Door":

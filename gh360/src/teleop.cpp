@@ -45,7 +45,6 @@ gh360::Teleop::Teleop() : Node("teleop")
     for (int i = 0; i < 13; i++) {
         this->jnt_to_motor_scaler.push_back(passive_pulleys[i]/active_pulleys[i]);
     }
-    // this->jnt_to_motor_scaler = passive_pulleys/active_pulleys;
     this->max_motor_vel = 10.0;
 
 
@@ -58,7 +57,6 @@ gh360::Teleop::~Teleop()
 
 void gh360::Teleop::motor_status_callback(const gh360_interfaces::msg::PortStatus::SharedPtr msg)
 {
-    // int msg_len = sizeof(msg->motors) / sizeof(msg->motors[0]);
     for (unsigned int i = 0; i < msg->motors.size(); i++) {
         this->motor_status.motors[msg->motors[i].motor_id-1] = msg->motors[i];
     }
@@ -67,10 +65,13 @@ void gh360::Teleop::motor_status_callback(const gh360_interfaces::msg::PortStatu
 void gh360::Teleop::spacemouse_callback(const gh360_interfaces::msg::SpaceMouse::SharedPtr msg)
 {
     if (msg->button1 and this->init_flag == false) {
-        // this->joint_state_msg.position = this->init_joint_pos;
         this->init_flag = true;
         RCLCPP_INFO(this->get_logger(),"init flag true");
         this->init_state = 0;
+
+        for (int i = 0; i < 13; i++) {
+            this->set_velocities_msg.motor_goal_velocities[i].velocity = 0.0;
+        }
     }
 }
 
@@ -83,39 +84,27 @@ void gh360::Teleop::timer_callback()
 {
     
     if (this->init_flag) {
-        // RCLCPP_INFO(this->get_logger(),"timer callback");
-        // for (int i = 0; i < 13; i++) {
-        //     this->set_velocities_msg.motor_goal_velocities[i].velocity = 0.0;
-        // }
-        // this->init_flag = false;
-        this->shoulder_position_publisher_->publish(this->init_motor_msg);
-        this->upperarm_position_publisher_->publish(this->init_motor_msg);
-        this->lowerarm_position_publisher_->publish(this->init_motor_msg);
+        // this->shoulder_position_publisher_->publish(this->init_motor_msg);
+        // this->upperarm_position_publisher_->publish(this->init_motor_msg);
+        // this->lowerarm_position_publisher_->publish(this->init_motor_msg);
 
         bool moving = false;
         bool pos_reached = true;
         for (int i = 0; i < 13; i++) {
             // RCLCPP_INFO(this->get_logger(),"Motor %d moving: %d", i+1, this->motor_status.motors[i].moving);
-            if (this->motor_status.motors[i].moving) {
+            if (this->motor_status.motors[i].present_velocity != 0.0) {
                 moving = true;
                 break;
             }
-
             if (this->motor_status.motors[i].present_position < this->init_motor_pos[i]-0.1 || this->motor_status.motors[i].present_position > this->init_motor_pos[i]+0.1) {
                 pos_reached = false;
             }
         }
-        // if (moving && this->init_state == 0) {
-        //     this->init_state = 1;
-        //     RCLCPP_INFO(this->get_logger(),"Init state 1");
-        // }
-
         if (pos_reached) {
             this->init_state = 1;
             RCLCPP_INFO(this->get_logger(),"init state 1");
         }
         
-
         if (!moving && this->init_state == 1) {
             this->init_flag = false;
             this->shoulder_velocity_publisher_->publish(this->set_velocities_msg);
@@ -144,8 +133,6 @@ void gh360::Teleop::timer_callback()
                 m_cntr++;
             }
         }
-        // this->joint_state_msg.position += this->goal_joint_velocity.velocity;
-        // joint_goal_publisher_->publish(this->joint_state_msg);
         if (max_vel > this->max_motor_vel) {
             for (int i = 0; i < 13; i++) {
                 this->set_velocities_msg.motor_goal_velocities[i].velocity = this->set_velocities_msg.motor_goal_velocities[i].velocity * this->max_motor_vel / max_vel;

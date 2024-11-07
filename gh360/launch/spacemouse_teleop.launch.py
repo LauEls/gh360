@@ -12,9 +12,7 @@ import xacro
 def generate_launch_description():
     package_name = 'gh360'
     robot_name = 'gh360'
-    # model_file_path = os.path.join(get_package_share_directory(package_name), 'urdf', 'gh360.urdf')
     model_file_path = os.path.join(get_package_share_directory(package_name), 'urdf', robot_name+'.urdf')
-    # rviz_config_file = os.path.join(get_package_share_directory(package_name), 'rviz', 'urdf_2.rviz')
     robot_description_raw = xacro.process_file(model_file_path).toxml()
 
     inverse_jacobian_cmd = Node(
@@ -40,35 +38,31 @@ def generate_launch_description():
             name='spacemouse'
     )
 
+    reset_robot_cmd = Node(
+        package='gh360_examples',
+        executable='reset_robot',
+        name='reset_robot'
+    )
 
-    # start_joint_state_publisher_cmd = Node(
-    #     # condition=UnlessCondition(gui),
-    #     package='joint_state_publisher',
-    #     executable='joint_state_publisher',
-    #     name='joint_state_publisher',
-    #     parameters=[{'source_list': ['gh360_joint_states']}]
+    # eef_pos_in_world_cmd = Node(
+    #     package='gh360_examples',
+    #     executable='eef_pos_in_world',
+    #     name='eef_pos_in_world'
     # )
 
-    # start_robot_state_publisher_cmd = Node(
-    #     package='robot_state_publisher',
-    #     executable='robot_state_publisher',
-    #     parameters=[{'robot_description': robot_description_raw}]
+    # door_env_obs_cmd = Node(
+    #     package='gh360_demonstration',
+    #     executable='door_env_obs',
+    #     name='door_env_obs'
     # )
-    
-    # start_rviz_cmd = Node(
-    #     package='rviz2',
-    #     executable='rviz2',
-    #     name='rviz2',
-    #     output='screen',
-    #     arguments=['-d', rviz_config_file]
-    # )
+
+
     
     return LaunchDescription([
-        # start_rviz_cmd,
         inverse_jacobian_cmd,
         teleop_cmd,
-        # start_joint_state_publisher_cmd,
-        # start_robot_state_publisher_cmd,
-        space_mouse_cmd
-
+        space_mouse_cmd,
+        reset_robot_cmd,
+        # door_env_obs_cmd,
+        # eef_pos_in_world_cmd
     ])

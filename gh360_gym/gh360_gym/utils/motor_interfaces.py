@@ -35,10 +35,13 @@ def generate_velocities_msg(arm, velocities, srv=False):
 
     return motor_vel_req
 
-def generate_positions_msg(arm, positions):
+def generate_positions_msg(arm, positions, srv=False):
     motor_iter = 0
     joint_iter = 0
-    motor_pos_req = MotorPositionStep.Request()
+    if srv:
+        motor_pos_req = MotorPositionStep.Request()
+    else:
+        motor_pos_req = SetMotorPositions()
 
     while motor_iter < len(positions):
         if type(arm[joint_iter]) == SoftJoint:

@@ -33,10 +33,24 @@ def generate_launch_description():
         namespace='door',
         output='screen')
     
+    eef_pos_in_world_cmd = Node(
+        package='gh360_examples',
+        executable='eef_pos_in_world',
+        name='eef_pos_in_world'
+    )
+
+    door_env_obs_cmd = Node(
+        package='gh360_demonstration',
+        executable='door_env_obs',
+        name='door_env_obs'
+    )
+    
     return LaunchDescription([
         motor_handler,
         encoder_handler,
         door_motor,
         camera_handler,
-        handle_sensor_filter_node
+        handle_sensor_filter_node,
+        eef_pos_in_world_cmd,
+        door_env_obs_cmd
     ])

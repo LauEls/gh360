@@ -21,6 +21,8 @@ class SoftJoint:
         self.min_current = -max_current
         self.right_motor_pos = 0.0
         self.left_motor_pos = 0.0
+        self.right_motor_vel = 0.0
+        self.left_motor_vel = 0.0
         self.right_motor_current = 0.0
         self.left_motor_current = 0.0
         self.joint_angle = 0.0
@@ -50,6 +52,8 @@ class MotorJoint:
         self.min_pos = min_pos
         self.max_current = max_current
         self.min_current = -max_current
+        self.motor_pos = 0.0
+        self.motor_vel = 0.0
         self.motor_current = 0.0
         self.joint_angle = 0.0
         self.joint_velocity = 0.0

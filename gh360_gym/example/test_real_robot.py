@@ -24,7 +24,7 @@ def run_recorded_actions():
 
 def run_zero_actions():
     # motor_action = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
-    motor_action = np.zeros(7)
+    motor_action = np.zeros(13)
     inc = 0.01
     cnt = 0
     done = False
@@ -48,8 +48,8 @@ def run_zero_actions():
 
 if __name__ == "__main__":
 
-    # env = gym.make('gh360_gym/Door-v0')
-    env = gym.make('gh360_gym/TrajectoryFollowing-v0', stiffness_mode="no_stiffness",)
+    env = gym.make('gh360_gym/Door-v0')
+    # env = gym.make('gh360_gym/TrajectoryFollowing-v0', stiffness_mode="no_stiffness",)
     
     env.reset()
 
