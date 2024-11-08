@@ -44,7 +44,7 @@ class DoorEnv(gym.Env):
         self.node = rclpy.create_node(self.__class__.__name__)
 
         self.motor_obs = motor_obs
-        print("motor obs: ", self.motor_obs)
+        # print("motor obs: ", self.motor_obs)
         self.stiffness_mode = stiffness_mode
         self.control_dim = 7
 
@@ -264,7 +264,7 @@ class DoorEnv(gym.Env):
     
 
     def reset(self):
-        print("resetting")
+        # print("resetting")
         self.controller.reset()
 
         # self.handle_pos = self.get_handle_pos()
@@ -281,7 +281,7 @@ class DoorEnv(gym.Env):
 
         """
         if self.reseted:
-            print("step: ", self.step_cntr)
+            # print("step: ", self.step_cntr)
             self.step_cntr = 0
         
         self.reseted = False

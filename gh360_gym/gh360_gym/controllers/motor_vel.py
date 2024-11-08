@@ -51,16 +51,16 @@ class MotorVelocityController(BaseController):
             self.min_multiplier = -np.ones(self.control_dim)
         # self.input_max = ([0.75, 0.75, 0.5, 0.5, 1.0, 1.0, 0.8, 0.8, 0.8, 0.8, 0.4, 1.3, 1.3])
         # self.input_min = -self.input_max
-        print(f"max_multiplier: {self.max_multiplier}")
-        print(f"min_multiplier: {self.min_multiplier}")
-        print(f"input_max: {self.input_max}")
-        print(f"input_min: {self.input_min}")
-        for joint in self.arm:
-            print(f"joint: {joint.joint_name}")
-            print(f"max_pos: {joint.max_pos}")
-            print(f"min_pos: {joint.min_pos}")
-            print(f"max_current: {joint.max_current}")
-            print(f"min_current: {joint.min_current}")
+        # print(f"max_multiplier: {self.max_multiplier}")
+        # print(f"min_multiplier: {self.min_multiplier}")
+        # print(f"input_max: {self.input_max}")
+        # print(f"input_min: {self.input_min}")
+        # for joint in self.arm:
+        #     print(f"joint: {joint.joint_name}")
+        #     print(f"max_pos: {joint.max_pos}")
+        #     print(f"min_pos: {joint.min_pos}")
+        #     print(f"max_current: {joint.max_current}")
+        #     print(f"min_current: {joint.min_current}")
         # print(f"max_current: {max_current}")
         # print(f"max_joint_pos: {max_joint_pos}")
         # print(f"min_joint_pos: {min_joint_pos}")
@@ -106,6 +106,11 @@ class MotorVelocityController(BaseController):
 
         stuck = False
         while np.max(np.absolute(pos_error)) > 0.1 or internal_state != 1:
+            if not self.robot_safety_check():
+                self.set_motor_torque(False)
+                input("Press Enter to continue...")
+                self.set_motor_torque(True)
+                
             if internal_state == 0 and np.max(np.absolute(pos_error)) < 0.2 and not stuck:
                 internal_state = 1
             if internal_state == 0:
@@ -125,7 +130,7 @@ class MotorVelocityController(BaseController):
             self.pub_goal_velocity_lowerarm.publish(motor_vel_msg)
             rclpy.spin_once(self.node)
 
-        print("final internal state: ", internal_state)
+        # print("final internal state: ", internal_state)
 
         
         self.control_time_adj = 0.0
