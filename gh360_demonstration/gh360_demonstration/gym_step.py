@@ -37,19 +37,28 @@ def run_step_data(step_data, env):
 
     obs, reward, done, _ = env.step(base_action)
 
+def run_base_action(env):
+    base_action = np.zeros(7)
+    while True:
+        obs, reward, done, _ = env.step(base_action)
+        print(f"Reward: {reward}")
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--bag_file", type=str, default="")
 
     args = parser.parse_args()
-    # env = gym.make('gh360_gym/Door-v0')
-    env = gym.make('gh360_gym/FreeMove-v0', stiffness_mode="variable", input_max=10, input_min=-10)
+    env = gym.make('gh360_gym/Door-v0')
+    # env = gym.make('gh360_gym/FreeMove-v0', stiffness_mode="variable", input_max=10, input_min=-10)
     
     env.reset()
 
-    rosbag_util = ROSBagUtil(args.bag_file)
-    vel_steps = rosbag_util.get_velocity_goal_steps()
-    # eq_pos_steps = generate_eq_control_steps(vel_steps)
-    # step_bag_data = parse_bag_file(args.bag_file)
+    run_base_action(env)
+    
 
-    run_step_data(vel_steps, env)
+    # rosbag_util = ROSBagUtil(args.bag_file)
+    # vel_steps = rosbag_util.get_velocity_goal_steps()
+    # # eq_pos_steps = generate_eq_control_steps(vel_steps)
+    # # step_bag_data = parse_bag_file(args.bag_file)
+
+    # run_step_data(vel_steps, env)

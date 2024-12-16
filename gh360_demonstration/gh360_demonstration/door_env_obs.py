@@ -12,8 +12,9 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
 # from ros2_aruco_interfaces.msg import ArucoMarkers
+from gh360_interfaces.msg import PortStatus
 from geometry_msgs.msg import Pose, TransformStamped, Transform, Vector3, Quaternion
-from std_msgs.msg import Int64
+from std_msgs.msg import Int64, Float64
 from ros2_aruco_interfaces.msg import ArucoMarkers
 import tf2_geometry_msgs
 from scipy.spatial.transform import Rotation
@@ -47,12 +48,30 @@ class DoorEnvObs(Node):
         self.door_env_msg = DoorEnv()
         self.door_env_pub = self.create_publisher(DoorEnv, '/door_env', 10)
 
-
+        self.create_subscription(Float64, '/door/filtered_handle_angle', self.handle_angle_callback, 10)
+        self.create_subscription(
+            PortStatus,
+            '/door/motor_status',
+            self.hinge_callback,
+            10
+        )
 
         timer_period = 0.1  # seconds
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
-        self.markers = ArucoMarkers()
+    def handle_angle_callback(self, msg):
+        self.door_env_msg.handle_angle = msg.data
+
+    def hinge_callback(self, msg):
+        motor_pos = msg.motors[0].present_position
+        # offset = 3.2505-1.4649
+        offset = 1.7809
+        fourty_five_deg_pos = 2.5847 - offset
+        # max_pos = 3.548 - offset
+        # hinge_angle_multi = (17.1887*np.pi/180) / max_pos
+        hinge_angle_multi = (np.pi/4) / fourty_five_deg_pos
+
+        self.door_env_msg.hinge_angle = (motor_pos - offset) * hinge_angle_multi
 
     def timer_callback(self):
         to_frame_rel = 'base_link'
@@ -64,7 +83,8 @@ class DoorEnvObs(Node):
                 handle_pose_trans = self.tf_buffer.lookup_transform(to_frame_rel, handle_frame, rclpy.time.Time())
                 handle_pos.append([handle_pose_trans.transform.translation.x, handle_pose_trans.transform.translation.y, handle_pose_trans.transform.translation.z])
             except TransformException as ex:
-                self.get_logger().info(f'Could not transform {handle_frame} to {to_frame_rel}: {ex}')
+                pass
+                # self.get_logger().info(f'Could not transform {handle_frame} to {to_frame_rel}: {ex}')
                 
         if len(handle_pos) == 0:
             return
@@ -74,6 +94,8 @@ class DoorEnvObs(Node):
         self.door_env_msg.handle_position.x = avg_handle_pos[0]
         self.door_env_msg.handle_position.y = avg_handle_pos[1]
         self.door_env_msg.handle_position.z = avg_handle_pos[2]
+        # self.door_env_msg.handle_angle = 0.0
+        # self.door_env_msg.hinge_angle = 0.0
         self.door_env_pub.publish(self.door_env_msg)
 
 

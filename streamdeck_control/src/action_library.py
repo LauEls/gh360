@@ -145,6 +145,20 @@ def spacemouse_teleop():
     
     return action_handler
 
+def demo_gui():
+    pre_command = f'source {venv}/bin/activate; source {ros2_ws}/install/setup.bash;'
+
+    process_handler = ProcessHandler()
+    process_handler.add_process(
+        f'{pre_command} ros2 run gh360_demonstration gui')
+    
+    action_handler = KeyActionHandler(
+        process_handler=process_handler,
+        on_icon=load_icon_byte_arr('record_icon.png'),
+        off_icon=load_icon_byte_arr('record_icon.png'))
+    
+    return action_handler
+
 def rosbag_record():
     pre_command = f'source {venv}/bin/activate; source {ros2_ws}/install/setup.bash;'
 

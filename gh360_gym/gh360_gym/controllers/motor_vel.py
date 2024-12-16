@@ -21,7 +21,9 @@ class MotorVelocityController(BaseController):
         # self.robot_reset_pos = [0.0, 0.0, 0.0, 0.0, 4.0, 4.0, 2.5, 2.5, 6.28, 6.28, 0.0, 0.0, 0.0]
         # self.control_dim = 13
         self.robot_reset_pos = [0.0, 0.0, 0.0, 0.0, 4.0, 4.0, 2.5, 2.5, 6.28, 6.28, 0.0, 0.0, 0.0]
-        self.via_point_pos = [0.2, 0.2, 1.5, 1.5, 4.0, 4.0, 4.5, 4.5, 5.5, 5.5, 0.0, 0.0, 0.0]
+        # self.via_point_pos = [0.2, 0.2, 1.5, 1.5, 4.0, 4.0, 4.5, 4.5, 5.5, 5.5, 0.0, 0.0, 0.0]
+        self.via_point_pos_1 = [0.2, 0.2, 1.5, 1.5, 4.0, 4.0, 4.5, 4.5, 7.5, 7.5, 0.0, 1.0, 1.0]
+        self.via_point_pos_2 = [0.2, 0.2, 1.5, 1.5, 4.0, 4.0, 4.5, 4.5, 5.5, 5.5, 0.0, 0.0, 0.0]
         self.control_dim = 7
         print("control dimensions: ", self.control_dim)
 
@@ -88,7 +90,7 @@ class MotorVelocityController(BaseController):
 
         return pos_error
 
-    def reset(self):
+    def reset(self, robot_eef_pos, handle_pos, handle_qpos=0.0):
         if self.reseted:
             return
 
@@ -102,27 +104,27 @@ class MotorVelocityController(BaseController):
             input("Press Enter to continue...")
             self.set_motor_torque(True)
 
-        pos_error = self.calc_motor_pos_error(self.via_point_pos)
+        if handle_pos[2] > robot_eef_pos[2]+0.01 and handle_qpos < 0.1:
+            internal_state = 2
+            pos_error = self.calc_motor_pos_error(self.robot_reset_pos)
+        else:
+            pos_error = self.calc_motor_pos_error(self.via_point_pos_1)
 
-        stuck = False
-        while np.max(np.absolute(pos_error)) > 0.1 or internal_state != 1:
+        while np.max(np.absolute(pos_error)) > 0.1 or internal_state != 2:
             if not self.robot_safety_check():
                 self.set_motor_torque(False)
                 input("Press Enter to continue...")
                 self.set_motor_torque(True)
                 
-            if internal_state == 0 and np.max(np.absolute(pos_error)) < 0.2 and not stuck:
-                internal_state = 1
+            if internal_state < 2 and np.max(np.absolute(pos_error)) < 0.2:
+                internal_state += 1
             if internal_state == 0:
-                stuck = False
-                pos_error = self.calc_motor_pos_error(self.via_point_pos)
-                if self.arm[4].joint_angle >= 1.0:
-                    pos_error[8] = -1.0
-                    pos_error[9] = -1.0
-                    stuck = True
+                pos_error = self.calc_motor_pos_error(self.via_point_pos_1)
             elif internal_state == 1:
+                pos_error = self.calc_motor_pos_error(self.via_point_pos_2)
+            elif internal_state == 2:
                 pos_error = self.calc_motor_pos_error(self.robot_reset_pos)
-            pos_error = np.clip(pos_error, -0.5, 0.5)
+            pos_error = np.clip(pos_error, -1.0, 1.0)
 
             motor_vel_msg = generate_velocities_msg(self.arm, pos_error)
             self.pub_goal_velocity_shoulder.publish(motor_vel_msg)
@@ -211,11 +213,11 @@ class MotorVelocityController(BaseController):
             # waited = True
             rclpy.spin_once(self.node)
 
-        if not self.robot_safety_check():
-            # wait for user_input
-            self.stop_motors()
-            input("Press Enter to continue...")
-            pass    
+            if not self.robot_safety_check():
+                # wait for user_input
+                self.set_motor_torque(False)
+                input("Press Enter to continue...")
+                self.set_motor_torque(True)
 
         t_control_loop = time.time() - self.last_time
 

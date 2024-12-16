@@ -144,7 +144,7 @@ class BaseController:
                         joint.joint_velocity = motor.present_velocity
 
     def set_motor_torque(self, torque):
-        msg = SetBool()
+        msg = SetBool.Request()
         msg.data = torque
 
         shoulder_future = self.client_set_motor_torque_shoulder.call_async(msg)

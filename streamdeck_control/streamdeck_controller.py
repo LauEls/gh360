@@ -26,10 +26,11 @@ class StreamDeckGH360Control:
         self.key_actions.append(action_library.colcon_build())
         self.key_actions.append(action_library.move_home())
         self.key_actions.append(action_library.spacemouse_teleop())
+        self.key_actions.append(action_library.demo_gui())
 
         self.dial_1_actions = []
-        self.dial_1_actions.append(action_library.rosbag_record())
-        self.dial_1_actions.append(action_library.rosbag_play())
+        # self.dial_1_actions.append(action_library.rosbag_record())
+        # self.dial_1_actions.append(action_library.rosbag_play())
 
         self.icon_exit = load_icon('Exit.png')
         self.icon_door = load_icon('open_door_icon.png')

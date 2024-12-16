@@ -17,6 +17,7 @@ class DoorControl(Node):
         self.vel_publisher_ = self.create_publisher(SetMotorVelocities, '/door/motor_goal_velocity', 10)
         
         self.first_status = False
+        self.motor_future = None
         self.create_subscription(
             PortStatus,
             '/door/motor_status',
@@ -30,13 +31,10 @@ class DoorControl(Node):
             10
         )
 
-
         self.client_motor_torque = self.create_client(SetBool, '/door/motor_set_torque')
         while not self.client_motor_torque.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
        
-
-
         self.motor_status = MotorStatus()
 
         self.goal_current_msg = SetMotorCurrents()
@@ -77,7 +75,7 @@ class DoorControl(Node):
     def spacemouse_callback(self, msg):
         btn = msg.button2
         if btn and not self.close_door:
-            motor_future = self.client_motor_torque.call_async(SetBool.Request(data=True))
+            self.motor_future = self.client_motor_torque.call_async(SetBool.Request(data=True))
             # self.goal_current_msg.motor_goal_currents[0].current = -self.closing_current
             self.status = 0
             self.close_door = True
@@ -89,6 +87,8 @@ class DoorControl(Node):
         
         # self.get_logger().info("Door status: " + str(self.close_door))
         if self.close_door:
+            if not self.motor_future.done():
+                return
             # self.client_motor_torque.call_async(SetBool.Request(data=True))
             if self.status == 0: 
                 if self.motor_status.present_position < 1.81:
@@ -102,16 +102,7 @@ class DoorControl(Node):
                 else:
                     self.status = 1    
                     self.get_logger().info("Changing to Satus 1")
-                
-                # elif self.motor_status.present_velocity <= 0.0 and self.motor_status.present_position > self.closing_start_pos-0.1:
-                #     self.status = 1
-                #     self.goal_current_msg.motor_goal_currents[0].current = -500.0
-                # elif self.motor_status.present_position < 1.81:
-                #     self.status = 2
-                #     self.goal_current_msg.motor_goal_currents[0].current = 0.0
-            # if self.status == 0 and self.motor_status.present_velocity > 0.0:
-            #     self.status = 1
-            #     self.get_logger().info("Changing to Satus 1")
+
             elif self.status == 1 and self.motor_status.present_velocity <= 0.0 and self.motor_status.present_position >= self.closing_start_pos-0.1:
                 self.status = 2
                 self.goal_current_msg.motor_goal_currents[0].current = self.closing_current
@@ -119,12 +110,6 @@ class DoorControl(Node):
             elif self.status == 2 and self.motor_status.present_velocity < 0.0:
                 self.status = 3
                 self.get_logger().info("Changing to Satus 3")
-            # elif self.status == 1 and self.motor_status.present_velocity <= 0.0:
-            #     self.status = 3
-            #     self.goal_current_msg.motor_goal_currents[0].current = 0.0
-            #     self.client_motor_torque.call_async(SetBool.Request(data=False))
-            #     self.get_logger().info("Changing to Satus 3")
-            #     self.close_door = False
             elif self.status == 3 and self.motor_status.present_velocity >= 0.0:
                 self.status = 4
                 self.goal_current_msg.motor_goal_currents[0].current = 0.0
@@ -134,7 +119,7 @@ class DoorControl(Node):
 
             # self.get_logger().info("Motor Current: " + str(self.goal_current_msg.motor_goal_currents[0].current))
             if self.status == 1:
-                self.goal_velocity_msg.motor_goal_velocities[0].velocity = self.closing_start_pos - self.motor_status.present_position
+                self.goal_velocity_msg.motor_goal_velocities[0].velocity = np.clip(self.closing_start_pos - self.motor_status.present_position, 0.0, 0.5)
                 # if self.motor_status.present_position >= self.closing_start_pos-0.1:
                 #     self.goal_velocity_msg.motor_goal_velocities[0].velocity = 0.0
                 self.vel_publisher_.publish(self.goal_velocity_msg)

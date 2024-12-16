@@ -10,6 +10,7 @@ import rclpy
 from rclpy.node import Node
 
 from std_msgs.msg import String, UInt16, Float64
+from std_srvs.srv import SetBool
 from ros2pkg.api import get_prefix_path
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
@@ -17,7 +18,7 @@ from tf2_ros.transform_listener import TransformListener
 from geometry_msgs.msg import Pose
 from sensor_msgs.msg import JointState
 import tf2_geometry_msgs
-from gh360_interfaces.msg import PortStatus
+from gh360_interfaces.msg import PortStatus, SetMotorVelocities, SetMotorCurrents, SetCurrent, SetVelocity, MotorStatus
 from gh360_interfaces.msg import DoorEnv as DoorEnvMsg
 
 from gh360_gym.utils.joints import SoftJoint, MotorJoint
@@ -48,27 +49,13 @@ class DoorEnv(gym.Env):
         self.stiffness_mode = stiffness_mode
         self.control_dim = 7
 
-        # if self.stiffness_mode == "variable":
-        #     self.control_dim = 13#MAYBE READ THAT OUT OF A CONFIG FILE -> should be 13 at the end
-        # elif self.stiffness_mode == "fixed" or stiffness_mode == "no_stiffness":
-        #     self.control_dim = 7
-
-        # print("control dimensions: ", self.control_dim)
-
-        # self.control_timestep = 0.2
-        # self.model_timestep = 0.1
-        # self.reseted = False
-        # print("control dimensions: ",self.control_dim)
-
-        # input and output max and min (allow for either explicit lists or single numbers)
-        # self.input_max = self.nums2array(input_max, self.control_dim)
-        # self.input_max = np.ones(self.control_dim) * input_max
-        # # self.input_min = self.nums2array(input_min, self.control_dim)
-        # self.input_min = np.ones(self.control_dim) * input_min
+        self.first_eef_msg = False
+        self.first_door_msg = False
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
 
+        self.eef_pos = np.array([0.0, 0.0, 0.0])
         self.handle_pos = np.array([0.0, 0.0, 0.0])
         self.handle_qpos = np.array([0.0])
         self.hinge_qpos = np.array([0.0])
@@ -79,13 +66,6 @@ class DoorEnv(gym.Env):
         # self.controller = EqPointController(self.node, op_mode=self.stiffness_mode)
         # self.controller = EqPointController(self.node, stiffness_mode=self.stiffness_mode, input_min=input_min, input_max=input_max)
         self.controller = MotorVelocityController(self.node, input_min=input_min, input_max=input_max, max_current=max_current, max_joint_pos=max_joint_pos, min_joint_pos=min_joint_pos)
-
-        # self.node.create_subscription(
-        #     Float64,
-        #     '/door/filtered_handle_angle',
-        #     self.handle_callback,
-        #     10
-        # )
 
         self.node.create_subscription(
             Pose,
@@ -101,13 +81,36 @@ class DoorEnv(gym.Env):
             10
         )
 
-        # self.node.create_subscription(
-        #     PortStatus,
-        #     '/door/motor_status',
-        #     self.hinge_callback,
-        #     10
-        # )
+        self.node.create_subscription(
+            PortStatus,
+            '/door/motor_status',
+            self.motor_status_callback,
+            10
+        )
 
+        self.door_motor_current_publisher = self.node.create_publisher(SetMotorCurrents, '/door/motor_goal_current', 10)
+        self.door_motor_vel_publisher = self.node.create_publisher(SetMotorVelocities, '/door/motor_goal_velocity', 10)
+
+        self.client_door_motor_torque = self.node.create_client(SetBool, '/door/motor_set_torque')
+        while not self.client_door_motor_torque.wait_for_service(timeout_sec=1.0):
+            self.node.get_logger().info('service not available, waiting again...')
+
+        self.goal_current_msg = SetMotorCurrents()
+        self.set_current_msg = SetCurrent()
+        self.set_current_msg.id = 31
+        self.set_current_msg.current = -500.0
+        self.goal_current_msg.motor_goal_currents.append(self.set_current_msg)
+
+        self.goal_velocity_msg = SetMotorVelocities()
+        self.set_velocity_msg = SetVelocity()
+        self.set_velocity_msg.id = 31
+        self.set_velocity_msg.velocity = 0.0
+        self.goal_velocity_msg.motor_goal_velocities.append(self.set_velocity_msg)
+
+        self.first_door_motor_status = False
+        self.door_motor_status = MotorStatus()
+        self.closing_start_pos = 2.2
+        self.closing_current = -600.0
 
         # self.motor_msg = SetMotorPositions()
         self.internal_state = 0
@@ -119,12 +122,17 @@ class DoorEnv(gym.Env):
         low = -high  
         self.action_space = spaces.Box(low, high)
 
-        self.obs_dim = 21
+        self.obs_dim = 23
         if self.motor_obs:
             self.obs_dim += 26
         high = np.inf*np.ones(self.obs_dim)
         low = -high
         self.observation_space = spaces.Box(low, high)
+
+        while not self.first_eef_msg or not self.first_door_msg:
+            rclpy.spin_once(self.node)
+
+
 
     # def handle_callback(self, msg):
     #     self.handle_qpos = np.clip(np.array([msg.data], dtype=np.float64),0.0,np.pi/2)
@@ -132,38 +140,21 @@ class DoorEnv(gym.Env):
     def eef_pose_callback(self, msg):
         self.eef_pos = np.array([msg.position.x, msg.position.y, msg.position.z], dtype=np.float64)
         self.eef_quat = np.array([msg.orientation.x, msg.orientation.y, msg.orientation.z, msg.orientation.w], dtype=np.float64)
+        if not self.first_eef_msg:
+            self.first_eef_msg = True
 
     def door_env_callback(self, msg):
         self.handle_pos = np.array([msg.handle_position.x, msg.handle_position.y, msg.handle_position.z], dtype=np.float64)
         self.handle_qpos = np.array([msg.handle_angle], dtype=np.float64)
         self.hinge_qpos = np.array([msg.hinge_angle], dtype=np.float64)
         # self.node.get_logger().info(f"handle pos: {self.handle_pos}")
+        if not self.first_door_msg:
+            self.first_door_msg = True
 
-    # def hinge_callback(self, msg):
-    #     motor_pos = msg.motors[0].present_position
-    #     offset = 3.2505
-    #     max_pos = 3.548 - offset
-    #     hinge_angle_multi = (17.1887*np.pi/180) / max_pos
-
-    #     self.hinge_qpos =   (motor_pos - offset) * hinge_angle_multi
-    
-    # def get_handle_pos(self):
-    #     to_frame_rel = 'base_link'
-    #     handle_frames = ['handle_1', 'handle_3']
-    #     handle_pos = []
-
-    #     for handle_frame in handle_frames:
-    #         try:
-    #             handle_pose_trans = self.tf_buffer.lookup_transform(to_frame_rel, handle_frame, rclpy.time.Time())
-    #             handle_pos.append([handle_pose_trans.transform.translation.x, handle_pose_trans.transform.translation.y, handle_pose_trans.transform.translation.z])
-    #         except TransformException as ex:
-    #             self.node.get_logger().info(f'Could not transform {handle_frame} to {to_frame_rel}: {ex}')
-                
-        
-    #     avg_handle_pos = np.mean(handle_pos, axis=0)
-    #     # self.node.get_logger().info(f"handle pos: {avg_handle_pos}")
-    #     return avg_handle_pos
-
+    def motor_status_callback(self, msg):
+        if not self.first_door_motor_status:
+            self.first_door_motor_status = True
+        self.door_motor_status = msg.motors[0]
 
     def _get_obs(self):
         """
@@ -193,39 +184,31 @@ class DoorEnv(gym.Env):
         robot_joint_vel = []
         robot_motor_pos = []
         robot_motor_vel = []
-        # robot_eef_pos = []
-        # robot_eef_quat = []
-
-
-        #from sim: door_pos = [-0.2300001, 0.46023886, 1.08]
-        # door_pos = [-0.31, 0.46, 1.08]
-        # #in sim: handle_pos = [-0.14994089, 0.40230259, 1.0534252]
-        # handle_pos = [-0.15, 0.4, 1.05]
+       
         
 
         #ROBOT SPECIFIC PARAMETERS
-        for joint in self.controller.arm:
+        # for joint in self.controller.arm:
             # if type(joint) == MotorJoint:
             #     print("MotorJoint")
-            robot_joint_pos.append(joint.joint_angle)
-            robot_joint_vel.append(joint.joint_velocity)
+            
 
-        #CALCUALATE FORWARD KINEMATICS TO GET EEF POS AND QUAT
-        from_frame_rel = 'eef'
-        to_frame_rel = 'base_link'
-        #Lookup the tranformation from from_frame_rel to to_frame_rel
-        try:
-            eef_pose_trans = self.tf_buffer.lookup_transform(to_frame_rel, from_frame_rel, rclpy.time.Time())
-        except TransformException as ex:
-            self.get_logger().info(
-                f'Could not transform {to_frame_rel} to {from_frame_rel}: {ex}')
-            return
-        #Tranform a Pose from from_frame_rel to to_frame_rel
-        # eef_pose = tf2_geometry_msgs.do_transform_pose(Pose(), self.trans_eef_base)
-        robot_eef_pos = np.array([eef_pose_trans.transform.translation.x, eef_pose_trans.transform.translation.y, eef_pose_trans.transform.translation.z], dtype=np.float64)
-        robot_eef_quat = np.array([eef_pose_trans.transform.rotation.x, eef_pose_trans.transform.rotation.y, eef_pose_trans.transform.rotation.z, eef_pose_trans.transform.rotation.w], dtype=np.float64)
+        # #CALCUALATE FORWARD KINEMATICS TO GET EEF POS AND QUAT
+        # from_frame_rel = 'eef'
+        # to_frame_rel = 'base_link'
+        # #Lookup the tranformation from from_frame_rel to to_frame_rel
+        # try:
+        #     eef_pose_trans = self.tf_buffer.lookup_transform(to_frame_rel, from_frame_rel, rclpy.time.Time())
+        # except TransformException as ex:
+        #     self.node.get_logger().info(
+        #         f'Could not transform {to_frame_rel} to {from_frame_rel}: {ex}')
+        #     return
+        # #Tranform a Pose from from_frame_rel to to_frame_rel
+        # # eef_pose = tf2_geometry_msgs.do_transform_pose(Pose(), self.trans_eef_base)
+        # robot_eef_pos = np.array([eef_pose_trans.transform.translation.x, eef_pose_trans.transform.translation.y, eef_pose_trans.transform.translation.z], dtype=np.float64)
+        # robot_eef_quat = np.array([eef_pose_trans.transform.rotation.x, eef_pose_trans.transform.rotation.y, eef_pose_trans.transform.rotation.z, eef_pose_trans.transform.rotation.w], dtype=np.float64)
 
-        self.handle_to_eef_pos = self.handle_pos - robot_eef_pos
+        self.handle_to_eef_pos = self.handle_pos - self.eef_pos
 
         # hinge_qpos = np.array([0.0])
         # handle_qpos = np.array([0.0])
@@ -234,6 +217,9 @@ class DoorEnv(gym.Env):
 
         
         for joint in self.controller.arm:
+            robot_joint_pos.append(joint.joint_angle)
+            robot_joint_vel.append(joint.joint_velocity)
+
             if type(joint) == SoftJoint:
                 robot_motor_pos.append(joint.right_motor_pos)
                 robot_motor_pos.append(joint.left_motor_pos)
@@ -250,9 +236,9 @@ class DoorEnv(gym.Env):
         # print("controller obs: ", controller_obs)
         
         if self.motor_obs:
-            obs = np.concatenate((self.handle_to_eef_pos, robot_eef_quat, robot_joint_pos, robot_joint_vel, robot_motor_pos, robot_motor_vel), axis=-1)
+            obs = np.concatenate((self.handle_qpos, self.hinge_qpos, self.handle_to_eef_pos, self.eef_quat, robot_joint_pos, robot_joint_vel, robot_motor_pos, robot_motor_vel), axis=-1)
         else:
-            obs = np.concatenate((self.handle_to_eef_pos, robot_eef_quat, robot_joint_pos, robot_joint_vel), axis=-1)
+            obs = np.concatenate((self.handle_qpos, self.hinge_qpos, self.handle_to_eef_pos, self.eef_quat, robot_joint_pos, robot_joint_vel), axis=-1)
         # print(obs)
         return obs
 
@@ -262,11 +248,64 @@ class DoorEnv(gym.Env):
         """
         return {}
     
+    def door_reset(self):
+        while not self.first_door_motor_status:
+            self.node.get_logger().info("Waiting to get motor status...")
+            rclpy.spin_once(self.node)
+
+        status = 0
+        
+        # self.client_motor_torque.call_async(SetBool.Request(data=True))
+        while status != 4:
+            if status == 0: 
+                if self.door_motor_status.present_position < 1.81:
+                    return
+                    # status = 3
+                    # self.goal_current_msg.motor_goal_currents[0].current = 0.0
+                    # self.node.get_logger().info("Changing to Satus 3")
+                elif self.door_motor_status.present_position >= self.closing_start_pos:
+                    status = 2
+                    future = self.client_door_motor_torque.call_async(SetBool.Request(data=True))
+                    rclpy.spin_until_future_complete(self.node, future)
+                    self.goal_current_msg.motor_goal_currents[0].current = self.closing_current
+                    self.node.get_logger().info("Changing to Satus 2")
+                else:
+                    status = 1    
+                    future = self.client_door_motor_torque.call_async(SetBool.Request(data=True))
+                    rclpy.spin_until_future_complete(self.node, future)
+                    self.node.get_logger().info("Changing to Satus 1")
+            elif status == 1 and self.door_motor_status.present_velocity <= 0.0 and self.door_motor_status.present_position >= self.closing_start_pos-0.1:
+                status = 2
+                self.goal_current_msg.motor_goal_currents[0].current = self.closing_current
+                self.node.get_logger().info("Changing to Satus 2")
+            elif status == 2 and self.door_motor_status.present_velocity < 0.0:
+                status = 3
+                self.node.get_logger().info("Changing to Satus 3")
+            elif status == 3 and self.door_motor_status.present_velocity >= 0.0:
+                status = 4
+                self.goal_current_msg.motor_goal_currents[0].current = 0.0
+                self.client_door_motor_torque.call_async(SetBool.Request(data=False))
+                self.node.get_logger().info("Changing to Satus 4")
+
+            # self.node.get_logger().info("Motor Current: " + str(self.goal_current_msg.motor_goal_currents[0].current))
+            if status == 1:
+                self.goal_velocity_msg.motor_goal_velocities[0].velocity = np.clip(self.closing_start_pos - self.door_motor_status.present_position, 0.0, 0.5)
+                # if self.motor_status.present_position >= self.closing_start_pos-0.1:
+                #     self.goal_velocity_msg.motor_goal_velocities[0].velocity = 0.0
+                self.door_motor_vel_publisher.publish(self.goal_velocity_msg)
+                # self.pos_pusblisher_.publish(self.door_opening_msg)
+            else:
+                self.door_motor_current_publisher.publish(self.goal_current_msg)
+
+            rclpy.spin_once(self.node)
+        
+        return
 
     def reset(self):
         # print("resetting")
-        self.controller.reset()
+        self.controller.reset(robot_eef_pos=self.eef_pos, handle_pos=self.handle_pos, handle_qpos=self.handle_qpos)
 
+        self.door_reset()
         # self.handle_pos = self.get_handle_pos()
 
         obs = self._get_obs()
@@ -302,8 +341,8 @@ class DoorEnv(gym.Env):
         # hinge_qpos = self.sim.data.qpos[self.hinge_qpos_addr]
         # return self.hinge_qpos < -0.3
         #print("hinge qpos: "+str(self.hinge_qpos))
-        # return np.abs(self.hinge_qpos) > 0.3
-        return False
+        return self.hinge_qpos >= 0.4 and self.handle_qpos <= 0.1
+        # return False
 
     def reward(self):
         """
@@ -322,15 +361,29 @@ class DoorEnv(gym.Env):
             reward = 1.0
         else:
             dist = np.linalg.norm(self.handle_to_eef_pos)
-            reaching_reward = 1.0 * (1 - np.tanh(10.0 * dist))
-            reward += 1.0*reaching_reward
+            # reaching_reward = 1.0 * (1 - np.tanh(10.0 * dist))
+            # reward += 1.0*reaching_reward
 
+            reaching_reward = 0.25 * (1 - np.tanh(10.0 * dist))
+            reward += reaching_reward
+
+            if self.handle_qpos > 0.1:
+                reward = 0.25
+                reward += np.clip(0.25 * np.abs(self.handle_qpos / 0.6), 0, 0.25)
+            
+            if self.hinge_qpos > 0.1:
+                reward = 0.5
+                reward += np.clip(0.25 * np.abs(self.hinge_qpos / 0.4), 0, 0.25)
 
             # handle_qpos = self.sim.data.qpos[self.handle_qpos_addr]
             #reward += np.clip(0.25 * np.abs(self.handle_qpos / 0.54), 0, 0.25)
 
         # reward = np.tanh(obs)
-        return reward
+        # print("hinge qpos: ", self.hinge_qpos)
+        # print("reward: ", reward)
+        
+        # return reward
+        return float(reward)
 
     def render(self):
         """

@@ -669,10 +669,22 @@ class RecordDemos(Node, TKMT.ThemedTKinterFrame):
         
 
     def start_record_process(self, env, rosbag_name):
+        topic_list = ""
+        topic_list += " /shoulder/motor_goal_velocity"
+        topic_list += " /upperarm/motor_goal_velocity"
+        topic_list += " /lowerarm/motor_goal_velocity"
+        topic_list += " /shoulder/motor_status"
+        topic_list += " /upperarm/motor_status"
+        topic_list += " /lowerarm/motor_status"
+        topic_list += " /gh360_joint_states"
+        topic_list += " /door_env"
+        topic_list += " /eef_pose"
+
+
         pre_command = f'source {self.path_venv}/bin/activate; source {self.path_ros2_ws}/install/setup.bash;'
         
-        process_command = f'{pre_command} ros2 bag record -o {self.path_demo_dir}{env}/{rosbag_name}'
-        process_command += ' -a'
+        process_command = f'{pre_command} ros2 bag record -o {self.path_demo_dir}{env}/{rosbag_name}{topic_list}'
+        # process_command += ' -a'
         record_process = subprocess.Popen(process_command, shell=True, executable="/bin/bash", preexec_fn=os.setsid)
 
         return record_process

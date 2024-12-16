@@ -1166,6 +1166,8 @@ bool gh360::MotorHandler::syncWrite(uint8_t size, uint8_t address)
                 // motor_goal_pos = motor_joint->get_motor_goal_position_int();
                 motor_goal = motor_joint->get_motor_goal_int(address);
 
+                if (motor_id == 31 && address == 104) RCLCPP_INFO(this->get_logger(), "Motor Goal: %d", motor_goal);
+
                 // param_motor_goal[0] = DXL_LOBYTE(DXL_LOWORD(motor_goal));
                 // param_motor_goal[1] = DXL_HIBYTE(DXL_LOWORD(motor_goal));
                 // param_motor_goal[2] = DXL_LOBYTE(DXL_HIWORD(motor_goal));

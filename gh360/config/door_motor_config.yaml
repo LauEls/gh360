@@ -7,8 +7,8 @@
     start_with_torque: false
     door_joint:
       joint_type: "motor_joint"
-      min_joint_angle: 0.0
-      max_joint_angle: 1.5708
+      min_joint_angle: 1.77
+      max_joint_angle: 3.0
       motor_init_pos: 0.0
       motor_id: 31
       movement_direction: 1
