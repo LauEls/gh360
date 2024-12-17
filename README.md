@@ -7,5 +7,7 @@
 * Clone the following packages into the ros2_gh360_ws:
   * gh360
   * ros2_aruco
-  * 
  
+* Install pyserial
+* Install rosserial_python 
+* Setup ROS1 bridge
