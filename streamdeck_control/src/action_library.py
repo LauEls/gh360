@@ -2,12 +2,35 @@ from src.process_handler import ProcessHandler
 from src.utils import load_icon_byte_arr
 from src.environments import Env
 import os
+import json
 
 venv = '~/phd_project/robosuite_venv'
 ros_ws = '~/phd_project/gh360_ws'
 ros_bridge_ws = '~/phd_project/bridge_ws'
 ros2_ws = '~/phd_project/ros2_gh360_ws'
 
+# kwargs_fpath = os.path.join("config/file_paths.json", "variant.json")
+# try:
+#     with open(kwargs_fpath) as f:
+#         config_file = json.load(f)
+# except FileNotFoundError:
+#     print("Error opening default controller filepath at: {}. "
+#         "Please check filepath and try again.".format(kwargs_fpath))
+
+# ros_venv = config_file['ros_venv']
+# ros2_venv = config_file['ros2_venv']
+# ros_ws = config_file['ros_ws']
+# ros_bridge_ws = config_file['ros_bridge_ws']
+# ros2_ws = config_file['ros2_ws']
+
+# if ros_venv == "":
+#     source_ros_venv = ""
+# else:
+#     source_ros_venv = f'source {ros_venv}/bin/activate;'
+# if ros2_venv == "":
+#     source_ros2_venv = ""
+# else:
+#     source_ros2_venv = f'source {ros2_venv}/bin/activate;'
 
 class KeyActionHandler:
     def __init__(self, process_handler, on_icon, off_icon):

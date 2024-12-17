@@ -17,7 +17,7 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-#find_package(dynamixel_sdk REQUIRED)
+find_package(dynamixel_sdk REQUIRED)
 # find_package(dynamixel_sdk_custom_interfaces REQUIRED)
 # find_package(dynamixel_workbench_toolbox REQUIRED)
 find_package(rclcpp REQUIRED)
@@ -44,7 +44,7 @@ add_library(gh360
   src/soft_joint.cpp
   src/motor_joint.cpp
 )
-ament_target_dependencies(gh360 "rclcpp" "sensor_msgs" "std_msgs" "std_srvs" "orocos_kdl" "kdl_parser")
+ament_target_dependencies(gh360 "rclcpp" "sensor_msgs" "std_msgs" "std_srvs" "dynamixel_sdk" "orocos_kdl" "kdl_parser")
 
 add_executable(motor_handler src/motor_handler.cpp)
 target_link_libraries(

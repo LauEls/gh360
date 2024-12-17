@@ -1,0 +1,7 @@
+{
+    "ros_venv": "",
+    "ros2_venv": "~/phd_project/robosuite_venv",
+    "ros_ws": "~/phd_project/gh360_ws",
+    "ros_bridge_ws": "~/phd_project/bridge_ws",
+    "ros2_ws": "~/phd_project/ros2_gh360_ws"
+}

@@ -24,7 +24,7 @@
 #include "gh360_interfaces/msg/arm_encoder_states.hpp"
 // #include <DynamixelWorkbench.h>
 // #include <dynamixel_workbench_toolbox/dynamixel_workbench.h>
-// #include "dynamixel_sdk/dynamixel_sdk.h"
+#include "dynamixel_sdk/dynamixel_sdk.h"
 // #include "dynamixel_sdk_custom_interfaces/msg/set_position.hpp"
 // #include "dynamixel_sdk_custom_interfaces/srv/get_position.hpp"
 
