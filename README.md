@@ -9,6 +9,26 @@
   pip install pyserial
   ```
 * Install rosserial_python:
+  ```
+  sudo apt install ros-noetic-rosserial-python
+  ```
+* Give permission to communicate with serial devices:
+  ```
+  sudo gpasswd --add ${USER} dialout
+  ```
+* Restart Ubuntu
+
+You can test if this part of the installation worked by connecting the USB cable of the arm and running the following commands:
+```
+source gh360_ws/devel/setup.bash
+roslaunch gh360_control encoder_manager.launch
+```
+In another terminal run:
+```
+source gh360_ws/devel/setup.bash
+rostopic list
+```
+You should see the following topics: /arm1/Shoulder_Encoders, /arm1/UpperArm_Encoders, /arm1/LowerArm_Encoders
 
 ### ROS Foxy Workspace
 * Install ROS2 Foxy and create a workspace with the name ros2_gh360_ws
