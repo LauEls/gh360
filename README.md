@@ -8,6 +8,8 @@
   * DynamixelSDK 
   * gh360
   * ros2_aruco
+  * realsense-ros
+  * rosbag2
  
 * Install pyserial
 * Install rosserial_python 
