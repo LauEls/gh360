@@ -31,11 +31,11 @@ rostopic list
 You should see the following topics: /arm1/Shoulder_Encoders, /arm1/UpperArm_Encoders, /arm1/LowerArm_Encoders
 
 ### ROS Foxy Workspace
-* Install ROS2 Foxy and create a workspace with the name ros2_gh360_ws
-* Clone the following packages into the ros2_gh360_ws:
-  * DynamixelSDK 
-  * gh360
-  * ros2_aruco
+* Install [ROS2 Foxy](https://docs.ros.org/en/foxy/Installation/Ubuntu-Install-Debians.html) and [create a workspace](https://docs.ros.org/en/foxy/Tutorials/Beginner-Client-Libraries/Creating-A-Workspace/Creating-A-Workspace.html) with the name **ros2_gh360_ws**
+* Clone the following packages into ros2_gh360_ws/src:
+  * [DynamixelSDK](https://github.com/ROBOTIS-GIT/DynamixelSDK/tree/foxy-devel) 
+  * [gh360](https://github.com/LauEls/gh360)
+  * [ros2_aruco](https://github.com/LauEls/ros2_aruco)
   * realsense-ros
   * rosbag2
  
