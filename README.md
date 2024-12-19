@@ -42,3 +42,26 @@ You should see the following topics: /arm1/Shoulder_Encoders, /arm1/UpperArm_Enc
 
 * Install rosserial_python 
 * Setup ROS1 bridge
+
+### ROS1 Bridge
+* Create a workspace with the name **bridge_ws**.
+* Clone the [ros1_bridge](https://github.com/ros2/ros1_bridge/tree/foxy) package in the src folder.
+* Follow the [build from source](https://github.com/ros2/ros1_bridge/tree/foxy?tab=readme-ov-file#building-the-bridge-from-source) instructions.
+
+To test the ros bridge use the following commands:
+* Terminal 1:
+  ```
+  source gh360_ws/devel/setup.bash
+  roslaunch gh360_control encoder_manager.launch
+  ```
+* Terminal 2:
+  ```
+  source bridge_ws/install/setup.bash
+  ros2 run ros1_bridge dynamic_bridge --bridge-all-topics
+  ```
+* Terminal 3:
+  ```
+  source ros2_gh360_ws/install/setup.bash
+  ros2 topic list
+  ```
+In Terminal 3 you should see the following topics: /arm1/Shoulder_Encoders, /arm1/UpperArm_Encoders, /arm1/LowerArm_Encoders
