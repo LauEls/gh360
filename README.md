@@ -4,6 +4,7 @@
 ### ROS Noetic Workspace
 * Install [ROS Noetic](http://wiki.ros.org/noetic/Installation/Ubuntu) and [create a workspace](http://wiki.ros.org/ROS/Tutorials/InstallingandConfiguringROSEnvironment#Create_a_ROS_Workspace) with the name **gh360_ws**
 * Clone the [gh360_control](https://github.com/LauEls/gh360_control) package into the gh360_ws/src/
+* Build the workspace
 * Install pyserial:
   ```
   pip install pyserial
