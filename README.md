@@ -37,8 +37,9 @@ You should see the following topics: /arm1/Shoulder_Encoders, /arm1/UpperArm_Enc
   * [DynamixelSDK](https://github.com/ROBOTIS-GIT/DynamixelSDK/tree/foxy-devel) 
   * [gh360](https://github.com/LauEls/gh360)
   * [ros2_aruco](https://github.com/LauEls/ros2_aruco)
-  * realsense-ros
+  * [realsense-ros](https://github.com/LauEls/realsense-ros)
   * rosbag2
+* Install [Realsense SDK](https://github.com/IntelRealSense/librealsense/blob/master/doc/distribution_linux.md#installing-the-packages) (including developer and debug packages)
 * Install xacro package:
   ```
   sudo apt install ros-foxy-xacro
@@ -46,6 +47,23 @@ You should see the following topics: /arm1/Shoulder_Encoders, /arm1/UpperArm_Enc
 * Install Joint State Publisher package:
   ```
   sudo apt install ros-foxy-joint-state-publisher
+  ```
+* Install scipy:
+  ```
+  pip install scipy
+  ```
+* Install opencv version 4.7.0.72:
+  ```
+  pip install opencv-python==4.7.0.72
+  ```
+* Install spacemouse library:
+  ```
+  pip install pyspacemouse
+  sudo apt-get install libhidapi-dev
+  sudo echo 'KERNEL=="hidraw*", SUBSYSTEM=="hidraw", MODE="0664", GROUP="plugdev"' | sudo tee /etc/udev/rules.d/99-hidraw-permissions.rules
+  sudo usermod -aG plugdev $USER
+  newgrp plugdev
+  pip install easyhid
   ```
  
 #### Stream Deck Setup
