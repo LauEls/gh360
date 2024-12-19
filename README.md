@@ -39,10 +39,24 @@ You should see the following topics: /arm1/Shoulder_Encoders, /arm1/UpperArm_Enc
   * [ros2_aruco](https://github.com/LauEls/ros2_aruco)
   * realsense-ros
   * rosbag2
+* Install xacro package:
+  ```
+  sudo apt install ros-foxy-xacro
+  ```
+* Install Joint State Publisher package:
+  ```
+  sudo apt install ros-foxy-joint-state-publisher
+  ```
  
+#### Stream Deck Setup
+* Install the python library to use the streamdeck
+  ```
+  pip install streamdeck
+  ```
+* [Install a HIDAPI Backend](https://python-elgato-streamdeck.readthedocs.io/en/stable/pages/backend_libusb_hidapi.html#linux-ubuntu-debian) which is required by the python library
 
-* Install rosserial_python 
-* Setup ROS1 bridge
+#### Realsense Camera Setup
+
 
 ### ROS1 Bridge
 * Create a workspace with the name **bridge_ws**.
