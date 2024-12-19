@@ -2,8 +2,8 @@ import time
 import numpy as np
 import rclpy
 from rclpy.node import Node
-import gh360_gym
-import gym
+# import gh360_gym
+# import gym
 from std_msgs.msg import String
 from std_srvs.srv import SetBool
 from gh360_interfaces.msg import PortStatus, SpaceMouse, SetMotorVelocities, SetVelocity, DoorEnv

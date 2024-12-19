@@ -4,33 +4,39 @@ from src.environments import Env
 import os
 import json
 
-venv = '~/phd_project/robosuite_venv'
-ros_ws = '~/phd_project/gh360_ws'
-ros_bridge_ws = '~/phd_project/bridge_ws'
-ros2_ws = '~/phd_project/ros2_gh360_ws'
+# venv = '~/phd_project/robosuite_venv'
+# ros_ws = '~/phd_project/gh360_ws'
+# ros_bridge_ws = '~/phd_project/bridge_ws'
+# ros2_ws = '~/phd_project/ros2_gh360_ws'
 
-# kwargs_fpath = os.path.join("config/file_paths.json", "variant.json")
-# try:
-#     with open(kwargs_fpath) as f:
-#         config_file = json.load(f)
-# except FileNotFoundError:
-#     print("Error opening default controller filepath at: {}. "
-#         "Please check filepath and try again.".format(kwargs_fpath))
+base_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), os.pardir)
 
-# ros_venv = config_file['ros_venv']
-# ros2_venv = config_file['ros2_venv']
-# ros_ws = config_file['ros_ws']
-# ros_bridge_ws = config_file['ros_bridge_ws']
-# ros2_ws = config_file['ros2_ws']
+kwargs_fpath = os.path.join(base_path, "config", "file_paths.json")
+try:
+    with open(kwargs_fpath) as f:
+        config_file = json.load(f)
+except FileNotFoundError:
+    print("Error opening default controller filepath at: {}. "
+        "Please check filepath and try again.".format(kwargs_fpath))
 
-# if ros_venv == "":
-#     source_ros_venv = ""
-# else:
-#     source_ros_venv = f'source {ros_venv}/bin/activate;'
-# if ros2_venv == "":
-#     source_ros2_venv = ""
-# else:
-#     source_ros2_venv = f'source {ros2_venv}/bin/activate;'
+ros_venv = config_file['ros_venv']
+ros2_venv = config_file['ros2_venv']
+ros_ws = config_file['ros_ws']
+ros_bridge_ws = config_file['ros_bridge_ws']
+ros2_ws = config_file['ros2_ws']
+
+source_ros_ws = f'source {ros_ws}/devel/setup.bash;'
+source_ros2_ws = f'source {ros2_ws}/install/setup.bash;'
+source_ros_bridge_ws = f'source {ros_bridge_ws}/install/setup.bash;'
+
+if ros_venv == "":
+    source_ros_venv = ""
+else:
+    source_ros_venv = f'source {ros_venv}/bin/activate;'
+if ros2_venv == "":
+    source_ros2_venv = ""
+else:
+    source_ros2_venv = f'source {ros2_venv}/bin/activate;'
 
 class KeyActionHandler:
     def __init__(self, process_handler, on_icon, off_icon):
@@ -51,13 +57,13 @@ class KeyActionHandler:
 def encoder_startup():
     process_handler = ProcessHandler()
     process_handler.add_process(
-        f'source {ros_bridge_ws}/install/setup.bash; ros2 run ros1_bridge dynamic_bridge --bridge-all-topics')
-    process_handler.add_process(
-        f'source {ros_ws}/devel/setup.bash; roslaunch gh360_control encoder_manager.launch', 
+        f'{source_ros_venv} {source_ros_ws} roslaunch gh360_control encoder_manager.launch', 
         env=Env.no_env)
     process_handler.add_process(
-        f'source {ros_ws}/devel/setup.bash; roslaunch gh360_control door_env.launch', 
+        f'{source_ros_venv} {source_ros_ws} roslaunch gh360_control door_env.launch', 
         env=Env.door)
+    process_handler.add_process(
+        f'{source_ros_bridge_ws} ros2 run ros1_bridge dynamic_bridge --bridge-all-topics')
 
     action_handler = KeyActionHandler(
         process_handler=process_handler, 
@@ -67,7 +73,7 @@ def encoder_startup():
     return action_handler
 
 def motor_startup():
-    pre_command = f'source {venv}/bin/activate; source {ros2_ws}/install/setup.bash;'
+    pre_command = f'{source_ros2_venv} {source_ros2_ws}'
 
     process_handler = ProcessHandler()
     process_handler.add_process(
@@ -85,7 +91,7 @@ def motor_startup():
     return action_handler
 
 def state_monitor():
-    pre_command = f'source {venv}/bin/activate; source {ros2_ws}/install/setup.bash;'
+    pre_command = f'{source_ros2_venv} {source_ros2_ws}'
 
     process_handler = ProcessHandler()
     process_handler.add_process(
@@ -99,7 +105,7 @@ def state_monitor():
     return action_handler
 
 def motor_torque_off():
-    pre_command = f'source {venv}/bin/activate; source {ros2_ws}/install/setup.bash;'
+    pre_command = f'{source_ros2_venv} {source_ros2_ws}'
 
     process_handler = ProcessHandler()
     process_handler.add_process(
@@ -120,7 +126,7 @@ def motor_torque_off():
     return action_handler
 
 def colcon_build():
-    pre_command = f'source {venv}/bin/activate; source {ros2_ws}/install/setup.bash;'
+    pre_command = f'{source_ros2_venv} {source_ros2_ws}'
 
     process_handler = ProcessHandler()
     process_handler.add_process(
@@ -134,7 +140,7 @@ def colcon_build():
     return action_handler
 
 def move_home():
-    pre_command = f'source {venv}/bin/activate; source {ros2_ws}/install/setup.bash;'
+    pre_command = f'{source_ros2_venv} {source_ros2_ws}'
 
     process_handler = ProcessHandler()
     process_handler.add_process(
@@ -152,7 +158,7 @@ def move_home():
     return action_handler
 
 def spacemouse_teleop():
-    pre_command = f'source {venv}/bin/activate; source {ros2_ws}/install/setup.bash;'
+    pre_command = f'{source_ros2_venv} {source_ros2_ws}'
 
     process_handler = ProcessHandler()
     process_handler.add_process(
@@ -169,7 +175,7 @@ def spacemouse_teleop():
     return action_handler
 
 def demo_gui():
-    pre_command = f'source {venv}/bin/activate; source {ros2_ws}/install/setup.bash;'
+    pre_command = f'{source_ros2_venv} {source_ros2_ws}'
 
     process_handler = ProcessHandler()
     process_handler.add_process(
@@ -183,7 +189,7 @@ def demo_gui():
     return action_handler
 
 def rosbag_record():
-    pre_command = f'source {venv}/bin/activate; source {ros2_ws}/install/setup.bash;'
+    pre_command = f'{source_ros2_venv} {source_ros2_ws}'
 
     process_handler = ProcessHandler()
     process_handler.add_process(
@@ -197,7 +203,7 @@ def rosbag_record():
     return action_handler
 
 def rosbag_play():
-    pre_command = f'source {venv}/bin/activate; source {ros2_ws}/install/setup.bash;'
+    pre_command = f'{source_ros2_venv} {source_ros2_ws}'
 
     process_handler = ProcessHandler()
     process_handler.add_process(
