@@ -23,7 +23,8 @@ class SpaceMouseNode(Node):
     def __init__(self):
         super().__init__('spacemouse_node')
 
-        self.publisher_ = self.create_publisher(SpaceMouse, '/spacemouse', 10)
+        self.spacemouse_publisher_ = self.create_publisher(SpaceMouse, '/spacemouse', 10)
+        self.cmd_eef_vel_publisher_ = self.create_publisher(Twist, '/cmd_eef_vel', 10)
 
         success = pyspacemouse.open()
         if not success:
@@ -50,7 +51,8 @@ class SpaceMouseNode(Node):
         msg.velocity = twist
         msg.button1 = bool(state.buttons[0])
         msg.button2 = bool(state.buttons[14])
-        self.publisher_.publish(msg)
+        self.spacemouse_publisher_.publish(msg)
+        self.cmd_eef_vel_publisher_.publish(twist)
         pass
 
 def main(args=None):
