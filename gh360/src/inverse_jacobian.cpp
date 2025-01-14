@@ -68,7 +68,7 @@ gh360::InverseJacobian::InverseJacobian()
     this->desired_velocity = geometry_msgs::msg::Twist();
 
     // this->spacemouse_subscriber_ = this->create_subscription<gh360_interfaces::msg::SpaceMouse>("/spacemouse", 10, std::bind(&gh360::InverseJacobian::spacemouse_callback, this, std::placeholders::_1));
-    this->spacemouse_subscriber_ = this->create_subscription<gh360_interfaces::msg::SpaceMouse>("/cmd_eef_vel", 10, std::bind(&gh360::InverseJacobian::spacemouse_callback, this, std::placeholders::_1));
+    this->cmd_eef_vel_subscriber_ = this->create_subscription<geometry_msgs::msg::Twist>("/cmd_eef_vel", 10, std::bind(&gh360::InverseJacobian::cmd_eef_vel_callback, this, std::placeholders::_1));
     this->joint_position_subscriber_ = this->create_subscription<sensor_msgs::msg::JointState>(joint_position_topic, 10, std::bind(&gh360::InverseJacobian::joint_position_callback, this, std::placeholders::_1));
 
     
@@ -85,9 +85,9 @@ gh360::InverseJacobian::~InverseJacobian()
 {
 }
 
-void gh360::InverseJacobian::spacemouse_callback(const gh360_interfaces::msg::SpaceMouse::SharedPtr msg)
+void gh360::InverseJacobian::cmd_eef_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
 {
-    this->desired_velocity = msg->velocity;
+    this->desired_velocity = *msg;
     // RCLCPP_INFO(this->get_logger(),"spacemouse callback");
 }
 

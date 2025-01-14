@@ -30,13 +30,13 @@ namespace gh360
 
         private:
             void timer_callback();
-            void spacemouse_callback(const gh360_interfaces::msg::SpaceMouse::SharedPtr msg);
+            void cmd_eef_vel_callback(const geometry_msgs::msg::Twist::SharedPtr msg);
             void joint_position_callback(const sensor_msgs::msg::JointState::SharedPtr msg);
 
             rclcpp::TimerBase::SharedPtr timer_;
             rclcpp::Publisher<sensor_msgs::msg::JointState>::SharedPtr joint_velocity_publisher_;
             rclcpp::Subscription<sensor_msgs::msg::JointState>::SharedPtr joint_position_subscriber_;
-            rclcpp::Subscription<gh360_interfaces::msg::SpaceMouse>::SharedPtr spacemouse_subscriber_;
+            rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr cmd_eef_vel_subscriber_;
 
             geometry_msgs::msg::Twist desired_velocity;
             sensor_msgs::msg::JointState current_joint_pos;
