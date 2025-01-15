@@ -217,24 +217,24 @@ class EEFVelocityController(BaseController):
                     action_adj.append(motor_action[i])
                     action_adj.append(motor_action[i])
                     if action_adj[joint.id_right_motor-1] > 0.0:
-                        if joint.right_motor_current >= joint.max_current or joint.joint_angle >= joint.max_pos-0.1:
+                        if joint.right_motor_current >= joint.max_current or joint.joint_angle >= joint.max_pos:#-0.1:
                             action_adj[joint.id_right_motor-1] = 0.0
                     elif action_adj[joint.id_right_motor-1] < 0.0:
-                        if joint.right_motor_current <= joint.min_current or joint.joint_angle <= joint.min_pos+0.1:
+                        if joint.right_motor_current <= joint.min_current or joint.joint_angle <= joint.min_pos:#+0.1:
                             action_adj[joint.id_right_motor-1] = 0.0
                     if action_adj[joint.id_left_motor-1] > 0.0:
-                        if joint.left_motor_current >= joint.max_current or joint.joint_angle >= joint.max_pos-0.1:
+                        if joint.left_motor_current >= joint.max_current or joint.joint_angle >= joint.max_pos:#-0.1:
                             action_adj[joint.id_left_motor-1] = 0.0
                     elif action_adj[joint.id_left_motor-1] < 0.0:
-                        if joint.left_motor_current <= joint.min_current or joint.joint_angle <= joint.min_pos+0.1:
+                        if joint.left_motor_current <= joint.min_current or joint.joint_angle <= joint.min_pos:#+0.1:
                             action_adj[joint.id_left_motor-1] = 0.0
                 elif type(joint) == MotorJoint:
                     action_adj.append(motor_action[i])
                     if action_adj[joint.id_motor-1] > 0.0:
-                        if joint.motor_current >= joint.max_current or joint.joint_angle >= joint.max_pos-0.1:
+                        if joint.motor_current >= joint.max_current or joint.joint_angle >= joint.max_pos:#-0.1:
                             action_adj[joint.id_motor-1] = 0.0
                     elif action_adj[joint.id_motor-1] < 0.0:
-                        if joint.motor_current <= joint.min_current or joint.joint_angle <= joint.min_pos+0.1:
+                        if joint.motor_current <= joint.min_current or joint.joint_angle <= joint.min_pos:#+0.1:
                             action_adj[joint.id_motor-1] = 0.0
 
             # print("action adj: ", action_adj)
