@@ -10,21 +10,21 @@ import xacro
 
 
 def generate_launch_description():
-    package_name = 'gh360'
-    robot_name = 'gh360'
-    model_file_path = os.path.join(get_package_share_directory(package_name), 'urdf', robot_name+'.urdf')
-    robot_description_raw = xacro.process_file(model_file_path).toxml()
+    # package_name = 'gh360'
+    # robot_name = 'gh360'
+    # model_file_path = os.path.join(get_package_share_directory(package_name), 'urdf', robot_name+'.urdf')
+    # robot_description_raw = xacro.process_file(model_file_path).toxml()
 
-    inverse_jacobian_cmd = Node(
-        package='gh360',
-        executable='inverse_jacobian',
-        name='inverse_jacobian',
-        # emulate_tty=True,
-        parameters=[{
-        'robot_description': robot_description_raw,
-        'tcp_link_name': 'eef',
-        'joint_states_topic': '/gh360_joint_states'}]
-    )
+    # inverse_jacobian_cmd = Node(
+    #     package='gh360',
+    #     executable='inverse_jacobian',
+    #     name='inverse_jacobian',
+    #     # emulate_tty=True,
+    #     parameters=[{
+    #     'robot_description': robot_description_raw,
+    #     'tcp_link_name': 'eef',
+    #     'joint_states_topic': '/gh360_joint_states'}]
+    # )
 
     teleop_cmd = Node(
         package='gh360',
@@ -59,7 +59,7 @@ def generate_launch_description():
 
     
     return LaunchDescription([
-        inverse_jacobian_cmd,
+        # inverse_jacobian_cmd,
         teleop_cmd,
         space_mouse_cmd,
         reset_robot_cmd,

@@ -24,6 +24,7 @@ from gh360_interfaces.msg import DoorEnv as DoorEnvMsg
 from gh360_gym.utils.joints import SoftJoint, MotorJoint
 from gh360_gym.controllers.eq_point import EqPointController
 from gh360_gym.controllers.motor_vel import MotorVelocityController
+from gh360_gym.controllers.eef_vel import EEFVelocityController
 
 
 class DoorEnv(gym.Env):
@@ -47,7 +48,7 @@ class DoorEnv(gym.Env):
         self.motor_obs = motor_obs
         # print("motor obs: ", self.motor_obs)
         self.stiffness_mode = stiffness_mode
-        self.control_dim = 7
+        
 
         self.first_eef_msg = False
         self.first_door_msg = False
@@ -65,7 +66,9 @@ class DoorEnv(gym.Env):
 
         # self.controller = EqPointController(self.node, op_mode=self.stiffness_mode)
         # self.controller = EqPointController(self.node, stiffness_mode=self.stiffness_mode, input_min=input_min, input_max=input_max)
-        self.controller = MotorVelocityController(self.node, input_min=input_min, input_max=input_max, max_current=max_current, max_joint_pos=max_joint_pos, min_joint_pos=min_joint_pos)
+        # self.controller = MotorVelocityController(self.node, input_min=input_min, input_max=input_max, max_current=max_current, max_joint_pos=max_joint_pos, min_joint_pos=min_joint_pos)
+        self.controller = EEFVelocityController(self.node, input_min=input_min, input_max=input_max, max_current=max_current, max_joint_pos=max_joint_pos, min_joint_pos=min_joint_pos)
+        self.control_dim = self.controller.control_dim
 
         self.node.create_subscription(
             Pose,
