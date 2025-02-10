@@ -1,6 +1,7 @@
 from setuptools import setup, find_packages
 import os
 import sys
+from glob import glob
 
 package_name = 'gh360_examples'
 
@@ -12,6 +13,7 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'launch'), glob(os.path.join('launch', '*.launch.py')))
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -38,6 +40,7 @@ setup(
             'pos_step_pub = gh360_examples.pos_step_pub:main',
             'testing_script = gh360_examples.testing_script:main',
             'reset_robot = gh360_examples.reset_robot:main',
+            'robosuite_teleop = gh360_examples.robosuite_teleop:main',
         ],
     },
 )

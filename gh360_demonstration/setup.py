@@ -25,6 +25,7 @@ setup(
             'timer_test = gh360_demonstration.timer_test:main',
             'gui = gh360_demonstration.gui:main',
             'door_env_obs = gh360_demonstration.door_env_obs:main',
+            'robosuite_demo = gh360_demonstration.robosuite_demo:main',
         ],
     },
 )
