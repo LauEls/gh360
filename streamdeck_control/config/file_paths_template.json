@@ -1,0 +1,7 @@
+{
+    "ros_venv": "",
+    "ros2_venv": "",
+    "ros_ws": "~/gh360_ws",
+    "ros_bridge_ws": "~/bridge_ws",
+    "ros2_ws": "~/ros2_gh360_ws"
+}
