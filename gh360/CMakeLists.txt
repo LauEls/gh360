@@ -18,8 +18,6 @@ endif()
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(dynamixel_sdk REQUIRED)
-# find_package(dynamixel_sdk_custom_interfaces REQUIRED)
-# find_package(dynamixel_workbench_toolbox REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
@@ -28,75 +26,68 @@ find_package(gh360_interfaces REQUIRED)
 find_package(orocos_kdl REQUIRED)
 find_package(urdf REQUIRED)
 find_package(kdl_parser REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
 
-include_directories(
-  include/${PROJECT_NAME}
-)
+set(library_name ${PROJECT_NAME}_core)
 
-add_library(gh360
-  src/mx_64_dict.cpp
-  src/mx_106_dict.cpp
-  # src/motor_handler.cpp
-  src/joint.cpp
-  src/soft_joint.cpp
-  src/motor_joint.cpp
+add_library(${library_name} SHARED
+  src/motor_dictionaries/motor_dict.cpp
+  src/motor_dictionaries/mx_64_dict.cpp
+  src/motor_dictionaries/mx_106_dict.cpp
+  src/joint_types/motor.cpp
+  src/joint_types/encoder.cpp
+  src/joint_types/joint.cpp
+  src/joint_types/soft_joint.cpp
+  src/joint_types/motor_joint.cpp
+  src/util/dynamixel.cpp
+  src/util/config_parser.cpp
 )
-ament_target_dependencies(gh360 "rclcpp" "sensor_msgs" "std_msgs" "std_srvs" "dynamixel_sdk" "orocos_kdl" "kdl_parser")
+target_include_directories(${library_name}
+  PUBLIC
+  "$<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>"
+  "$<INSTALL_INTERFACE:include/${PROJECT_NAME}>")
+
+ament_target_dependencies(${library_name} rclcpp dynamixel_sdk gh360_interfaces)  
+# target_link_libraries(${library_name} PUBLIC 
+#   rclcpp::rclcpp
+#   dynamixel_sdk
+#   gh360_interfaces
+# )
 
 add_executable(motor_handler src/motor_handler.cpp)
-target_link_libraries(
-  motor_handler
-  gh360
-)
-ament_target_dependencies(motor_handler rclcpp std_msgs std_srvs gh360_interfaces)
+target_link_libraries(motor_handler ${library_name})
+ament_target_dependencies(motor_handler std_msgs std_srvs gh360_interfaces)
 
 add_executable(encoder_handler src/encoder_handler.cpp)
-target_link_libraries(
-  encoder_handler
-  gh360
-)
-ament_target_dependencies(encoder_handler rclcpp std_msgs gh360_interfaces)
+target_link_libraries(encoder_handler PRIVATE ${library_name} rclcpp::rclcpp)
+# ament_target_dependencies(encoder_handler std_msgs gh360_interfaces)
 
 add_executable(joint_states src/joint_states.cpp)
-target_link_libraries(
-  joint_states
-  gh360
-)
-ament_target_dependencies(joint_states rclcpp std_msgs gh360_interfaces sensor_msgs)
+# target_link_libraries(joint_states PRIVATE ${library_name} rclcpp::rclcpp)
+target_link_libraries(joint_states ${library_name})
+ament_target_dependencies(joint_states std_msgs gh360_interfaces sensor_msgs)
 
-add_executable(inverse_jacobian src/inverse_jacobian.cpp)
-target_link_libraries(
-  inverse_jacobian
-  gh360
-)
-ament_target_dependencies(inverse_jacobian rclcpp std_msgs gh360_interfaces orocos_kdl kdl_parser)
+# add_executable(inverse_jacobian src/inverse_jacobian.cpp)
+# target_link_libraries(motor_handler ${library_name} rclcpp::rclcpp)
+# ament_target_dependencies(inverse_jacobian std_msgs gh360_interfaces orocos_kdl kdl_parser)
 
-add_executable(teleop_rviz src/teleop_rviz.cpp)
-target_link_libraries(
-  teleop_rviz
-  gh360
-)
-ament_target_dependencies(teleop_rviz rclcpp std_msgs gh360_interfaces)
+# add_executable(teleop_rviz src/teleop_rviz.cpp)
+# target_link_libraries(motor_handler ${library_name} rclcpp::rclcpp)
+# ament_target_dependencies(teleop_rviz std_msgs gh360_interfaces)
 
-add_executable(teleop src/teleop.cpp)
-target_link_libraries(
-  teleop
-  gh360
-)
-ament_target_dependencies(teleop rclcpp std_msgs gh360_interfaces)
+# add_executable(teleop src/teleop.cpp)
+# target_link_libraries(motor_handler ${library_name} rclcpp::rclcpp)
+# ament_target_dependencies(teleop std_msgs gh360_interfaces)
 
 ################################################################################
 # Install
 ################################################################################
 install(DIRECTORY include/
-  DESTINATION include
+  DESTINATION include/${PROJECT_NAME}
 )
 
 install(
-  TARGETS ${PROJECT_NAME}
+  TARGETS ${library_name}
+  EXPORT ${library_name}
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
@@ -106,9 +97,9 @@ install(TARGETS
   motor_handler
   encoder_handler
   joint_states
-  inverse_jacobian
-  teleop_rviz
-  teleop
+  # inverse_jacobian
+  # teleop_rviz
+  # teleop
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files.
@@ -142,6 +133,7 @@ DESTINATION share/${PROJECT_NAME}
 )
 
 
+
 ################################################################################
 # Test
 ################################################################################
@@ -159,9 +151,12 @@ endif()
 ################################################################################
 # Macro for ament package
 ################################################################################
-ament_export_include_directories(include)
-# ament_export_dependencies(dynamixel_sdk)
-# ament_export_dependencies(rclcpp)
-# ament_export_libraries(${PROJECT_NAME})
-# ament_export_targets(export_${PROJECT_NAME})
+ament_export_include_directories(include/${PROJECT_NAME})
+ament_export_libraries(${library_name})
+
+ament_export_dependencies(
+  rclcpp
+)
+ament_export_targets(${library_name})
+
 ament_package()

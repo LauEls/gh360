@@ -13,6 +13,7 @@ from gh360_interfaces.msg import SpaceMouse
 
 import sys
 from robosuite.wrappers import GymWrapper
+from .collect_demos import collect_demonstrations
 sys.path.insert(0, '/home/laurenz/phd_project/sac/sac_2')
 from wrappers import NormalizedBoxEnv
 
@@ -41,10 +42,12 @@ class RobosuiteTeleop(Node):
         self.record_data = False
         self.btn1_pressed = False
         self.btn2_pressed = False
-        self.save_file_path = '/home/laurenz/phd_project/ros2_gh360_ws/src/gh360/gh360_examples/data/spacemouse_demonstrations/robosuite/door_mirror/robosuite_door_mirror_demonstration_v3.npy'
 
+
+        self.save_file_path = '/home/laurenz/phd_project/ros2_gh360_ws/src/gh360/gh360_examples/data/spacemouse_demonstrations/robosuite/door_mirror/robosuite_door_mirror_demonstration_v3.npy'
         config_file = '/home/laurenz/phd_project/TD7/runs/door_mirror/gh360/joint_velocity/offline/v5_new_gather_method/variant.json'
-        
+        self.expert_paths = ''
+
         # kwargs_fpath = os.path.join(load_dir, "variant.json")
         try:
             with open(config_file) as f:
@@ -55,20 +58,10 @@ class RobosuiteTeleop(Node):
             
         env_config = variant["environment_kwargs"]
         controller = env_config.pop("controller")
-        self.ep_length = variant["episode_length"]
-
-        if controller in set(suite.ALL_CONTROLLERS):
-            print("Controller: "+controller)
-            # This is a default controller
-            controller_config = suite.load_controller_config(default_controller=controller)
+        
+        controller_config = suite.load_controller_config(default_controller=controller)
             
-            if "controller_config" in env_config.keys():
-                controller_settings = env_config.pop("controller_config")
-                for config in controller_settings:
-                    controller_config[config] = controller_settings[config]
-        else:
-            # This is a string to the custom controller
-            controller_config = suite.load_controller_config(custom_fpath=controller)
+        
             
         env = suite.make(**env_config,
             #  has_renderer=variant["render"],
@@ -80,27 +73,8 @@ class RobosuiteTeleop(Node):
             render_camera="agentview",
             )
 
-        # options = {}
-        # options["env_name"] = 'DoorMirror'
-        # options["robots"] = 'GH360'
-        # options["gripper_types"] = 'HookGripper' #'PandaGripper'
-        # controller_name = 'OSC_POSE'
-        # controller_name = 'JOINT_VELOCITY'
-        # options["controller_configs"] = suite.load_controller_config(default_controller=controller_name)
-        # options["table_offset"] = (-0.43, 0.412, 0.81)
-        # env = suite.make(
-        #     **options,
-        #     has_renderer=True,
-        #     has_offscreen_renderer=False,
-        #     use_object_obs=True,
-        #     # ignore_done=True,
-        #     use_camera_obs=False,
-        #     hard_reset=False,
-        #     ignore_done=True,
-        #     # control_freq=20,
-        #     reward_shaping=True,
-        #     render_camera="agentview",
-        # )
+        self.ep_length = variant["episode_length"]
+
         self.env = NormalizedBoxEnv(GymWrapper(env))
         self.observation = self.env.reset()
         self.env.render()
@@ -164,233 +138,270 @@ class RobosuiteTeleop(Node):
             else:
                 self.get_logger().info("Stopped recording data")
 
-    def collect_demonstrations(self, num_eps: int):
-        paths = []
-        eps = 0
-        steps = 0
-        self.get_logger().info(f"Start collectin {num_eps} demonstrations")
-        while eps < num_eps:
-            print(f"Episode {eps}")
-            path = self.demo_episode_rollout()
-            steps += len(path['actions'])
-            paths.append(path)
-            eps += 1
+    def expert_action(self, observation):
+        if self.reset:
+            self.reset_env()
+        joint_positions = observation[5:12].tolist()
+        self.joint_state_msg.position = joint_positions
+        self.joint_goal_publisher.publish(self.joint_state_msg)
 
-        self.get_logger().info(f"Collected {eps} episodes with {steps} steps. Start generating random data.")
-        rnd_steps = 0
-        while rnd_steps < steps:
-            path = self.exploration_rollout()
-            rnd_steps += len(path['actions'])
-            paths.append(path)
+        self.env.render()
+        rclpy.spin_once(self)
 
-        self.get_logger().info(f"Finished collecting {rnd_steps} random steps. Saving data to {self.save_file_path}")
-        file_array = np.array(paths)
-        np.save(self.save_file_path, file_array)
-        return paths
+        action = self.goal_joint_velocity
+
+        return action, self.record_data
     
-    def collect_gradual_demonstrations(self, num_eps: int):
+    def reset_env(self):
+        observation = self.env.reset()
+        self.env.render()
+
+        self.reset = False
+        self.record_data = False
+
+        return observation
+
+    # def collect_demonstrations(self, num_eps: int):
+    #     paths = []
+    #     eps = 0
+    #     steps = 0
+    #     self.get_logger().info(f"Start collectin {num_eps} demonstrations")
+    #     while eps < num_eps:
+    #         print(f"Episode {eps}")
+    #         path = self.demo_episode_rollout()
+    #         steps += len(path['actions'])
+    #         paths.append(path)
+    #         eps += 1
+
+    #     self.get_logger().info(f"Collected {eps} episodes with {steps} steps. Start generating random data.")
+    #     rnd_steps = 0
+    #     while rnd_steps < steps:
+    #         path = self.exploration_rollout()
+    #         rnd_steps += len(path['actions'])
+    #         paths.append(path)
+
+    #     self.get_logger().info(f"Finished collecting {rnd_steps} random steps. Saving data to {self.save_file_path}")
+    #     file_array = np.array(paths)
+    #     np.save(self.save_file_path, file_array)
+    #     return paths
+
+    def collect_demonstrations(self, mode, num_eps: int):
         paths = []
-        expert_paths = []
-        eps = 0
-        steps = 0
-        self.get_logger().info(f"Start collectin {num_eps} demonstrations")
-        while eps < num_eps:
-            print(f"Episode {eps}")
-            path = self.demo_episode_rollout(horizon=self.ep_length)
-            steps += len(path['actions'])
-            paths.append(path)
-            expert_paths.append(path)
-            eps += 1
 
-        self.get_logger().info(f"Collected {eps} episodes with {steps} steps. Start generating hybrid data.")
-
-        expert_ratios = [0.0, 0.25, 0.5, 0.75]
-        for expert_ratio in expert_ratios:
-            print(f"Expert ratio: {expert_ratio}")
-            expert_steps = int(expert_ratio * self.ep_length)
-            eps = 0
-            while eps < num_eps:
-                print(f"Episode {eps}")
-                path = self.hybrid_rollout(horizon=self.ep_length, expert_steps=expert_steps, expert_episodes=expert_paths)
-                steps += len(path['actions'])
-                paths.append(path)
-                eps += 1
-
-        self.get_logger().info(f"Finished collecting {steps} steps. Saving data to {self.save_file_path}")
-
+        self.get_logger().info("Collecting expert demonstrations")
+        paths = collect_demonstrations(self, mode, num_eps, self.expert_paths)
+        self.get_logger().info("Expert demonstrations collected")
+        
         file_array = np.array(paths)
         np.save(self.save_file_path, file_array)
-        return paths
-
-    def hybrid_rollout(self, horizon, expert_steps, expert_episodes):
-        action = np.zeros(7)
-        observation = self.env.reset()
-
-        observations = []
-        next_observations = []
-        actions = []
-        rewards = []
-        dones = []
-        infos = []
-
-        #choose random expert episode
-        expert_episode = np.random.choice(expert_episodes)
-
-        for i in range(horizon):
-            if i < expert_steps:
-                #expert action
-                action = expert_episode['actions'][i]
-            else:
-                #random action
-                action = self.env.action_space.sample()
-
-            next_observation, reward, done, info = self.env.step(action)
-            # self.env.render()
-
-            observations.append(observation)
-            next_observations.append(next_observation)
-            actions.append(action)
-            rewards.append(reward)
-            dones.append(done)
-            infos.append(info)
-
-            observation = next_observation
-
-        actions = np.array(actions)
-        observations = np.array(observations)
-        next_observations = np.array(next_observations)
-        rewards = np.array(rewards)
-        dones=np.array(dones)
-        infos = np.array(infos)
-
-        path = dict(
-            observations=observations,
-            actions=actions,
-            rewards=rewards,
-            next_observations=next_observations,
-            dones=dones,
-            infos=infos,
-        )
-
-        return path
         
-    def exploration_rollout(self):
-        action = np.zeros(7)
-        observation = self.env.reset()
+    
+    # def collect_gradual_demonstrations(self, num_eps: int):
+    #     paths = []
+    #     expert_paths = []
+    #     eps = 0
+    #     steps = 0
+    #     self.get_logger().info(f"Start collectin {num_eps} demonstrations")
+    #     while eps < num_eps:
+    #         print(f"Episode {eps}")
+    #         path = self.demo_episode_rollout(horizon=self.ep_length)
+    #         steps += len(path['actions'])
+    #         paths.append(path)
+    #         expert_paths.append(path)
+    #         eps += 1
 
-        observations = []
-        next_observations = []
-        actions = []
-        rewards = []
-        dones = []
-        infos = []
-        for _ in range(self.ep_length):
-            action = self.env.action_space.sample()
-            next_observation, reward, done, info = self.env.step(action)
+    #     self.get_logger().info(f"Collected {eps} episodes with {steps} steps. Start generating hybrid data.")
 
-            observations.append(observation)
-            next_observations.append(next_observation)
-            actions.append(action)
-            rewards.append(reward)
-            dones.append(done)
-            infos.append(info)
+    #     expert_ratios = [0.0, 0.25, 0.5, 0.75]
+    #     for expert_ratio in expert_ratios:
+    #         print(f"Expert ratio: {expert_ratio}")
+    #         expert_steps = int(expert_ratio * self.ep_length)
+    #         eps = 0
+    #         while eps < num_eps:
+    #             print(f"Episode {eps}")
+    #             path = self.hybrid_rollout(horizon=self.ep_length, expert_steps=expert_steps, expert_episodes=expert_paths)
+    #             steps += len(path['actions'])
+    #             paths.append(path)
+    #             eps += 1
 
-            observation = next_observation
+    #     self.get_logger().info(f"Finished collecting {steps} steps. Saving data to {self.save_file_path}")
 
-        actions = np.array(actions)
-        observations = np.array(observations)
-        next_observations = np.array(next_observations)
-        rewards = np.array(rewards)
-        dones=np.array(dones)
-        infos = np.array(infos)
+    #     file_array = np.array(paths)
+    #     np.save(self.save_file_path, file_array)
+    #     return paths
+    
+    
+        
 
-        path = dict(
-            observations=observations,
-            actions=actions,
-            rewards=rewards,
-            next_observations=next_observations,
-            dones=dones,
-            infos=infos,
-        )
+    # def hybrid_rollout(self, horizon, expert_steps, expert_episodes):
+    #     action = np.zeros(7)
+    #     observation = self.env.reset()
 
-        return path
+    #     observations = []
+    #     next_observations = []
+    #     actions = []
+    #     rewards = []
+    #     dones = []
+    #     infos = []
+
+    #     #choose random expert episode
+    #     expert_episode = np.random.choice(expert_episodes)
+
+    #     for i in range(horizon):
+    #         if i < expert_steps:
+    #             #expert action
+    #             action = expert_episode['actions'][i]
+    #         else:
+    #             #random action
+    #             action = self.env.action_space.sample()
+
+    #         next_observation, reward, done, info = self.env.step(action)
+    #         # self.env.render()
+
+    #         observations.append(observation)
+    #         next_observations.append(next_observation)
+    #         actions.append(action)
+    #         rewards.append(reward)
+    #         dones.append(done)
+    #         infos.append(info)
+
+    #         observation = next_observation
+
+    #     actions = np.array(actions)
+    #     observations = np.array(observations)
+    #     next_observations = np.array(next_observations)
+    #     rewards = np.array(rewards)
+    #     dones=np.array(dones)
+    #     infos = np.array(infos)
+
+    #     path = dict(
+    #         observations=observations,
+    #         actions=actions,
+    #         rewards=rewards,
+    #         next_observations=next_observations,
+    #         dones=dones,
+    #         infos=infos,
+    #     )
+
+    #     return path
+        
+    # def exploration_rollout(self):
+    #     action = np.zeros(7)
+    #     observation = self.env.reset()
+
+    #     observations = []
+    #     next_observations = []
+    #     actions = []
+    #     rewards = []
+    #     dones = []
+    #     infos = []
+    #     for _ in range(self.ep_length):
+    #         action = self.env.action_space.sample()
+    #         next_observation, reward, done, info = self.env.step(action)
+
+    #         observations.append(observation)
+    #         next_observations.append(next_observation)
+    #         actions.append(action)
+    #         rewards.append(reward)
+    #         dones.append(done)
+    #         infos.append(info)
+
+    #         observation = next_observation
+
+    #     actions = np.array(actions)
+    #     observations = np.array(observations)
+    #     next_observations = np.array(next_observations)
+    #     rewards = np.array(rewards)
+    #     dones=np.array(dones)
+    #     infos = np.array(infos)
+
+    #     path = dict(
+    #         observations=observations,
+    #         actions=actions,
+    #         rewards=rewards,
+    #         next_observations=next_observations,
+    #         dones=dones,
+    #         infos=infos,
+    #     )
+
+    #     return path
 
 
-    def demo_episode_rollout(self, horizon: int = 0):
-        observation = self.env.reset()
-        cntr = 0
-        self.reset = True
-        self.record_data = False  
-        succ_cntr = 0
-        success = False
-        # print("New epsiode")
-        while cntr < horizon or not success:
-            # print("Step")
-            if self.reset or cntr >= horizon:
-                self.env.reset()
-                self.env.render()
-                observations = []
-                next_observations = []
-                actions = []
-                rewards = []
-                dones = []
-                infos = []
-                self.reset = False
-                self.record_data = False  
-                cntr = 0
+    # def demo_episode_rollout(self, horizon: int = 0):
+    #     observation = self.env.reset()
+    #     cntr = 0
+    #     self.reset = True
+    #     self.record_data = False  
+    #     succ_cntr = 0
+    #     success = False
+    #     # print("New epsiode")
+    #     while cntr < horizon or not success:
+    #         # print("Step")
+    #         if self.reset or cntr >= horizon:
+    #             self.env.reset()
+    #             self.env.render()
+    #             observations = []
+    #             next_observations = []
+    #             actions = []
+    #             rewards = []
+    #             dones = []
+    #             infos = []
+    #             self.reset = False
+    #             self.record_data = False  
+    #             cntr = 0
 
-            next_observation, reward, done, info = self.env.step(self.goal_joint_velocity)
+    #         next_observation, reward, done, info = self.env.step(self.goal_joint_velocity)
 
-            # print(f"Reward: {reward}")
+    #         # print(f"Reward: {reward}")
             
-            if reward == 1.0:
-                if succ_cntr == 0:
-                    self.get_logger().info("Epsiode success")
-                    if horizon != 0:
-                        success = True
-                succ_cntr += 1
-                if succ_cntr > 30 and self.record_data:
-                    success = True
-            else:
-                success = False
-                succ_cntr = 0
+    #         if reward == 1.0:
+    #             if succ_cntr == 0:
+    #                 self.get_logger().info("Epsiode success")
+    #                 if horizon != 0:
+    #                     success = True
+    #             succ_cntr += 1
+    #             if succ_cntr > 30 and self.record_data:
+    #                 success = True
+    #         else:
+    #             success = False
+    #             succ_cntr = 0
 
-            if self.record_data:
-                actions.append(self.goal_joint_velocity)
-                observations.append(observation)
-                next_observations.append(next_observation)
-                rewards.append(reward)
-                dones.append(done)
-                infos.append(info)
-                cntr += 1
+    #         if self.record_data:
+    #             actions.append(self.goal_joint_velocity)
+    #             observations.append(observation)
+    #             next_observations.append(next_observation)
+    #             rewards.append(reward)
+    #             dones.append(done)
+    #             infos.append(info)
+    #             cntr += 1
 
-            observation = next_observation
-            joint_positions = observation[5:12].tolist()
-            self.joint_state_msg.position = joint_positions
-            self.joint_goal_publisher.publish(self.joint_state_msg)
+    #         observation = next_observation
+    #         joint_positions = observation[5:12].tolist()
+    #         self.joint_state_msg.position = joint_positions
+    #         self.joint_goal_publisher.publish(self.joint_state_msg)
 
-            self.env.render()
-            rclpy.spin_once(self)
+    #         self.env.render()
+    #         rclpy.spin_once(self)
 
-        self.get_logger().info(f"Episode finished after {cntr} steps")
+    #     self.get_logger().info(f"Episode finished after {cntr} steps")
 
-        actions = np.array(actions)
-        observations = np.array(observations)
-        next_observations = np.array(next_observations)
-        rewards = np.array(rewards)
-        dones=np.array(dones)
-        infos = np.array(infos)
+    #     actions = np.array(actions)
+    #     observations = np.array(observations)
+    #     next_observations = np.array(next_observations)
+    #     rewards = np.array(rewards)
+    #     dones=np.array(dones)
+    #     infos = np.array(infos)
 
-        path = dict(
-            observations=observations,
-            actions=actions,
-            rewards=rewards,
-            next_observations=next_observations,
-            dones=dones,
-            infos=infos,
-        )
+    #     path = dict(
+    #         observations=observations,
+    #         actions=actions,
+    #         rewards=rewards,
+    #         next_observations=next_observations,
+    #         dones=dones,
+    #         infos=infos,
+    #     )
 
-        return path
+    #     return path
 
 
 def main(args=None):
@@ -398,11 +409,11 @@ def main(args=None):
 
     robosuite_teleop = RobosuiteTeleop()
 
-    # rclpy.spin(minimal_publisher)
+    # rclpy.spin(robosuite_teleop)
     # while True:
     #     rclpy.spin_once(robosuite_teleop)
-    # robosuite_teleop.collect_demonstrations(100)
-    robosuite_teleop.collect_gradual_demonstrations(50)
+    robosuite_teleop.collect_demonstrations("expert", 5)
+    # robosuite_teleop.collect_gradual_demonstrations(50)
 
     
     # Destroy the node explicitly

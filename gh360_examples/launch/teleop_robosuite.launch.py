@@ -81,7 +81,7 @@ def generate_launch_description():
     return LaunchDescription([
         # start_rviz_cmd,
         inverse_jacobian_cmd,
-        # teleop_robosuite_cmd,
+        teleop_robosuite_cmd,
         start_joint_state_publisher_cmd,
         start_robot_state_publisher_cmd,
         # camera_frame_cmd,

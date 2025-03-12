@@ -7,7 +7,7 @@ import numpy as np
 import os
 
 from geometry_msgs.msg import Twist
-from gh360_interfaces.msg import SpaceMouse
+from gh360_interfaces.msg import SpaceMouse, BoolMultiArray
 
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
@@ -23,8 +23,9 @@ class SpaceMouseNode(Node):
     def __init__(self):
         super().__init__('spacemouse_node')
 
-        self.spacemouse_publisher_ = self.create_publisher(SpaceMouse, '/spacemouse', 10)
-        self.cmd_eef_vel_publisher_ = self.create_publisher(Twist, '/cmd_eef_vel', 10)
+        self.spacemouse_publisher_ = self.create_publisher(SpaceMouse, 'spacemouse', 10)
+        self.cmd_eef_vel_publisher_ = self.create_publisher(Twist, '/gh360_control/teleop_eef_velocity', 10)
+        self.button_publisher_ = self.create_publisher(BoolMultiArray, '/gh360_control/teleop_buttons', 10)
 
         success = pyspacemouse.open()
         if not success:
@@ -40,6 +41,7 @@ class SpaceMouseNode(Node):
         state = pyspacemouse.read()
         
         msg = SpaceMouse()
+        buttons = BoolMultiArray()
         twist = Twist()
         twist.linear.x = float(state.x)
         twist.linear.y = float(state.y)
@@ -50,9 +52,12 @@ class SpaceMouseNode(Node):
 
         msg.velocity = twist
         msg.button1 = bool(state.buttons[0])
+        buttons.data.append(bool(state.buttons[0]))
         msg.button2 = bool(state.buttons[14])
+        buttons.data.append(bool(state.buttons[14]))
         self.spacemouse_publisher_.publish(msg)
         self.cmd_eef_vel_publisher_.publish(twist)
+        self.button_publisher_.publish(buttons)
         pass
 
 def main(args=None):

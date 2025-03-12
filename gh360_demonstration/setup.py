@@ -26,6 +26,7 @@ setup(
             'gui = gh360_demonstration.gui:main',
             'door_env_obs = gh360_demonstration.door_env_obs:main',
             'robosuite_demo = gh360_demonstration.robosuite_demo:main',
+            'gh360_demo = gh360_demonstration.gh360_demo:main',
         ],
     },
 )

@@ -6,12 +6,6 @@ from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import IncludeLaunchDescription
-# from launch.events.process.process_exited import ProcessExited
-# from launch.event_handlers.on_process_exit import OnProcessExit
-# from launch.actions import RegisterEventHandler
-# from launch.launch_context import LaunchContext
-
-
 
 def generate_launch_description():
     camera_startup = IncludeLaunchDescription(

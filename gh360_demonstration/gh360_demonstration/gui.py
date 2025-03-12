@@ -123,40 +123,61 @@ class RecordDemos(Node, TKMT.ThemedTKinterFrame):
         # Generate Demonstration Dataset Tab #
         ######################################
         self.tab_4 = self.notebook.addTab("Generate Demonstration Dataset")
-        self.tab_4.Text("Environment:", row=0, col=0)
+
+        self.tab_4.Text("Platform:", row=0, col=0)
+        self.platform_option_menu_list = ["Real Robot", "Simulated Robot"]
+        self.demo_platform = tk.StringVar(value=self.platform_option_menu_list[0])
+        self.tab_4.OptionMenu(self.platform_option_menu_list, self.demo_platform, row=0, col=1)
+        self.demo_platform.trace_add("write", self.platform_changed)
+
+        self.tab_4.Text("Environment:", row=1, col=0)
         self.demo_env = tk.StringVar(value=self.env_option_menu_list[0])
-        self.tab_4.OptionMenu(self.env_option_menu_list, self.demo_env, row=0, col=1)
-        self.demo_env.trace_add("write", self.update_recordings)
-        self.recordings_frame = self.tab_4.addLabelFrame("Recordings", row=1, col=0, colspan=2)
-        recordings_vscrollbar = ttk.Scrollbar(self.recordings_frame.master, orient=VERTICAL)
-        recordings_vscrollbar.pack(fill=Y, side=RIGHT, expand=FALSE)
-        self.recordings_canvas = tk.Canvas(self.recordings_frame.master, height=300, highlightthickness=0, bd=0, yscrollcommand=recordings_vscrollbar.set)
-        self.recordings_canvas.pack(side=LEFT, fill=BOTH, expand=TRUE)
-        recordings_vscrollbar.config(command=self.recordings_canvas.yview)
-        self.recordings_interior = tk.Frame(self.recordings_canvas)
-        self.recordings_interior_id = self.recordings_canvas.create_window(0, 0, window=self.recordings_interior, anchor=NW)
-        self.recordings_interior.bind("<Configure>", 
-            lambda event, canvas=self.recordings_canvas, interior_frame=self.recordings_interior: 
-            self._configure_interior(event, canvas, interior_frame)
-        )
-        self.recordings_canvas.bind("<Configure>", 
-            lambda event, canvas=self.recordings_canvas, interior_frame=self.recordings_interior, interior_id=self.recordings_interior_id: 
-            self._configure_canvas(event, canvas, interior_frame, interior_id)
-        )
-        self.recordings_canvas.bind_all("<Button-4>", 
-            lambda event, scroll=-1, canvas=self.recordings_canvas: 
-            self._on_mousehwheel(event, canvas, scroll)
-        )
-        self.recordings_canvas.bind_all("<Button-5>", 
-            lambda event, scroll=1, canvas=self.recordings_canvas: 
-            self._on_mousehwheel(event, canvas, scroll)
-        )
-        self.cbtn_recordings_var = []
-        self.cbtn_recordings = [] 
+        self.env_option_menu_object = self.tab_4.OptionMenu(self.env_option_menu_list, self.demo_env, row=1, col=1)
+
+        self.tab_4.Text("Mode:", row=2, col=0)
+        self.mode_option_menu_list = ["Expert", "Random", "Hybrid"]
+        self.demo_mode = tk.StringVar(value=self.mode_option_menu_list[0])
+        self.tab_4.OptionMenu(self.mode_option_menu_list, self.demo_mode, row=2, col=1)
+        self.demo_mode.trace_add("write", self.mode_changed)
+        
+        self.tab_4.Text("Number of Demonstrations:", row=6, col=0)
+        self.spinboxnumvar = tk.StringVar(value="50")
+        self.tab_4.NumericalSpinbox(0, 250, 10, self.spinboxnumvar, row=6, col=1)
+        
+        # self.demo_env.trace_add("write", self.update_recordings)
+
+        # self.recordings_frame = self.tab_4.addLabelFrame("Recordings", row=1, col=0, colspan=2)
+        # recordings_vscrollbar = ttk.Scrollbar(self.recordings_frame.master, orient=VERTICAL)
+        # recordings_vscrollbar.pack(fill=Y, side=RIGHT, expand=FALSE)
+        # self.recordings_canvas = tk.Canvas(self.recordings_frame.master, height=300, highlightthickness=0, bd=0, yscrollcommand=recordings_vscrollbar.set)
+        # self.recordings_canvas.pack(side=LEFT, fill=BOTH, expand=TRUE)
+        # recordings_vscrollbar.config(command=self.recordings_canvas.yview)
+        # self.recordings_interior = tk.Frame(self.recordings_canvas)
+        # self.recordings_interior_id = self.recordings_canvas.create_window(0, 0, window=self.recordings_interior, anchor=NW)
+        # self.recordings_interior.bind("<Configure>", 
+        #     lambda event, canvas=self.recordings_canvas, interior_frame=self.recordings_interior: 
+        #     self._configure_interior(event, canvas, interior_frame)
+        # )
+        # self.recordings_canvas.bind("<Configure>", 
+        #     lambda event, canvas=self.recordings_canvas, interior_frame=self.recordings_interior, interior_id=self.recordings_interior_id: 
+        #     self._configure_canvas(event, canvas, interior_frame, interior_id)
+        # )
+        # self.recordings_canvas.bind_all("<Button-4>", 
+        #     lambda event, scroll=-1, canvas=self.recordings_canvas: 
+        #     self._on_mousehwheel(event, canvas, scroll)
+        # )
+        # self.recordings_canvas.bind_all("<Button-5>", 
+        #     lambda event, scroll=1, canvas=self.recordings_canvas: 
+        #     self._on_mousehwheel(event, canvas, scroll)
+        # )
+        # self.cbtn_recordings_var = []
+        # self.cbtn_recordings = [] 
         self.dataset_filename = tk.StringVar(value="")
         self.tab_4.Text("File Name:", row=3, col=0)
         self.tab_4.Entry(self.dataset_filename, row=3, col=1)
         self.btn_gen_demos = self.tab_4.AccentButton("Generate Dataset", self.generate_demonstration_dataset, row=4, col=0, colspan=2)
+        
+        self.btn_opne_file = self.tab_4.AccentButton("Open File", self.open_file, row=5, col=0, colspan=2)
 
         # self.learning_datasets_frame = self.tab_4.addLabelFrame("Demonstration Datasets", row=1, col=3, colspan=2)
         # self.learning_datasets_interior = self.ScrollableFrame(self.learning_datasets_frame.master)
@@ -318,9 +339,9 @@ class RecordDemos(Node, TKMT.ThemedTKinterFrame):
         if tab_text == "Visualize Data":
             self.update_treeview(self.tree_view_2)
             
-        if tab_text == "Generate Demonstration Dataset":
-            self.file_tree = self.parse_file_tree()
-            self.update_recordings()
+        # if tab_text == "Generate Demonstration Dataset":
+        #     self.file_tree = self.parse_file_tree()
+        #     self.update_recordings()
 
     def cancel_gen_demos(self):
         if self.gen_random_paths_process.poll() is None:
@@ -763,6 +784,31 @@ class RecordDemos(Node, TKMT.ThemedTKinterFrame):
             for file in env["files"]:
                 tv.insert(parent_cntr, "end", cntr, text=file["name"], values=(file["date"], file["time"]))
                 cntr += 1
+
+    def platform_changed(self, *args):
+        self.get_logger().info(f"Platform Changed to: {self.demo_platform.get()}")
+        if self.demo_platform.get() == "Simulated Robot":
+            self.env_option_menu_list = ["No Environment", "DoorMirror", "Lift", "Stack"]
+        elif self.demo_platform.get() == "Real Robot":
+            self.env_option_menu_list = ["No Environment", "Door"]
+
+        self.env_option_menu_object.set_menu(self.env_option_menu_list[0], *self.env_option_menu_list)
+        
+    def mode_changed(self, *args):
+        self.get_logger().info(f"Mode Changed to: {self.demo_mode.get()}")
+        if self.demo_mode.get() == "Expert":
+            self.get_logger().info("Expert Mode")
+        elif self.demo_mode.get() == "Random":
+            self.get_logger().info("Random Mode")
+        elif self.demo_mode.get() == "Hybrid":
+            self.get_logger().info("Hybrid Mode")
+
+    def open_file(self):
+        file_path = tk.filedialog.askopenfilename(title="Select Configuration File", filetypes=(("json files", "*.json"), ("all files", "*.*")))
+        if file_path:
+            self.get_logger().info(f"Opening File: {file_path}")
+            # os.system(f'xdg-open "{file_path}"')
+            # file = open(file_path, "r")
 
 def main(args=None):
     rclpy.init(args=args)

@@ -37,13 +37,24 @@ class DoorEnv(gym.Env):
                  max_current=[],
                  stiffness_mode = "variable",
                  motor_obs = False,
+                 node = None,
                  ):
         """
         Have a variable the defines the action size
 
         """
-        rclpy.init(args=None)
-        self.node = rclpy.create_node(self.__class__.__name__)
+        # try:
+        #     rclpy.init(args=None)
+        # except:
+        #     pass
+        # self.node = rclpy.create_node(self.__class__.__name__)
+
+        if node is None:
+            rclpy.init(args=None)
+            self.node = rclpy.create_node(self.__class__.__name__)
+        else:
+            self.node = node
+        
 
         self.motor_obs = motor_obs
         # print("motor obs: ", self.motor_obs)

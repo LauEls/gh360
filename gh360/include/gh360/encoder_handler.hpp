@@ -13,6 +13,8 @@
 #include "gh360_interfaces/msg/arm_encoder_states.hpp"
 #include "gh360_interfaces/msg/joint_encoder_state.hpp"
 
+#include "joint_types/encoder.hpp"
+
 using namespace std::chrono_literals;
 
 namespace gh360
@@ -25,53 +27,20 @@ namespace gh360
 
         private:
             void timer_callback();
-            void shoulder_encoder_callback(const std_msgs::msg::String::SharedPtr msg);
-            void upperarm_encoder_callback(const std_msgs::msg::String::SharedPtr msg);
-            void lowerarm_encoder_callback(const std_msgs::msg::String::SharedPtr msg);
+            void encoder_callback(const std_msgs::msg::String::SharedPtr msg, const std::string port_name);
 
             std::vector<double> strToDoubleVector(std::string s, std::string del = " ");
 
             rclcpp::TimerBase::SharedPtr timer_;
-            // rclcpp::Publisher<gh360_interfaces::msg::PortStatus>::SharedPtr encoder_publisher_;
             rclcpp::Publisher<gh360_interfaces::msg::ArmEncoderStates>::SharedPtr encoder_state_publisher_;
-            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr shoulder_encoder_subscriber_;
-            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr upperarm_encoder_subscriber_;
-            rclcpp::Subscription<std_msgs::msg::String>::SharedPtr lowerarm_encoder_subscriber_;
 
-            std::vector<std::string> joint_names = {"shoulder_yaw", "shoulder_roll", "shoulder_pitch", "upperarm_roll", "elbow", "wrist_pitch"};
-            std::vector<std::string> shoulder_joint_names;
-            std::vector<std::string> upperarm_joint_names;
-            std::vector<std::string> lowerarm_joint_names;
-            std::vector<int> shoulder_port_ids;
-            std::vector<int> upperarm_port_ids;
-            std::vector<int> lowerarm_port_ids;
-            std::vector<double> shoulder_offsets;
-            std::vector<double> upperarm_offsets;
-            std::vector<double> lowerarm_offsets;
-            std::vector<int> shoulder_inverters;
-            std::vector<int> upperarm_inverters;
-            std::vector<int> lowerarm_inverters;
-            std::vector<double> shoulder_joint_angles;
-            std::vector<double> upperarm_joint_angles;
-            std::vector<double> lowerarm_joint_angles;
-            std::vector<double> shoulder_prev_joint_angles;
-            std::vector<double> upperarm_prev_joint_angles;
-            std::vector<double> lowerarm_prev_joint_angles;
-            std::vector<double> shoulder_joint_vels;
-            std::vector<double> upperarm_joint_vels;
-            std::vector<double> lowerarm_joint_vels;
-
-            std::chrono::time_point<std::chrono::system_clock> shoulder_prev_time;
-            std::chrono::time_point<std::chrono::system_clock> upperarm_prev_time;
-            std::chrono::time_point<std::chrono::system_clock> lowerarm_prev_time;
-            std::chrono::time_point<std::chrono::system_clock> prev_time;
-
-            bool shoulder_data_recieved = false;
-            bool upperarm_data_recieved = false;
-            bool lowerarm_data_recieved = false;
+            std::vector<rclcpp::Subscription<std_msgs::msg::String>::SharedPtr> encoder_subscribers;
+            std::vector<std::string> joint_names;
+            std::vector<std::string> port_names;
+            std::vector<Encoder*> encoders;
+            std::vector<bool> data_recieved;
 
             float alpha = 0.1;
-            // std::vector<double> joint_velcities;
     };   
 
 }

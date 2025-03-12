@@ -1,0 +1,53 @@
+/gh360_control/eef_velocity:
+  ros__parameters:
+    base_link_name: "base_link"
+    eef_link_name: "eef"
+    
+/gh360_control/joint_velocity:
+  ros__parameters:
+    control_mode: "open_loop"
+    max_motor_vel: 1.0
+
+/gh360_control/motor_position:
+  ros__parameters:
+    control_mode: "open_loop"
+    command_interface: "velocity"
+    max_motor_vel: 1.0
+    motor_pos_accuracy: 0.2
+
+/gh360_control/teleop_eef_velocity:
+  ros__parameters:
+    translation_scaler: 0.1
+    rotation_scaler: 0.5
+    shoulder_yaw:
+      right:
+        motor_reset_pos: 0.0
+      left:
+        motor_reset_pos: 0.0
+    shoulder_roll:
+      right:
+        motor_reset_pos: 0.0
+      left:
+        motor_reset_pos: 0.0
+    shoulder_pitch: 
+      right:
+        motor_reset_pos: 4.0
+      left:
+        motor_reset_pos: 4.0
+    upperarm_roll:
+      right:
+        motor_reset_pos: 2.5
+      left:
+        motor_reset_pos: 2.5
+    elbow:
+      right:
+        motor_reset_pos: 6.28
+      left:
+        motor_reset_pos: 6.28
+    forearm_roll:
+      motor_reset_pos: 0.0
+    wrist_pitch:
+      right:
+        motor_reset_pos: 0.0
+      left:
+        motor_reset_pos: 0.0

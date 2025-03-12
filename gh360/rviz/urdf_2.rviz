@@ -4,7 +4,8 @@ Panels:
     Name: Displays
     Property Tree Widget:
       Expanded:
-        - /RobotModel1
+        - /RobotModel1/Status1
+        - /RobotModel1/Description Topic1
       Splitter Ratio: 0.5
     Tree Height: 500
   - Class: rviz_common/Views
@@ -43,7 +44,7 @@ Visualization Manager:
         Durability Policy: Volatile
         History Policy: Keep Last
         Reliability Policy: Reliable
-        Value: /robot_description
+        Value: /gh360/robot_description
       Enabled: true
       Links:
         All Links Enabled: true
@@ -55,6 +56,31 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+        eef:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hook:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        lowerarm0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        lowerarm1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        lowerarm2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         shoulder0:
           Alpha: 1
           Show Axes: false
@@ -66,6 +92,26 @@ Visualization Manager:
           Show Trail: false
           Value: true
         shoulder2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        shoulder3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        upperarm0:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        upperarm1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        upperarm2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
@@ -82,11 +128,29 @@ Visualization Manager:
         All Enabled: true
         base_link:
           Value: true
+        eef:
+          Value: true
+        hook:
+          Value: true
+        lowerarm0:
+          Value: true
+        lowerarm1:
+          Value: true
+        lowerarm2:
+          Value: true
         shoulder0:
           Value: true
         shoulder1:
           Value: true
         shoulder2:
+          Value: true
+        shoulder3:
+          Value: true
+        upperarm0:
+          Value: true
+        upperarm1:
+          Value: true
+        upperarm2:
           Value: true
       Marker Scale: 1
       Name: TF
@@ -98,7 +162,16 @@ Visualization Manager:
           shoulder0:
             shoulder1:
               shoulder2:
-                {}
+                shoulder3:
+                  upperarm0:
+                    upperarm1:
+                      upperarm2:
+                        lowerarm0:
+                          lowerarm1:
+                            lowerarm2:
+                              hook:
+                                eef:
+                                  {}
       Update Interval: 0
       Value: true
   Enabled: true
@@ -116,25 +189,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 2.213693380355835
+      Distance: 1.5085700750350952
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.25580576062202454
-        Y: 0.14518781006336212
-        Z: 0.8283134698867798
+        X: -0.3456462025642395
+        Y: 0.4789431691169739
+        Z: 0.6904223561286926
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.17000074684619904
+      Pitch: 0.3400009870529175
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.8768125772476196
+      Yaw: 2.1818132400512695
     Saved: ~
 Window Geometry:
   Displays:

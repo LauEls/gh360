@@ -6,19 +6,8 @@ from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from ament_index_python.packages import get_package_share_directory
-import xacro
 
 def generate_launch_description():
-    
-
-    # motor_handler = IncludeLaunchDescription(
-    #     PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360'), 'launch'), '/motor_handler.launch.py'])
-    # )
-
-    # encoder_handler = IncludeLaunchDescription(
-    #     PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360'), 'launch'), '/encoder_handler.launch.py'])
-    # )
-
     gh360_startup = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360'), 'launch'), '/gh360_startup.launch.py'])
     )
@@ -30,8 +19,6 @@ def generate_launch_description():
     camera_handler = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360'), 'launch'), '/camera_handler.launch.py'])
     )
-
-    
 
     handle_sensor_filter_node = Node(
         package='gh360_examples',
@@ -54,8 +41,6 @@ def generate_launch_description():
     
     return LaunchDescription([
         gh360_startup,
-        # motor_handler,
-        # encoder_handler,
         door_motor,
         camera_handler,
         handle_sensor_filter_node,
