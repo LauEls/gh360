@@ -20,7 +20,9 @@
 #include "gh360_interfaces/msg/set_current.hpp"
 #include "gh360_interfaces/srv/motor_position_step.hpp"
 #include "gh360_interfaces/srv/motor_velocity_step.hpp"
+#include "gh360_interfaces/srv/set_robot_limits.hpp"
 #include "std_srvs/srv/set_bool.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "gh360_interfaces/msg/arm_encoder_states.hpp"
 // #include <DynamixelWorkbench.h>
 // #include <dynamixel_workbench_toolbox/dynamixel_workbench.h>
@@ -36,6 +38,7 @@
 #include "joint_types/soft_joint.hpp"
 #include "joint_types/motor_joint.hpp"
 #include "util/dynamixel.hpp"
+#include "util/config_parser.hpp"
 
 using namespace std::chrono_literals;
 
@@ -80,7 +83,17 @@ namespace gh360
              */
             bool initMovementCheck(bool reference_current=false, bool reference_joint_angle=false);
 
+            /**
+             * @brief If the motors are in velocity or current mode, this function checks if the goal values are still being updated.
+             * If the goal values are not updated for more than 200ms, velocity and current goal values are set to 0.
+             */
             void check_goal_alive();
+
+            /**
+             * @brief Checks if the state of the robot (joints and motors) are within the limits.
+             * If not, the goal velocities and currents are set to 0.
+             */
+            void check_limits();
 
         private:
             void timer_callback();
@@ -92,7 +105,10 @@ namespace gh360
             // void delta_position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
             void set_torque_callback(const std::shared_ptr<std_srvs::srv::SetBool::Request> request, std::shared_ptr<std_srvs::srv::SetBool::Response> response);
             void move_home_callback(const std::shared_ptr<std_srvs::srv::SetBool::Request> request, std::shared_ptr<std_srvs::srv::SetBool::Response> response);
+            void move_home_sub_callback(const std_msgs::msg::Bool::SharedPtr msg);
             void encoder_callback(const gh360_interfaces::msg::ArmEncoderStates::SharedPtr msg);
+            void set_torque_sub_callback(const std_msgs::msg::Bool::SharedPtr msg);
+            void set_robot_limits_callback(const std::shared_ptr<gh360_interfaces::srv::SetRobotLimits::Request> request, std::shared_ptr<gh360_interfaces::srv::SetRobotLimits::Response> response);
 
             DynamixelHandler* dxl_handler;
             
@@ -105,6 +121,7 @@ namespace gh360
             bool motors_initiated = false;
             bool emergency_stop = false;
             bool require_encoder_data = true;
+         
             std::chrono::time_point<std::chrono::high_resolution_clock> velocity_goal_timestamp;
             std::chrono::time_point<std::chrono::high_resolution_clock> current_goal_timestamp;
             int init_state = 0;
@@ -117,9 +134,12 @@ namespace gh360
             // rclcpp::Service<gh360_interfaces::srv::MotorPositionStep>::SharedPtr delta_position_step_service_;
             rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_torque_service_;
             rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr move_home_service_;
+            rclcpp::Service<gh360_interfaces::srv::SetRobotLimits>::SharedPtr set_robot_limits_service_;
             rclcpp::Subscription<gh360_interfaces::msg::ArmEncoderStates>::SharedPtr encoder_subscriber_;
             rclcpp::Subscription<gh360_interfaces::msg::SetMotorCurrents>::SharedPtr motor_goal_currents_subscriber_;
             rclcpp::Subscription<gh360_interfaces::msg::SetMotorVelocities>::SharedPtr motor_goal_velocities_subscriber_;
+            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr move_home_subscriber_;
+            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr set_torque_subscriber_;
 
             std::vector<std::string> joint_names;
             std::vector<Joint*> joints;

@@ -14,9 +14,9 @@ def generate_launch_description():
     robot_config_file = PathJoinSubstitution([FindPackageShare('gh360'), 'config', 'gh360_config.yaml'])
     controller_config_file = PathJoinSubstitution([FindPackageShare('gh360_control'), 'config', 'controller_config.yaml'])
 
-    controller_nodes = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360_control'), 'launch'), '/controllers.launch.py'])
-    )
+    # controller_nodes = IncludeLaunchDescription(
+    #     PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360_control'), 'launch'), '/controllers.launch.py'])
+    # )
 
     teleop_node = Node(
         package='gh360_control',

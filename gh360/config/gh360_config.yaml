@@ -3,16 +3,16 @@
     joint_names: ['shoulder_yaw', 'shoulder_roll', 'shoulder_pitch', 'upperarm_roll', 'elbow', 'forearm_roll', 'wrist_pitch']
     shoulder_yaw:
       joint_type: "soft_joint"
-      min_joint_angle: -1.45
-      max_joint_angle: 1.45
+      min_joint_angle: -1.5708
+      max_joint_angle: 0.7
       right:
         motor_id: 1
       left:
         motor_id: 2
     shoulder_roll:
       joint_type: "soft_joint"
-      min_joint_angle: -1.5
-      max_joint_angle: 1.5
+      min_joint_angle: -1.4
+      max_joint_angle: 1.4
       right:
         motor_id: 3
       left:
@@ -20,14 +20,14 @@
     shoulder_pitch:
       joint_type: "soft_joint"
       min_joint_angle: 0.0
-      max_joint_angle: 1.5
+      max_joint_angle: 1.0
       right:
         motor_id: 5
       left:
         motor_id: 6
     upperarm_roll:
       joint_type: "soft_joint"
-      min_joint_angle: -3.0
+      min_joint_angle: -1.0
       max_joint_angle: 3.0
       right:
         motor_id: 7
@@ -36,7 +36,7 @@
     elbow:
       joint_type: "soft_joint"
       min_joint_angle: -0.1
-      max_joint_angle: 2.2
+      max_joint_angle: 2.1
       right:
         motor_id: 10
       left:
@@ -48,8 +48,8 @@
       motor_id: 11
     wrist_pitch:
       joint_type: "soft_joint"
-      min_joint_angle: -1.5708
-      max_joint_angle: 1.5708
+      min_joint_angle: -1.5
+      max_joint_angle: 1.5
       right:
         motor_id: 13
       left:

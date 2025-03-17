@@ -206,6 +206,30 @@ public:
     void set_operating_mode(int operating_mode);
 
     /**
+     * @brief Set the maximum allowed current of the motor in the positive direction
+     * @param max_current The max current in mA
+     */
+    void set_max_current(double max_current);
+
+    /**
+     * @brief Set the maximum allowed current of the motor in the negative direction
+     * @param min_current The min current in mA
+     */
+    void set_min_current(double min_current);
+
+    /**
+     * @brief Set the maximum allowed velocity of the motor in the positive direction
+     * @param max_velocity The max velocity in rad/s
+     */
+    void set_max_velocity(double max_velocity);
+
+    /**
+     * @brief Set the maximum allowed velocity of the motor in the negative direction
+     * @param min_velocity The min velocity in rad/s
+     */
+    void set_min_velocity(double min_velocity);
+
+    /**
      * @brief Get the motor id
      * @return The motor id
      */
@@ -413,6 +437,26 @@ public:
      */
     int get_operating_mode();
 
+    /**
+     * @return Returns the maximum allowed current of the motor in the positive direction
+     */
+    double get_max_current();
+
+    /**
+     * @return Returns the maximum allowed current of the motor in the negative direction
+     */
+    double get_min_current();
+
+    /**
+     * @return Returns the maximum allowed velocity of the motor in the positive direction
+     */
+    double get_max_velocity();
+
+    /**
+     * @return Returns the maximum allowed velocity of the motor in the negative direction
+     */
+    double get_min_velocity();
+
 
 private:
     int motor_id;
@@ -436,6 +480,10 @@ private:
     // Motor Temperature in Celsius
     double present_temperature;
 
+    double max_current;
+    double min_current;
+    double max_velocity;
+    double min_velocity;
     bool moving;
     bool safety_check;
     bool first_pos_value = true;

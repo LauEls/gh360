@@ -27,8 +27,8 @@ class MotorVelocityController(BaseController):
         self.control_dim = 7
         print("control dimensions: ", self.control_dim)
 
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self.node)
+        # self.tf_buffer = Buffer()
+        # self.tf_listener = TransformListener(self.tf_buffer, self.node)
 
         # self.input_max = np.ones(self.control_dim) * input_max
         # self.input_min = np.ones(self.control_dim) * input_min

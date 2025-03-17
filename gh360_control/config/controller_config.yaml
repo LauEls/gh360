@@ -13,7 +13,7 @@
     control_mode: "open_loop"
     command_interface: "velocity"
     max_motor_vel: 1.0
-    motor_pos_accuracy: 0.2
+    motor_pos_accuracy: 0.1
 
 /gh360_control/teleop_eef_velocity:
   ros__parameters:

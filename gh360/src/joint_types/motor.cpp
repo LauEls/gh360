@@ -27,6 +27,8 @@ void Motor::set_offset(double offset)
 void Motor::set_motor_model(MotorDictionary *motor_model)
 {
     this->motor_model = motor_model;
+    this->max_current = this->motor_model->CURRENT_LIMIT;
+    this->min_current = -this->motor_model->CURRENT_LIMIT;
 }
 
 void Motor::set_torque_enabled(bool torque)
@@ -227,6 +229,26 @@ void Motor::set_reference_current_adjusted(double ref_current)
 void Motor::set_operating_mode(int operating_mode)
 {
     this->operating_mode = operating_mode;
+}
+
+void Motor::set_max_current(double max_current)
+{
+    this->max_current = max_current;
+}
+
+void Motor::set_min_current(double min_current)
+{
+    this->min_current = min_current;
+}
+
+void Motor::set_max_velocity(double max_velocity)
+{
+    this->max_velocity = max_velocity;
+}
+
+void Motor::set_min_velocity(double min_velocity)
+{
+    this->min_velocity = min_velocity;
 }
 
 int Motor::get_motor_id()
@@ -526,6 +548,25 @@ int Motor::get_operating_mode()
     return this->operating_mode;
 }
 
+double Motor::get_max_current()
+{
+    return this->max_current;
+}
+
+double Motor::get_min_current()
+{
+    return this->min_current;
+}
+
+double Motor::get_max_velocity()
+{
+    return this->max_velocity;
+}
+
+double Motor::get_min_velocity()
+{
+    return this->min_velocity;
+}
 
 double Motor::positionIntToDouble(int data)
 {

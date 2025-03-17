@@ -39,8 +39,24 @@ def generate_launch_description():
         parameters=[robot_config_file, controller_config_file],
         output='screen')
     
+    move_home_node = Node(
+        package='gh360_control',
+        executable='move_home',
+        name='move_home',
+        namespace='gh360_control',
+        output='screen')
+    
+    robot_stop_node = Node(
+        package='gh360_control',
+        executable='robot_stop',
+        name='robot_stop',
+        namespace='gh360_control',
+        output='screen')
+    
     return LaunchDescription([
         joint_velocity_node,
         eef_velocity_node,
-        motor_position_node
+        motor_position_node,
+        move_home_node,
+        robot_stop_node
     ])

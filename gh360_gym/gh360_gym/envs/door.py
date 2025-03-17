@@ -25,6 +25,7 @@ from gh360_gym.utils.joints import SoftJoint, MotorJoint
 from gh360_gym.controllers.eq_point import EqPointController
 from gh360_gym.controllers.motor_vel import MotorVelocityController
 from gh360_gym.controllers.eef_vel import EEFVelocityController
+from gh360_gym.controllers.motor_pos import MotorPositionController
 
 
 class DoorEnv(gym.Env):
@@ -75,10 +76,16 @@ class DoorEnv(gym.Env):
 
         self.step_cntr = 0
 
+        self.robot_reset_pos = [0.0, 0.0, 0.0, 0.0, 4.0, 4.0, 2.5, 2.5, 6.28, 6.28, 0.0, 0.0, 0.0]
+        # self.via_point_pos = [0.2, 0.2, 1.5, 1.5, 4.0, 4.0, 4.5, 4.5, 5.5, 5.5, 0.0, 0.0, 0.0]
+        self.via_point_pos_1 = [0.2, 0.2, 1.5, 1.5, 4.0, 4.0, 4.5, 4.5, 7.5, 7.5, 0.0, 1.0, 1.0]
+        self.via_point_pos_2 = [0.2, 0.2, 1.5, 1.5, 4.0, 4.0, 4.5, 4.5, 5.5, 5.5, 0.0, 0.0, 0.0]
+
         # self.controller = EqPointController(self.node, op_mode=self.stiffness_mode)
         # self.controller = EqPointController(self.node, stiffness_mode=self.stiffness_mode, input_min=input_min, input_max=input_max)
         # self.controller = MotorVelocityController(self.node, input_min=input_min, input_max=input_max, max_current=max_current, max_joint_pos=max_joint_pos, min_joint_pos=min_joint_pos)
         self.controller = EEFVelocityController(self.node, input_min=input_min, input_max=input_max, max_current=max_current, max_joint_pos=max_joint_pos, min_joint_pos=min_joint_pos)
+        self.reset_controller = MotorPositionController(self.node, input_min=input_min, input_max=input_max, max_current=max_current, max_joint_pos=max_joint_pos, min_joint_pos=min_joint_pos)
         self.control_dim = self.controller.control_dim
 
         self.node.create_subscription(
@@ -230,19 +237,22 @@ class DoorEnv(gym.Env):
         # np.copyto(hinge_qpos, self.hinge_qpos)
 
         
-        for joint in self.controller.arm:
+        for joint in self.controller.joints:
             robot_joint_pos.append(joint.joint_angle)
             robot_joint_vel.append(joint.joint_velocity)
+            # if type(joint) == SoftJoint:
+            #     robot_motor_pos.append(joint.right_motor_pos)
+            #     robot_motor_pos.append(joint.left_motor_pos)
+            #     robot_motor_vel.append(joint.right_motor_vel)
+            #     robot_motor_vel.append(joint.left_motor_vel)
+            # elif type(joint) == MotorJoint:
+            #     robot_motor_pos.append(joint.motor_pos)
+            #     robot_motor_vel.append(joint.motor_vel)
 
-            if type(joint) == SoftJoint:
-                robot_motor_pos.append(joint.right_motor_pos)
-                robot_motor_pos.append(joint.left_motor_pos)
-                robot_motor_vel.append(joint.right_motor_vel)
-                robot_motor_vel.append(joint.left_motor_vel)
-            elif type(joint) == MotorJoint:
-                robot_motor_pos.append(joint.motor_pos)
-                robot_motor_vel.append(joint.motor_vel)
-
+        for motor in self.controller.motors:
+            robot_motor_pos.append(motor.motor_pos)
+            robot_motor_vel.append(motor.motor_vel)
+            
         robot_motor_pos = np.array(robot_motor_pos)
         robot_motor_vel = np.array(robot_motor_vel)
 
@@ -314,12 +324,88 @@ class DoorEnv(gym.Env):
             rclpy.spin_once(self.node)
         
         return
+    
+    def robot_reset(self):
+        if self.reseted:
+            return
+        
+        # internal_state = 0
+        reset_trajectory = []
+
+        for _ in range(10):
+            rclpy.spin_once(self.node)
+
+        if not self.reset_controller.robot_safety_check():
+            self.reset_controller.stop_robot(True)
+            input("Press Enter to continue...")
+            self.reset_controller.stop_robot(False)
+
+        if self.handle_pos[2] > self.eef_pos[2]+0.01 and self.handle_qpos < 0.1:
+            # internal_state = 2
+            # pos_error = self.calc_motor_pos_error(self.robot_reset_pos)
+            # pos_goal = self.robot_reset_pos
+            reset_trajectory = [self.robot_reset_pos]
+        else:
+            # pos_error = self.calc_motor_pos_error(self.via_point_pos_1)
+            # pos_goal = self.via_point_pos_1
+            reset_trajectory = [self.via_point_pos_1, self.via_point_pos_2, self.robot_reset_pos]
+
+        self.reset_controller.set_goal_trajectory(reset_trajectory)
+
+        # while not self.goal_pos_reached() or internal_state != 2:
+        #     if not self.robot_safety_check():
+        #         self.set_motor_torque(False)
+        #         input("Press Enter to continue...")
+        #         self.set_motor_torque(True)
+                
+        #     if internal_state < 2 and self.goal_pos_reached():
+        #         internal_state += 1
+        #     if internal_state == 0:
+        #         # pos_error = self.calc_motor_pos_error(self.via_point_pos_1)
+        #         pos_goal = self.via_point_pos_1
+        #     elif internal_state == 1:
+        #         # pos_error = self.calc_motor_pos_error(self.via_point_pos_2)
+        #         pos_goal = self.via_point_pos_2
+        #     elif internal_state == 2:
+        #         # pos_error = self.calc_motor_pos_error(self.robot_reset_pos)
+        #         pos_goal = self.robot_reset_pos
+        #     # pos_error = np.clip(pos_error, -1.0, 1.0)
+
+        #     # motor_vel_msg = generate_velocities_msg(self.arm, pos_error)
+        #     motor_pos_msg = generate_positions_msg(self.arm, pos_goal)
+        #     # self.pub_goal_velocity_shoulder.publish(motor_vel_msg)
+        #     # self.pub_goal_velocity_upperarm.publish(motor_vel_msg)
+        #     # self.pub_goal_velocity_lowerarm.publish(motor_vel_msg)
+        #     self.pub_motor_goal_position.publish(motor_pos_msg)
+        #     rclpy.spin_once(self.node)
+
+        # print("final internal state: ", internal_state)
+
+        
+        self.control_time_adj = 0.0
+        self.last_time = 0
+        time_sum = 0
+        for i in range(20):
+            zero_action = np.zeros(self.controller.control_dim)
+            time_sum += self.controller.set_step_goal(zero_action)
+
+        self.controller.control_time_adj = (time_sum/20) - (self.control_timestep)
+        self.last_time = 0
+        self.reseted = True
+        
+
+        return
+        time.sleep(1)
+        
+
 
     def reset(self):
         # print("resetting")
-        self.controller.reset(robot_eef_pos=self.eef_pos, handle_pos=self.handle_pos, handle_qpos=self.handle_qpos)
+        # self.controller.reset(robot_eef_pos=self.eef_pos, handle_pos=self.handle_pos, handle_qpos=self.handle_qpos)
 
-        self.door_reset()
+        if not self.reseted:
+            self.robot_reset()
+            self.door_reset()
         # self.handle_pos = self.get_handle_pos()
 
         obs = self._get_obs()

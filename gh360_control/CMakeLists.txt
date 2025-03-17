@@ -19,6 +19,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(std_srvs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(gh360 REQUIRED)
@@ -55,6 +56,12 @@ ament_target_dependencies(motor_position gh360 rclcpp std_msgs sensor_msgs geome
 add_executable(teleop_eef_velocity src/teleop_eef_velocity.cpp)
 ament_target_dependencies(teleop_eef_velocity gh360 rclcpp geometry_msgs gh360_interfaces)
 
+add_executable(move_home src/move_home.cpp)
+ament_target_dependencies(move_home gh360 rclcpp std_srvs std_msgs gh360_interfaces)
+
+add_executable(robot_stop src/robot_stop.cpp)
+ament_target_dependencies(robot_stop gh360 rclcpp std_srvs std_msgs gh360_interfaces)
+
 install(DIRECTORY include/
   DESTINATION include
 )
@@ -63,6 +70,8 @@ install(TARGETS
   eef_velocity
   joint_velocity
   motor_position
+  move_home
+  robot_stop
   teleop_eef_velocity
   DESTINATION lib/${PROJECT_NAME})
 

@@ -25,15 +25,15 @@ TeleopEEFVelocity::TeleopEEFVelocity() : Node("teleop_eef_velocity")
         }
         for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
         {
-            gh360_interfaces::msg::SetPosition new_position = gh360_interfaces::msg::SetPosition();
-            new_position.id = this->joints[i]->get_motor(j)->get_motor_id();
-            new_position.position = this->joints[i]->get_motor(j)->get_goal_position();
-            this->motor_reset_msg.motor_goal_positions.push_back(new_position);
+            // gh360_interfaces::msg::SetPosition new_position = gh360_interfaces::msg::SetPosition();
+            // new_position.id = this->joints[i]->get_motor(j)->get_motor_id();
+            // new_position.position = this->joints[i]->get_motor(j)->get_goal_position();
+            this->motor_reset_msg.data.push_back(this->joints[i]->get_motor(j)->get_goal_position());
         }
     }
 
     this->eef_velocity_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_eef_vel", 10);
-    this->motor_position_publisher_ = this->create_publisher<gh360_interfaces::msg::SetMotorPositions>("cmd_motor_pos", 10);
+    this->motor_position_publisher_ = this->create_publisher<std_msgs::msg::Float64MultiArray>("cmd_motor_pos", 10);
     this->teleop_commands_subscriber_ = this->create_subscription<geometry_msgs::msg::Twist>("teleop_eef_velocity", 10, std::bind(&TeleopEEFVelocity::teleop_commands_callback, this, std::placeholders::_1));
     this->teleop_buttons_subscriber_ = this->create_subscription<gh360_interfaces::msg::BoolMultiArray>("teleop_buttons", 10, std::bind(&TeleopEEFVelocity::teleop_buttons_callback, this, std::placeholders::_1));
     this->motor_states_subscriber_ = this->create_subscription<gh360_interfaces::msg::PortStatus>("/gh360/motor_states", 10, std::bind(&TeleopEEFVelocity::motor_states_callback, this, std::placeholders::_1));

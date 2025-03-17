@@ -6,6 +6,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "geometry_msgs/msg/twist.hpp"
 #include "sensor_msgs/msg/joint_state.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
 
 // #include "gh360/motor_dictionaries/motor_dict.hpp"
 #include "gh360/joint_types/soft_joint.hpp"
@@ -24,7 +25,7 @@ class MotorPosition : public rclcpp::Node
 
     private:
         // void timer_callback();
-        void cmd_motor_pos_callback(const gh360_interfaces::msg::SetMotorPositions::SharedPtr msg);
+        void cmd_motor_pos_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg);
         void motor_states_callback(const gh360_interfaces::msg::PortStatus::SharedPtr msg);
         void calculate_motor_goal_velocity(gh360_interfaces::msg::SetMotorPositions msg);
 
@@ -32,7 +33,7 @@ class MotorPosition : public rclcpp::Node
         rclcpp::Publisher<gh360_interfaces::msg::SetMotorVelocities>::SharedPtr motor_velocity_publisher_;
         rclcpp::Publisher<gh360_interfaces::msg::SetMotorPositions>::SharedPtr motor_position_publisher_;
         rclcpp::Subscription<gh360_interfaces::msg::PortStatus>::SharedPtr motor_states_subscriber_;
-        rclcpp::Subscription<gh360_interfaces::msg::SetMotorPositions>::SharedPtr cmd_motor_pos_subscriber_;
+        rclcpp::Subscription<std_msgs::msg::Float64MultiArray>::SharedPtr cmd_motor_pos_subscriber_;
 
         // std::vector<double> desired_velocity;
         // std::vector<double> current_joint_pos;

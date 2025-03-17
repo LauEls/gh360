@@ -10,7 +10,7 @@ std::vector<Joint*> get_robot_joints(rclcpp::Node* node)
     std::vector<std::string> joint_names = node->get_parameter("joint_names").as_string_array();
 
     for (unsigned int i = 0; i < joint_names.size(); i++) {
-        RCLCPP_INFO(node->get_logger(), "Joint Name: %s", joint_names[i].c_str());
+        // RCLCPP_INFO(node->get_logger(), "Joint Name: %s", joint_names[i].c_str());
         
         std::string joint_name = joint_names[i];
         node->declare_parameter(joint_name+".joint_type", "default");
@@ -23,7 +23,7 @@ std::vector<Joint*> get_robot_joints(rclcpp::Node* node)
         node->declare_parameter(joint_name+".min_joint_angle", 0.0);
         node->declare_parameter(joint_name+".max_joint_angle", 0.0);
         node->declare_parameter(joint_name+".motor_init_pos", 0.0);
-        node->declare_parameter(joint_name+".initialize", true);
+        // node->declare_parameter(joint_name+".initialize", true);
         if (joint_type == "soft_joint") {
             node->declare_parameter(joint_name+".right.motor_id", 0);
             node->declare_parameter(joint_name+".left.motor_id", 0);

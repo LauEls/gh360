@@ -20,90 +20,42 @@ gh360::MotorHandler::MotorHandler()
     this->torque_start = get_parameter("start_with_torque").as_bool();
 
     this->dxl_handler = new DynamixelHandler(port_name, baud_rate);
+    this->joints = get_robot_joints(this);
+    RCLCPP_INFO(this->get_logger(), "Number of joints: %d", this->joints.size());
 
-    this->declare_parameter("joint_names", std::vector<std::string>());
-    this->joint_names = get_parameter("joint_names").as_string_array();
+    // this->declare_parameter("joint_names", std::vector<std::string>());
+    // this->joint_names = get_parameter("joint_names").as_string_array();
 
     MotorDictionary* motor_model_type = nullptr;
     this->multi_motor_models = false;
     this->require_encoder_data = false;
     this->motors_initiated = true;
-    for (unsigned int i = 0; i < this->joint_names.size(); i++) {
-        RCLCPP_INFO(this->get_logger(), "Joint Name: %s", this->joint_names[i].c_str());
-        
-        std::string joint_name = this->joint_names[i];
-        this->declare_parameter(joint_name+".joint_type", "default");
-        std::string joint_type = get_parameter(joint_name+".joint_type").as_string();
-        if (joint_type == "default") {
-            RCLCPP_ERROR(this->get_logger(), "Joint type not specified for joint %s", joint_name.c_str());
-            continue;
-        }
 
-        this->declare_parameter(joint_name+".min_joint_angle", 0.0);
-        this->declare_parameter(joint_name+".max_joint_angle", 0.0);
-        this->declare_parameter(joint_name+".motor_init_pos", 0.0);
-        this->declare_parameter(joint_name+".initialize", true);
-        this->motors_initiated = !(get_parameter(joint_name+".initialize").as_bool());
+    for (unsigned int i=0; i < this->joints.size(); i++)
+    {
+        this->declare_parameter(this->joints[i]->get_joint_name()+".initialize", true);
+        this->motors_initiated = !(get_parameter(this->joints[i]->get_joint_name()+".initialize").as_bool());
+        RCLCPP_INFO(this->get_logger(), "Got parameter %s", this->joints[i]->get_joint_name().c_str());
 
-        if (joint_type == "soft_joint") {
-            this->declare_parameter(this->joint_names[i]+".right.motor_id", 0);
-            this->declare_parameter(this->joint_names[i]+".left.motor_id", 0);
-            this->declare_parameter(this->joint_names[i]+".right.movement_direction", 0);
-            this->declare_parameter(this->joint_names[i]+".left.movement_direction", 0);
-            this->declare_parameter(this->joint_names[i]+".right.offset", 0.0);
-            this->declare_parameter(this->joint_names[i]+".left.offset", 0.0);
+        for (int j=0; j< this->joints[i]->get_motor_cnt(); j++)
+        {
+            Motor * motor = this->joints[i]->get_motor(j);
 
-            SoftJoint * new_joint = new SoftJoint();
-            new_joint->set_joint_name(this->joint_names[i]);
-            new_joint->set_min_joint_angle(get_parameter(this->joint_names[i]+".min_joint_angle").as_double());
-            new_joint->set_max_joint_angle(get_parameter(this->joint_names[i]+".max_joint_angle").as_double());
-            new_joint->set_motor_init_pos(get_parameter(this->joint_names[i]+".motor_init_pos").as_double());
-            
-            Motor * right_motor = new_joint->get_motor(new_joint->RIGHT);
-            Motor * left_motor = new_joint->get_motor(new_joint->LEFT);
-            right_motor->set_motor_id(get_parameter(this->joint_names[i]+".right.motor_id").as_int());
-            left_motor->set_motor_id(get_parameter(this->joint_names[i]+".left.motor_id").as_int());
-            right_motor->set_movement_direction(get_parameter(this->joint_names[i]+".right.movement_direction").as_int());
-            left_motor->set_movement_direction(get_parameter(this->joint_names[i]+".left.movement_direction").as_int());
-            right_motor->set_offset(get_parameter(this->joint_names[i]+".right.offset").as_double());
-            left_motor->set_offset(get_parameter(this->joint_names[i]+".left.offset").as_double());
-            right_motor->set_motor_model(this->dxl_handler->getMotorModel(right_motor->get_motor_id()));
-            left_motor->set_motor_model(this->dxl_handler->getMotorModel(left_motor->get_motor_id()));
-
-            this->dxl_handler->setOperatingMode(new_joint, 4);
-            this->dxl_handler->setTorqueEnable(new_joint, 1);
-            this->joints.push_back(new_joint);
-
-            if (motor_model_type == nullptr) motor_model_type = right_motor->get_motor_model(); //new_joint->get_right_motor_model();
-            else if (typeid(right_motor->get_motor_model())!= typeid(motor_model_type)) this->multi_motor_models = true;
-
-            if (typeid(left_motor->get_motor_model())!= typeid(motor_model_type)) this->multi_motor_models = true;
-
-            this->require_encoder_data = true;
-        }
-        else {
-            this->declare_parameter(this->joint_names[i]+".motor_id", 0);
-            this->declare_parameter(this->joint_names[i]+".movement_direction", 0);
-            this->declare_parameter(this->joint_names[i]+".offset", 0.0);
-
-            MotorJoint * new_joint = new MotorJoint(); 
-            new_joint->set_joint_name(this->joint_names[i]);
-            new_joint->set_min_joint_angle(get_parameter(this->joint_names[i]+".min_joint_angle").as_double());
-            new_joint->set_max_joint_angle(get_parameter(this->joint_names[i]+".max_joint_angle").as_double());
-            new_joint->set_motor_init_pos(get_parameter(this->joint_names[i]+".motor_init_pos").as_double());
-            Motor * motor = new_joint->get_motor(0);
-            motor->set_motor_id(get_parameter(this->joint_names[i]+".motor_id").as_int());
-            motor->set_movement_direction(get_parameter(this->joint_names[i]+".movement_direction").as_int());
-            motor->set_offset(get_parameter(this->joint_names[i]+".offset").as_double());
             motor->set_motor_model(this->dxl_handler->getMotorModel(motor->get_motor_id()));
-            this->dxl_handler->setOperatingMode(new_joint, 3);
-            if (this->torque_start) this->dxl_handler->setTorqueEnable(new_joint, 1);
-            this->joints.push_back(new_joint);
-
             if (motor_model_type == nullptr) motor_model_type = motor->get_motor_model();
             else if (typeid(motor->get_motor_model())!= typeid(motor_model_type)) this->multi_motor_models = true;
         }
 
+        RCLCPP_INFO(this->get_logger(), "set motor model");
+
+        if (this->joints[i]->get_motor_cnt() == 2) 
+        {
+            this->dxl_handler->setOperatingMode(this->joints[i], 4);
+            this->require_encoder_data = true;
+        }
+        else this->dxl_handler->setOperatingMode(this->joints[i], 3);
+
+        if (this->torque_start) this->dxl_handler->setTorqueEnable(this->joints[i], 1);
     }
 
     if (!this->multi_motor_models) this->joints_motor_model = motor_model_type;
@@ -130,11 +82,14 @@ gh360::MotorHandler::MotorHandler()
     
     this->set_torque_service_ = this->create_service<std_srvs::srv::SetBool>("motor_set_torque", std::bind(&gh360::MotorHandler::set_torque_callback, this, std::placeholders::_1, std::placeholders::_2));
     this->move_home_service_ = this->create_service<std_srvs::srv::SetBool>("motor_move_home", std::bind(&gh360::MotorHandler::move_home_callback, this, std::placeholders::_1, std::placeholders::_2));
-    
+    this->set_robot_limits_service_ = this->create_service<gh360_interfaces::srv::SetRobotLimits>("set_robot_limits", std::bind(&gh360::MotorHandler::set_robot_limits_callback, this, std::placeholders::_1, std::placeholders::_2));
+
     this->motor_goal_positions_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorPositions>(ns+"/motor_goal_position", 10, std::bind(&gh360::MotorHandler::motor_goal_positions_callback, this, std::placeholders::_1));
     this->motor_goal_currents_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorCurrents>(ns+"/motor_goal_current", 10, std::bind(&gh360::MotorHandler::motor_goal_current_callback, this, std::placeholders::_1));
     this->motor_goal_velocities_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorVelocities>(ns+"/motor_goal_velocity", 10, std::bind(&gh360::MotorHandler::motor_goal_velocity_callback, this, std::placeholders::_1));
-   
+ 
+    this->move_home_subscriber_ = this->create_subscription<std_msgs::msg::Bool>(ns+"/move_home", 10, std::bind(&gh360::MotorHandler::move_home_sub_callback, this, std::placeholders::_1));
+    this->set_torque_subscriber_ = this->create_subscription<std_msgs::msg::Bool>(ns+"/set_torque", 10, std::bind(&gh360::MotorHandler::set_torque_sub_callback, this, std::placeholders::_1));
 }
 
 
@@ -148,16 +103,7 @@ gh360::MotorHandler::~MotorHandler()
 }
 
 bool gh360::MotorHandler::initMotorPositions()
-{
-    //state 0: wait for encoder data
-    //state 1: move to closest position that is the init position plus a multiple of 2*pi
-    //state 2: wait for movement to finish
-    //state 3: adjust cocontraction
-    //state 4: wait for movement to finish
-    //state 5: find base equilibrium point position
-
-    
-    
+{   
     if (this->init_state == 0)
     {
         if (!(this->joint_states_recieved) && this->require_encoder_data) RCLCPP_INFO_ONCE(this->get_logger(), "Waiting for joint encoder data...");
@@ -507,6 +453,61 @@ void gh360::MotorHandler::check_goal_alive()
     }
 }
 
+void gh360::MotorHandler::check_limits()
+{
+    for (unsigned int i=0; i < this->joints.size(); i++)
+    {
+        bool limit_reached = false;
+        if (this->joints[i]->get_joint_angle() >= this->joints[i]->get_max_joint_angle())
+        {
+            for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
+            {
+                Motor * motor = this->joints[i]->get_motor(j);
+                if (motor->get_goal_position_adjusted() > motor->get_present_position_adjusted()) motor->set_goal_position(motor->get_present_position());
+                if (motor->get_goal_velocity_adjusted() > 0.0) motor->set_goal_velocity(0.0);
+                if (motor->get_goal_current_adjusted() > 0.0) motor->set_goal_current(0.0);
+            }
+        }
+        else if (this->joints[i]->get_joint_angle() <= this->joints[i]->get_min_joint_angle())
+        {
+            for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
+            {
+                Motor * motor = this->joints[i]->get_motor(j);
+                if (motor->get_goal_position_adjusted() < motor->get_present_position_adjusted()) motor->set_goal_position(motor->get_present_position());
+                if (motor->get_goal_velocity_adjusted() < 0.0) motor->set_goal_velocity(0.0);
+                if (motor->get_goal_current_adjusted() < 0.0) motor->set_goal_current(0.0);
+            }
+        }
+        for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
+        {
+            Motor * motor = this->joints[i]->get_motor(j);
+            if (motor->get_present_current_adjusted() >= motor->get_max_current())
+            {
+                if (motor->get_goal_position_adjusted() > motor->get_present_position_adjusted()) limit_reached = true;
+                if (motor->get_goal_velocity_adjusted() > 0.0) limit_reached = true;
+                if (motor->get_goal_current_adjusted() > 0.0) limit_reached = true;
+            }
+            else if (motor->get_present_current() <= motor->get_min_current())
+            {
+                if (motor->get_goal_position_adjusted() < motor->get_present_position_adjusted()) limit_reached = true;
+                if (motor->get_goal_velocity_adjusted() < 0.0) limit_reached = true;
+                if (motor->get_goal_current_adjusted() < 0.0) limit_reached = true;
+            }
+        }
+
+        if (limit_reached)
+        {
+            for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
+            {
+                Motor * motor = this->joints[i]->get_motor(j);
+                motor->set_goal_position(motor->get_present_position());
+                motor->set_goal_velocity(0.0);
+                motor->set_goal_current(0.0);
+            }
+        }
+    }
+}
+
 void gh360::MotorHandler::motor_goal_positions_callback(const gh360_interfaces::msg::SetMotorPositions::SharedPtr msg)
 {
     this->dxl_handler->setControlMode(this->joints, [this](Joint* joint) {
@@ -567,6 +568,44 @@ void gh360::MotorHandler::position_step_callback(const std::shared_ptr<gh360_int
 
 }
 
+void gh360::MotorHandler::set_robot_limits_callback(const std::shared_ptr<gh360_interfaces::srv::SetRobotLimits::Request> request, std::shared_ptr<gh360_interfaces::srv::SetRobotLimits::Response> response)
+{
+    bool max_joint_angles_set = false;
+    bool min_joint_angles_set = false;
+    bool max_motor_currents_set = false;
+    bool min_motor_currents_set = false;
+    bool max_motor_velocities_set = false;
+    bool min_motor_velocities_set = false;
+
+    unsigned int motor_cnt = 0;
+    for (unsigned int i=0; i < this->joints.size(); i++)
+    {
+        motor_cnt += this->joints[i]->get_motor_cnt();
+    }
+
+    if (request->max_joint_angles.size() == this->joints.size()) max_joint_angles_set = true;
+    if (request->min_joint_angles.size() == this->joints.size()) min_joint_angles_set = true;
+    if (request->max_motor_currents.size() == motor_cnt) max_motor_currents_set = true;
+    if (request->min_motor_currents.size() == motor_cnt) min_motor_currents_set = true;
+    if (request->max_motor_velocities.size() == motor_cnt) max_motor_velocities_set = true;
+    if (request->min_motor_velocities.size() == motor_cnt) min_motor_velocities_set = true;
+
+    for (unsigned int i=0; i < this->joints.size(); i++)
+    {
+        if (max_joint_angles_set) this->joints[i]->set_max_joint_angle(request->max_joint_angles[i]);
+        if (min_joint_angles_set) this->joints[i]->set_min_joint_angle(request->min_joint_angles[i]);
+        for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
+        {
+            if (max_motor_currents_set) this->joints[i]->get_motor(j)->set_max_current(request->max_motor_currents[i*this->joints[i]->get_motor_cnt()+j]);
+            if (min_motor_currents_set) this->joints[i]->get_motor(j)->set_min_current(request->min_motor_currents[i*this->joints[i]->get_motor_cnt()+j]);
+            if (max_motor_velocities_set) this->joints[i]->get_motor(j)->set_max_velocity(request->max_motor_velocities[i*this->joints[i]->get_motor_cnt()+j]);
+            if (min_motor_velocities_set) this->joints[i]->get_motor(j)->set_min_velocity(request->min_motor_velocities[i*this->joints[i]->get_motor_cnt()+j]);
+        }
+    }
+
+    response->success = true;
+}
+
 void gh360::MotorHandler::set_torque_callback(const std::shared_ptr<std_srvs::srv::SetBool::Request> request, std::shared_ptr<std_srvs::srv::SetBool::Response> response)
 {
     int set_torque;
@@ -589,6 +628,28 @@ void gh360::MotorHandler::set_torque_callback(const std::shared_ptr<std_srvs::sr
     RCLCPP_INFO(this->get_logger(), "Torque set to: %d", set_torque);
 
     response->success = true;
+}
+
+void gh360::MotorHandler::set_torque_sub_callback(const std_msgs::msg::Bool::SharedPtr msg)
+{
+    int set_torque;
+    if (msg->data == true)
+    {
+        set_torque = 1;
+        this->dxl_handler->setEmergencyStop(false);
+    }
+    else
+    {
+        set_torque = 0;
+        this->dxl_handler->setEmergencyStop(true);
+    }
+
+    for (unsigned int i=0; i < this->joints.size(); i++)
+    {
+        this->dxl_handler->setTorqueEnable(this->joints[i], set_torque);
+    }
+
+    // RCLCPP_INFO(this->get_logger(), "Torque set to: %d", set_torque);
 }
 
 void gh360::MotorHandler::move_home_callback(const std::shared_ptr<std_srvs::srv::SetBool::Request> request, std::shared_ptr<std_srvs::srv::SetBool::Response> response)
@@ -617,6 +678,28 @@ void gh360::MotorHandler::move_home_callback(const std::shared_ptr<std_srvs::srv
     response->success = true;
 }
 
+void gh360::MotorHandler::move_home_sub_callback(const std_msgs::msg::Bool::SharedPtr msg)
+{
+    if (msg->data == true)
+    {
+        double init_pos;
+        this->dxl_handler->setEmergencyStop(false);
+        this->dxl_handler->setControlMode(this->joints, [this](Joint* joint) {
+            return this->dxl_handler->getPositionModeID(joint);
+        });
+        for (unsigned int i=0; i < this->joints.size(); i++)
+        {
+            if (!this->joints[i]->get_motor(0)->get_torque_enabled()) this->dxl_handler->setTorqueEnable(this->joints[i],1);
+            init_pos = this->joints[i]->get_motor_init_pos();
+
+            for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
+            {
+                this->joints[i]->get_motor(j)->set_goal_position_adjusted(init_pos);
+            }
+        }
+    }
+}
+
 void gh360::MotorHandler::timer_callback()
 {
     this->dxl_handler->syncRead(this->joints, this->joints_motor_model->Present_Position);
@@ -632,6 +715,7 @@ void gh360::MotorHandler::timer_callback()
     if (safety_check == true) 
     {
         this->check_goal_alive();
+        this->check_limits();
         if (this->joints[0]->get_operating_mode() == this->joints[0]->get_position_mode_id())
         {
             this->dxl_handler->syncWrite(this->joints, this->joints_motor_model->Goal_Position);

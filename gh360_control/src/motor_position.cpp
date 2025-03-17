@@ -15,9 +15,8 @@ MotorPosition::MotorPosition(): Node("motor_position")
     
     this->motor_velocity_publisher_ = this->create_publisher<gh360_interfaces::msg::SetMotorVelocities>("/gh360/motor_goal_velocity", 10);
     this->motor_position_publisher_ = this->create_publisher<gh360_interfaces::msg::SetMotorPositions>("/gh360/motor_goal_position", 10);
-    this->cmd_motor_pos_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorPositions>("cmd_motor_pos", 10, std::bind(&MotorPosition::cmd_motor_pos_callback, this, std::placeholders::_1));
+    this->cmd_motor_pos_subscriber_ = this->create_subscription<std_msgs::msg::Float64MultiArray>("cmd_motor_pos", 10, std::bind(&MotorPosition::cmd_motor_pos_callback, this, std::placeholders::_1));
     this->motor_states_subscriber_ = this->create_subscription<gh360_interfaces::msg::PortStatus>("/gh360/motor_states", 10, std::bind(&MotorPosition::motor_states_callback, this, std::placeholders::_1));
-    // this->timer_ = this->create_wall_timer(10ms, std::bind(&JointVelocity::timer_callback, this));
 
     RCLCPP_INFO(this->get_logger(), "Motor Position node started");
 }
@@ -61,26 +60,32 @@ void MotorPosition::motor_states_callback(const gh360_interfaces::msg::PortStatu
 }
 
 
-void MotorPosition::cmd_motor_pos_callback(const gh360_interfaces::msg::SetMotorPositions::SharedPtr msg)
+void MotorPosition::cmd_motor_pos_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
 {
     this->motor_goal_vel_msg.motor_goal_velocities.clear();
     this->motor_goal_pos_msg.motor_goal_positions.clear();
 
+    int msg_cntr = 0;
+    for (unsigned int i=0; i < this->joints.size(); i++)
+    {
+        for (int j=0; j < this->joints[i]->get_motor_cnt(); j++)
+        {
+            Motor * motor = this->joints[i]->get_motor(j);
+            gh360_interfaces::msg::SetPosition new_position = gh360_interfaces::msg::SetPosition();
+            new_position.id = motor->get_motor_id();
+            new_position.position = msg->data[msg_cntr];
+            this->motor_goal_pos_msg.motor_goal_positions.push_back(new_position);
+            msg_cntr++;
+        }
+    }
+
     if (this->command_interface == "position")
     {
-        this->motor_goal_pos_msg.motor_goal_positions = msg->motor_goal_positions;
         this->motor_position_publisher_->publish(this->motor_goal_pos_msg);
     }
     else if (this->command_interface == "velocity")
     {
-        this->motor_goal_pos_msg = *msg;
         this->goal_recieved = true;
-        // RCLCPP_INFO(this->get_logger(), "Goal recieved");
-        // if (this->motor_states_recieved)
-        // {
-        //     this->calculate_motor_goal_velocity(msg);
-        //     this->motor_velocity_publisher_->publish(this->motor_goal_vel_msg);
-        // }
     }
 }
 

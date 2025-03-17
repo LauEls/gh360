@@ -143,25 +143,31 @@ bool DynamixelHandler::setTorqueEnable(Joint* joint, int value)
     if (this->emergency_stop && value == 1) return false;
 
     bool comm_result = true;
+    bool register_written = false;
     for (int i=0; i<joint->get_motor_cnt(); i++) 
     {
         Motor * motor = joint->get_motor(i);
-        comm_result = this->writeRegister(motor->get_motor_id(), motor->get_motor_model()->Torque_Enable, value);
+        if (motor->get_torque_enabled() != value)
+        {
+            comm_result = this->writeRegister(motor->get_motor_id(), motor->get_motor_model()->Torque_Enable, value);
+            register_written = true;
+        }
         if (!comm_result) break;
         motor->set_torque_enabled(value);
     }
     
-    if (comm_result)
+    if (comm_result && register_written)
     {
         if (value == 0) RCLCPP_INFO(rclcpp::get_logger("motor_handler"), "Torque on %s successfully turned off", joint->get_joint_name().c_str());
         else RCLCPP_INFO(rclcpp::get_logger("motor_handler"), "Torque on %s successfully turned on", joint->get_joint_name().c_str());
         return true;
     }
-    else
+    else if (register_written && !comm_result)
     {
         RCLCPP_ERROR(rclcpp::get_logger("motor_handler"), "Changing operation mode failed!");
         return false;
     }
+    return true;
 }
 
 bool DynamixelHandler::setVelocityProfile(Joint* joint, double value)

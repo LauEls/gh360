@@ -66,6 +66,10 @@ add_executable(joint_states src/joint_states.cpp)
 target_link_libraries(joint_states ${library_name})
 ament_target_dependencies(joint_states std_msgs gh360_interfaces sensor_msgs)
 
+add_executable(motor_states src/motor_states.cpp)
+target_link_libraries(motor_states ${library_name})
+ament_target_dependencies(motor_states std_msgs gh360_interfaces sensor_msgs)
+
 # add_executable(inverse_jacobian src/inverse_jacobian.cpp)
 # target_link_libraries(motor_handler ${library_name} rclcpp::rclcpp)
 # ament_target_dependencies(inverse_jacobian std_msgs gh360_interfaces orocos_kdl kdl_parser)
@@ -97,6 +101,7 @@ install(TARGETS
   motor_handler
   encoder_handler
   joint_states
+  motor_states
   # inverse_jacobian
   # teleop_rviz
   # teleop

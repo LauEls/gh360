@@ -30,19 +30,12 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360'), 'launch'), '/encoder_handler.launch.py'])
     )
 
-    # inverse_jacobian_cmd = Node(
-    #     package='gh360',
-    #     executable='inverse_jacobian',
-    #     name='inverse_jacobian',
-    #     # emulate_tty=True,
-    #     parameters=[{
-    #     'robot_description': robot_description_raw,
-    #     'tcp_link_name': 'eef',
-    #     'joint_states_topic': '/gh360_joint_states'}]
-    # )
+    controller_nodes = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360_control'), 'launch'), '/controllers.launch.py'])
+    )
     
     return LaunchDescription([
         motor_handler_with_namespace,
         encoder_handler,
-        #inverse_jacobian_cmd,
+        controller_nodes
     ])

@@ -9,6 +9,7 @@
 #include "gh360_interfaces/msg/bool_multi_array.hpp"
 #include "gh360_interfaces/msg/port_status.hpp"
 #include "gh360/util/config_parser.hpp"
+#include "std_msgs/msg/float64_multi_array.hpp"
 
 using namespace std::chrono_literals;
 
@@ -26,14 +27,14 @@ class TeleopEEFVelocity : public rclcpp::Node
 
         // rclcpp::TimerBase::SharedPtr timer_;
         rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr eef_velocity_publisher_;
-        rclcpp::Publisher<gh360_interfaces::msg::SetMotorPositions>::SharedPtr motor_position_publisher_;
+        rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr motor_position_publisher_;
         rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr teleop_commands_subscriber_;
         rclcpp::Subscription<gh360_interfaces::msg::BoolMultiArray>::SharedPtr teleop_buttons_subscriber_;
         rclcpp::Subscription<gh360_interfaces::msg::PortStatus>::SharedPtr motor_states_subscriber_;
 
         std::vector<Joint*> joints;
         geometry_msgs::msg::Twist desired_eef_velocity;
-        gh360_interfaces::msg::SetMotorPositions motor_reset_msg;
+        std_msgs::msg::Float64MultiArray motor_reset_msg;
         std::vector<double> reset_motor_pos;
         float translation_scaler = 1.0;
         float rotation_scaler = 1.0;
