@@ -1,56 +1,23 @@
-#subscribe to marker poses
-#generate door pose from marker pose
-#generate handle pose from door pose
-#publish frames for each pose
-
 import rclpy
 from rclpy.node import Node
-import numpy as np
 
-from tf2_ros import TransformException, TransformBroadcaster
-from tf2_ros.buffer import Buffer
-from tf2_ros.transform_listener import TransformListener
-
-# from ros2_aruco_interfaces.msg import ArucoMarkers
-from geometry_msgs.msg import Pose, TransformStamped, Transform, Vector3, Quaternion
-from std_msgs.msg import Int64
+from tf2_ros import TransformBroadcaster
+from geometry_msgs.msg import TransformStamped
 from ros2_aruco_interfaces.msg import ArucoMarkers
-import tf2_geometry_msgs
-from scipy.spatial.transform import Rotation
 
 class DoorHandlePose(Node):
     def __init__(self):
-        super().__init__('door_handle_pose_node')
-        self.tf_broadcaster = TransformBroadcaster(self)
-        #Initiate a ROS parameter with a default value and then read the parameters value
-        # self.declare_parameter('namespace', 'tb3_5')
-        # self.namespace = self.get_parameter('namespace').get_parameter_value().string_value
-
-        # self.marker_id = 1000
-        # self.marker_pose = Pose()
-        # self.marker_recieved = False
-
-        # self.marker_recognition_sub = self.create_subscription(ArucoMarkers, '/'+self.namespace+'/aruco_markers', self.clbk_marker_recognition, 10)
-        # self.marker_map_pose_pub = self.create_publisher(Pose, '/'+self.namespace+'/marker_map_pose', 10)
-        # self.marker_id_pub = self.create_publisher(Int64,'/'+self.namespace+'/marker_id', 10)
-        self.create_subscription(ArucoMarkers, '/aruco_markers', self.clbk_marker_recognition, 10)
-
-        #Initialize a transform listener that is later used for looking up tranformations from one frame to another
-        # self.tf_buffer = Buffer()
-        # self.tf_listener = TransformListener(self.tf_buffer, self)
-
-        timer_period = 0.1  # seconds
-        self.timer = self.create_timer(timer_period, self.timer_callback)
-
+        super().__init__('door_handle_pose')
         self.markers = ArucoMarkers()
 
+        self.tf_broadcaster = TransformBroadcaster(self)
+        self.create_subscription(ArucoMarkers, 'aruco_markers', self.clbk_marker_recognition, 10)
 
+        timer_period = 0.1
+        self.timer = self.create_timer(timer_period, self.timer_callback)
 
     def clbk_marker_recognition(self, msg):
-        # self.marker_id = msg.marker_ids[0]
-        # self.marker_pose = msg.poses[0]
         self.markers = msg
-
         for i in range(len(msg.marker_ids)):
             self.marker_id = msg.marker_ids[i]
             self.marker_pose = msg.poses[i]
@@ -63,18 +30,10 @@ class DoorHandlePose(Node):
             t.header.stamp = self.get_clock().now().to_msg()
             t.header.frame_id = 'camera_color_frame'
             t.child_frame_id = 'marker_'+str(self.markers.marker_ids[i])
-            # t.transform = self.transform
             t.transform.translation.x = self.markers.poses[i].position.x
             t.transform.translation.y = self.markers.poses[i].position.y
             t.transform.translation.z = self.markers.poses[i].position.z
             t.transform.rotation = self.markers.poses[i].orientation
-            # t.transform.translation.x = 0.13395628663621322
-            # t.transform.translation.y = 0.07813541504103579
-            # t.transform.translation.z = 0.06372504768866594
-            # t.transform.rotation.x = 0.0
-            # t.transform.rotation.y = 0.0
-            # t.transform.rotation.z = 0.0
-            # t.transform.rotation.w = 1.0
 
             self.tf_broadcaster.sendTransform(t)
 

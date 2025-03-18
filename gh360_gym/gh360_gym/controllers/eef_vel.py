@@ -68,6 +68,9 @@ class EEFVelocityController(BaseController):
     #     return obs
     
     def set_step_goal(self, action):
+        if self.last_time == 0:
+            self.last_time = time.time()
+
         action = np.clip(action, self.input_min, self.input_max)
 
         while (time.time() - self.last_time) < (self.control_timestep-self.control_time_adj):

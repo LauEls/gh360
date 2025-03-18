@@ -23,6 +23,7 @@ class GH360Teleop(Node):
 
     def __init__(self):
         super().__init__('gh360_teleop')
+        self.get_logger().info("Initializing GH360 Teleop Node")
         # self.joint_goal_publisher = self.create_publisher(JointState, '/gh360_joint_states', 10)
         # self.joint_state_msg = JointState()
         # self.joint_state_msg.name = ['shoulder_yaw', 'shoulder_roll', 'shoulder_pitch', 'upperarm_roll', 'elbow', 'forearm_roll', 'wrist_pitch']
@@ -31,7 +32,7 @@ class GH360Teleop(Node):
         
         self.create_subscription(
             SpaceMouse,
-            '/spacemouse',
+            'spacemouse',
             self.spacemouse_callback,
             10)
         
@@ -68,11 +69,7 @@ class GH360Teleop(Node):
 
         self.ep_length = variant["episode_length"]
 
-        # self.env = NormalizedBoxEnv(env)
         self.observation = self.env.reset()
-        # self.env.render()
-        # joint_positions = self.observation[5:12].tolist()
-        # self.joint_state_msg.position = joint_positions
 
         self.observations = []
         self.next_observations = []
@@ -84,21 +81,12 @@ class GH360Teleop(Node):
         self.paths = []
 
         self.eef_vel = None
-        # self.goal_joint_velocity = None
 
 
         while self.eef_vel is None:
             rclpy.spin_once(self)
-        
-        
 
-        # timer_period = 0.01  # seconds
-        # self.timer = self.create_timer(timer_period, self.timer_callback)
-        # self.i = 0
-        # self.last_time = time.time()
-
-    def inverse_jacobian_callback(self, msg):
-        self.goal_joint_velocity = np.array(msg.velocity)
+        self.get_logger().info("GH360 Teleop Node initialized")
 
     def spacemouse_callback(self, msg):
         self.eef_vel = np.zeros(6)
@@ -130,16 +118,10 @@ class GH360Teleop(Node):
     def expert_action(self, observation):
         if self.reset:
             self.reset_env()
-        # joint_positions = observation[5:12].tolist()
-        # self.joint_state_msg.position = joint_positions
-        # self.joint_goal_publisher.publish(self.joint_state_msg)
 
-        # self.env.render()
         rclpy.spin_once(self)
 
         action = self.eef_vel
-
-        # rclpy.spin_once(self)
 
         return action, self.record_data
     
@@ -171,7 +153,7 @@ def main(args=None):
     # rclpy.spin(robosuite_teleop)
     # while True:
     #     rclpy.spin_once(robosuite_teleop)
-    robosuite_teleop.collect_demonstrations("expert", 5)
+    robosuite_teleop.collect_demonstrations("expert", 10)
     # robosuite_teleop.collect_gradual_demonstrations(50)
 
     

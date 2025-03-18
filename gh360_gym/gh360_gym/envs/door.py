@@ -9,7 +9,7 @@ from gym import spaces
 import rclpy
 from rclpy.node import Node
 
-from std_msgs.msg import String, UInt16, Float64
+from std_msgs.msg import String, UInt16, Float64, Bool
 from std_srvs.srv import SetBool
 from ros2pkg.api import get_prefix_path
 from tf2_ros import TransformException
@@ -55,6 +55,8 @@ class DoorEnv(gym.Env):
             self.node = rclpy.create_node(self.__class__.__name__)
         else:
             self.node = node
+
+        self.node.get_logger().info("Initializing Door Environment")    
         
 
         self.motor_obs = motor_obs
@@ -64,6 +66,7 @@ class DoorEnv(gym.Env):
 
         self.first_eef_msg = False
         self.first_door_msg = False
+        self.reseted = False
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
@@ -90,31 +93,32 @@ class DoorEnv(gym.Env):
 
         self.node.create_subscription(
             Pose,
-            '/eef_pose',
+            '/gh360/eef_pose',
             self.eef_pose_callback,
             10
         )
 
         self.node.create_subscription(
             DoorEnvMsg,
-            '/door_env',
+            '/door/environment_observations',
             self.door_env_callback,
             10
         )
 
-        self.node.create_subscription(
-            PortStatus,
-            '/door/motor_status',
-            self.motor_status_callback,
-            10
-        )
+        # self.node.create_subscription(
+        #     PortStatus,
+        #     '/door/motor_status',
+        #     self.motor_status_callback,
+        #     10
+        # )
 
-        self.door_motor_current_publisher = self.node.create_publisher(SetMotorCurrents, '/door/motor_goal_current', 10)
-        self.door_motor_vel_publisher = self.node.create_publisher(SetMotorVelocities, '/door/motor_goal_velocity', 10)
+        # self.door_motor_current_publisher = self.node.create_publisher(SetMotorCurrents, '/door/motor_goal_current', 10)
+        # self.door_motor_vel_publisher = self.node.create_publisher(SetMotorVelocities, '/door/motor_goal_velocity', 10)
+        self.door_reset_publisher = self.node.create_publisher(Bool, '/door/reset', 10)
 
-        self.client_door_motor_torque = self.node.create_client(SetBool, '/door/motor_set_torque')
-        while not self.client_door_motor_torque.wait_for_service(timeout_sec=1.0):
-            self.node.get_logger().info('service not available, waiting again...')
+        # self.client_door_motor_torque = self.node.create_client(SetBool, '/door/motor_set_torque')
+        # while not self.client_door_motor_torque.wait_for_service(timeout_sec=1.0):
+        #     self.node.get_logger().info('service not available, waiting again...')
 
         self.goal_current_msg = SetMotorCurrents()
         self.set_current_msg = SetCurrent()
@@ -172,10 +176,10 @@ class DoorEnv(gym.Env):
         if not self.first_door_msg:
             self.first_door_msg = True
 
-    def motor_status_callback(self, msg):
-        if not self.first_door_motor_status:
-            self.first_door_motor_status = True
-        self.door_motor_status = msg.motors[0]
+    # def motor_status_callback(self, msg):
+    #     if not self.first_door_motor_status:
+    #         self.first_door_motor_status = True
+    #     self.door_motor_status = msg.motors[0]
 
     def _get_obs(self):
         """
@@ -250,8 +254,8 @@ class DoorEnv(gym.Env):
             #     robot_motor_vel.append(joint.motor_vel)
 
         for motor in self.controller.motors:
-            robot_motor_pos.append(motor.motor_pos)
-            robot_motor_vel.append(motor.motor_vel)
+            robot_motor_pos.append(motor.present_position)
+            robot_motor_vel.append(motor.present_velocity)
             
         robot_motor_pos = np.array(robot_motor_pos)
         robot_motor_vel = np.array(robot_motor_vel)
@@ -273,55 +277,18 @@ class DoorEnv(gym.Env):
         return {}
     
     def door_reset(self):
-        while not self.first_door_motor_status:
+        
+        while not self.first_door_msg:
             self.node.get_logger().info("Waiting to get motor status...")
             rclpy.spin_once(self.node)
 
-        status = 0
-        
-        # self.client_motor_torque.call_async(SetBool.Request(data=True))
-        while status != 4:
-            if status == 0: 
-                if self.door_motor_status.present_position < 1.81:
-                    return
-                    # status = 3
-                    # self.goal_current_msg.motor_goal_currents[0].current = 0.0
-                    # self.node.get_logger().info("Changing to Satus 3")
-                elif self.door_motor_status.present_position >= self.closing_start_pos:
-                    status = 2
-                    future = self.client_door_motor_torque.call_async(SetBool.Request(data=True))
-                    rclpy.spin_until_future_complete(self.node, future)
-                    self.goal_current_msg.motor_goal_currents[0].current = self.closing_current
-                    self.node.get_logger().info("Changing to Satus 2")
-                else:
-                    status = 1    
-                    future = self.client_door_motor_torque.call_async(SetBool.Request(data=True))
-                    rclpy.spin_until_future_complete(self.node, future)
-                    self.node.get_logger().info("Changing to Satus 1")
-            elif status == 1 and self.door_motor_status.present_velocity <= 0.0 and self.door_motor_status.present_position >= self.closing_start_pos-0.1:
-                status = 2
-                self.goal_current_msg.motor_goal_currents[0].current = self.closing_current
-                self.node.get_logger().info("Changing to Satus 2")
-            elif status == 2 and self.door_motor_status.present_velocity < 0.0:
-                status = 3
-                self.node.get_logger().info("Changing to Satus 3")
-            elif status == 3 and self.door_motor_status.present_velocity >= 0.0:
-                status = 4
-                self.goal_current_msg.motor_goal_currents[0].current = 0.0
-                self.client_door_motor_torque.call_async(SetBool.Request(data=False))
-                self.node.get_logger().info("Changing to Satus 4")
+        door_closed = False
 
-            # self.node.get_logger().info("Motor Current: " + str(self.goal_current_msg.motor_goal_currents[0].current))
-            if status == 1:
-                self.goal_velocity_msg.motor_goal_velocities[0].velocity = np.clip(self.closing_start_pos - self.door_motor_status.present_position, 0.0, 0.5)
-                # if self.motor_status.present_position >= self.closing_start_pos-0.1:
-                #     self.goal_velocity_msg.motor_goal_velocities[0].velocity = 0.0
-                self.door_motor_vel_publisher.publish(self.goal_velocity_msg)
-                # self.pos_pusblisher_.publish(self.door_opening_msg)
-            else:
-                self.door_motor_current_publisher.publish(self.goal_current_msg)
-
+        while not door_closed:
+            self.door_reset_publisher.publish(Bool(data=True))
             rclpy.spin_once(self.node)
+            if self.handle_qpos[0] < 0.0 and self.hinge_qpos[0] < 0.01:
+                door_closed = True
         
         return
     
@@ -382,15 +349,14 @@ class DoorEnv(gym.Env):
         # print("final internal state: ", internal_state)
 
         
-        self.control_time_adj = 0.0
-        self.last_time = 0
+        self.controller.last_time = 0
         time_sum = 0
         for i in range(20):
             zero_action = np.zeros(self.controller.control_dim)
             time_sum += self.controller.set_step_goal(zero_action)
 
-        self.controller.control_time_adj = (time_sum/20) - (self.control_timestep)
-        self.last_time = 0
+        self.controller.control_time_adj = (time_sum/20) - (self.controller.control_timestep)
+        self.controller.last_time = 0
         self.reseted = True
         
 
@@ -402,7 +368,7 @@ class DoorEnv(gym.Env):
     def reset(self):
         # print("resetting")
         # self.controller.reset(robot_eef_pos=self.eef_pos, handle_pos=self.handle_pos, handle_qpos=self.handle_qpos)
-
+        self.node.get_logger().info("Resetting Door Environment")
         if not self.reseted:
             self.robot_reset()
             self.door_reset()
@@ -426,7 +392,7 @@ class DoorEnv(gym.Env):
         self.reseted = False
         self.step_cntr += 1
         
-        t_loop = self.controller.set_motor_goal(action)
+        t_loop = self.controller.set_step_goal(action)
         # print("t_loop: ", t_loop)
 
         observation = self._get_obs()

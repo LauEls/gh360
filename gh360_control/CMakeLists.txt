@@ -50,6 +50,9 @@ ament_target_dependencies(eef_velocity rclcpp std_msgs sensor_msgs geometry_msgs
 add_executable(joint_velocity src/joint_velocity.cpp)
 ament_target_dependencies(joint_velocity gh360 rclcpp std_msgs sensor_msgs geometry_msgs gh360_interfaces)
 
+add_executable(joint_position src/joint_position.cpp)
+ament_target_dependencies(joint_position gh360 rclcpp std_msgs sensor_msgs geometry_msgs gh360_interfaces)
+
 add_executable(motor_position src/motor_position.cpp)
 ament_target_dependencies(motor_position gh360 rclcpp std_msgs sensor_msgs geometry_msgs gh360_interfaces)
 
@@ -69,6 +72,7 @@ install(DIRECTORY include/
 install(TARGETS
   eef_velocity
   joint_velocity
+  joint_position
   motor_position
   move_home
   robot_stop

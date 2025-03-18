@@ -121,6 +121,7 @@ namespace gh360
             bool motors_initiated = false;
             bool emergency_stop = false;
             bool require_encoder_data = true;
+            bool move_home_topic = false;
          
             std::chrono::time_point<std::chrono::high_resolution_clock> velocity_goal_timestamp;
             std::chrono::time_point<std::chrono::high_resolution_clock> current_goal_timestamp;

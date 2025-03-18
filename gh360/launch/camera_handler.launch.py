@@ -12,25 +12,15 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('realsense2_camera'), 'launch'), '/rs_launch.py'])
     )
 
-    aruco_recognition = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('ros2_aruco'), 'launch'), '/aruco_recognition.launch.py'])
-    )
-
     camera_frame_cmd = Node(
-        package='gh360_examples',
+        package='gh360',
         executable='camera_frame',
         name='camera_frame'
     )
 
-    door_handle_frame_cmd = Node(
-        package='gh360_examples',
-        executable='door_handle_pose',
-        name='door_handle_pose'
-    )
+    
     
     return LaunchDescription([
         camera_startup,
-        aruco_recognition,
         camera_frame_cmd,
-        door_handle_frame_cmd,
     ])

@@ -69,6 +69,15 @@ def generate_launch_description():
             'config', 'gh360_config.yaml')],
         output='screen')
     
+    gh360_motor_states_cmd = Node(
+        package='gh360',
+        executable='motor_states',
+        name='motor_states',
+        parameters=[os.path.join(
+            get_package_share_directory('gh360'),
+            'config', 'gh360_config.yaml')],
+        output='screen')
+    
     start_rviz_cmd = Node(
         package='rviz2',
         executable='rviz2',
@@ -84,5 +93,6 @@ def generate_launch_description():
         start_rviz_cmd,
         start_joint_state_publisher_cmd,
         start_robot_state_publisher_cmd,
-        gh360_joint_states_cmd
+        gh360_joint_states_cmd,
+        gh360_motor_states_cmd
     ])

@@ -21,20 +21,25 @@ import tf2_geometry_msgs
 
 class SpaceMouseNode(Node):
     def __init__(self):
-        super().__init__('spacemouse_node')
+        super().__init__('spacemouse')
+
+        self.declare_parameter("translation_scaler", 1.0)
+        self.declare_parameter("rotation_scaler", 1.0)
+        self.translation_scaler = self.get_parameter("translation_scaler").get_parameter_value().double_value
+        self.rotation_scaler = self.get_parameter("rotation_scaler").get_parameter_value().double_value
+
+        self.get_logger().info("Translation Scaler: " + str(self.translation_scaler))
+        self.get_logger().info("Rotation Scaler: " + str(self.rotation_scaler))
 
         self.spacemouse_publisher_ = self.create_publisher(SpaceMouse, 'spacemouse', 10)
-        self.cmd_eef_vel_publisher_ = self.create_publisher(Twist, '/gh360_control/teleop_eef_velocity', 10)
-        self.button_publisher_ = self.create_publisher(BoolMultiArray, '/gh360_control/teleop_buttons', 10)
+        self.cmd_eef_vel_publisher_ = self.create_publisher(Twist, 'teleop_eef_velocity', 10)
+        self.button_publisher_ = self.create_publisher(BoolMultiArray, 'teleop_buttons', 10)
 
         success = pyspacemouse.open()
         if not success:
             print("Failed to open SpaceMouse")
 
-
-        # state = pyspacemouse.read()
-
-        timer_period = 0.01  # seconds
+        timer_period = 0.01
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
     def timer_callback(self):
@@ -43,12 +48,12 @@ class SpaceMouseNode(Node):
         msg = SpaceMouse()
         buttons = BoolMultiArray()
         twist = Twist()
-        twist.linear.x = float(state.x)
-        twist.linear.y = float(state.y)
-        twist.linear.z = float(state.z)
-        twist.angular.x = float(state.roll)
-        twist.angular.y = float(state.pitch)
-        twist.angular.z = float(state.yaw)
+        twist.linear.x = float(state.x)*self.translation_scaler
+        twist.linear.y = float(state.y)*self.translation_scaler
+        twist.linear.z = float(state.z)*self.translation_scaler
+        twist.angular.x = -float(state.pitch)*self.rotation_scaler
+        twist.angular.y = float(state.roll)*self.rotation_scaler
+        twist.angular.z = -float(state.yaw)*self.rotation_scaler
 
         msg.velocity = twist
         msg.button1 = bool(state.buttons[0])
@@ -64,12 +69,7 @@ def main(args=None):
     rclpy.init(args=args)
 
     spacemouse_node = SpaceMouseNode()
-
     rclpy.spin(spacemouse_node)
-
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
     spacemouse_node.destroy_node()
     rclpy.shutdown()
 

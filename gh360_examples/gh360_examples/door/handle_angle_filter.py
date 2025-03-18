@@ -3,24 +3,22 @@ import numpy as np
 import rclpy
 from rclpy.node import Node
 
-from std_msgs.msg import String, Int32, Float64
-from gh360_interfaces.msg import SetMotorCurrents, SetCurrent, PortStatus, MotorStatus
+from std_msgs.msg import Int32, Float64
 
 
-class HandleSensorFilter(Node):
+class DoorHandleAngleFilter(Node):
 
     def __init__(self):
-        super().__init__('handle_sensor_filter')
-        self.publisher_ = self.create_publisher(Float64, 'filtered_handle_angle', 10)
+        super().__init__('door_handle_angle_filter')
+        self.publisher_ = self.create_publisher(Float64, 'handle_angle_filtered', 10)
 
         self.create_subscription(
             Int32,
-            '/handle_angle',
+            'handle_angle',
             self.handle_angle_callback,
             10)
         
         self.data_buffer = np.zeros(50, dtype=float)
-
         self.filtered_handle_angle = Float64()
 
         timer_period = 0.05  # seconds
@@ -37,21 +35,13 @@ class HandleSensorFilter(Node):
 
     def timer_callback(self):
         self.filtered_handle_angle.data = (234.31-np.median(self.data_buffer)*(300/1023))*np.pi/180 - 0.1536 + 1.0544
-        # print("Median: "+str(np.median(self.data_buffer)*(300/1023)))
-        # print("Mean: "+str(np.mean(self.data_buffer)*(300/1023)))
         self.publisher_.publish(self.filtered_handle_angle)
 
 
 def main(args=None):
     rclpy.init(args=args)
-
-    handle_sensor_filter = HandleSensorFilter()
-
+    handle_sensor_filter = DoorHandleAngleFilter()
     rclpy.spin(handle_sensor_filter)
-
-    # Destroy the node explicitly
-    # (optional - otherwise it will be done automatically
-    # when the garbage collector destroys the node object)
     handle_sensor_filter.destroy_node()
     rclpy.shutdown()
 

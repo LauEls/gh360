@@ -2,12 +2,7 @@
 
 TeleopEEFVelocity::TeleopEEFVelocity() : Node("teleop_eef_velocity")
 {
-
     this->joints = get_robot_joints(this);
-    this->declare_parameter("translation_scaler", 1.0);
-    this->translation_scaler = get_parameter("translation_scaler").as_double();
-    this->declare_parameter("rotation_scaler", 1.0);
-    this->rotation_scaler = get_parameter("rotation_scaler").as_double();
     
     for (unsigned int i=0; i < this->joints.size(); i++)
     {
@@ -25,15 +20,13 @@ TeleopEEFVelocity::TeleopEEFVelocity() : Node("teleop_eef_velocity")
         }
         for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
         {
-            // gh360_interfaces::msg::SetPosition new_position = gh360_interfaces::msg::SetPosition();
-            // new_position.id = this->joints[i]->get_motor(j)->get_motor_id();
-            // new_position.position = this->joints[i]->get_motor(j)->get_goal_position();
             this->motor_reset_msg.data.push_back(this->joints[i]->get_motor(j)->get_goal_position());
         }
     }
 
     this->eef_velocity_publisher_ = this->create_publisher<geometry_msgs::msg::Twist>("cmd_eef_vel", 10);
     this->motor_position_publisher_ = this->create_publisher<std_msgs::msg::Float64MultiArray>("cmd_motor_pos", 10);
+    this->door_reset_publisher_ = this->create_publisher<std_msgs::msg::Bool>("/door/reset", 10);
     this->teleop_commands_subscriber_ = this->create_subscription<geometry_msgs::msg::Twist>("teleop_eef_velocity", 10, std::bind(&TeleopEEFVelocity::teleop_commands_callback, this, std::placeholders::_1));
     this->teleop_buttons_subscriber_ = this->create_subscription<gh360_interfaces::msg::BoolMultiArray>("teleop_buttons", 10, std::bind(&TeleopEEFVelocity::teleop_buttons_callback, this, std::placeholders::_1));
     this->motor_states_subscriber_ = this->create_subscription<gh360_interfaces::msg::PortStatus>("/gh360/motor_states", 10, std::bind(&TeleopEEFVelocity::motor_states_callback, this, std::placeholders::_1));
@@ -80,6 +73,13 @@ void TeleopEEFVelocity::teleop_buttons_callback(const gh360_interfaces::msg::Boo
         this->eef_velocity_publisher_->publish(this->desired_eef_velocity);
         RCLCPP_INFO(this->get_logger(), "Resetting motors to intial position");
     }
+    if (msg->data[1]) {
+        std_msgs::msg::Bool door_reset_msg;
+        door_reset_msg.data = true;
+        this->door_reset_publisher_->publish(door_reset_msg);
+        RCLCPP_INFO(this->get_logger(), "Resetting door");
+    }
+
 }
 
 void TeleopEEFVelocity::teleop_commands_callback(const geometry_msgs::msg::Twist::SharedPtr msg)
@@ -103,20 +103,17 @@ void TeleopEEFVelocity::teleop_commands_callback(const geometry_msgs::msg::Twist
 
         if (pos_reached && !motor_moving) {
             RCLCPP_INFO(this->get_logger(), "Motors reset finished");
+
             this->reseting = false;
         }
 
         return;
     } 
-    
-    this->desired_eef_velocity.linear.x = msg->linear.x * this->translation_scaler;
-    this->desired_eef_velocity.linear.y = msg->linear.y * this->translation_scaler;
-    this->desired_eef_velocity.linear.z = msg->linear.z * this->translation_scaler;
-    this->desired_eef_velocity.angular.x = -msg->angular.y * this->rotation_scaler;
-    this->desired_eef_velocity.angular.y = msg->angular.x * this->rotation_scaler;
-    this->desired_eef_velocity.angular.z = -msg->angular.z * this->rotation_scaler;
+
+    this->desired_eef_velocity = *msg;
 
     this->eef_velocity_publisher_->publish(this->desired_eef_velocity);
+    
 
 }
 

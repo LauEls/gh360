@@ -1,6 +1,7 @@
 /**:
   ros__parameters:
     joint_names: ['shoulder_yaw', 'shoulder_roll', 'shoulder_pitch', 'upperarm_roll', 'elbow', 'forearm_roll', 'wrist_pitch']
+    move_home_topic: True
     shoulder_yaw:
       joint_type: "soft_joint"
       min_joint_angle: -1.5708
@@ -132,34 +133,34 @@
 
 /gh360/encoder_handler:
   ros__parameters:
-    port_names: ['/arm1/Shoulder_Encoders', '/arm1/UpperArm_Encoders', '/arm1/LowerArm_Encoders']
+    port_names: ['/gh360/shoulder/encoders', '/gh360/upperarm/encoders', '/gh360/lowerarm/encoders']
     shoulder_yaw:
-      port_name: "/arm1/Shoulder_Encoders"
+      port_name: "/gh360/shoulder/encoders"
       port_id: 2
       offset: 1.3
       inverter: -1
     shoulder_roll:
-      port_name: "/arm1/Shoulder_Encoders"
+      port_name: "/gh360/shoulder/encoders"
       port_id: 1
       offset: 0.05
       inverter: -1
     shoulder_pitch:
-      port_name: "/arm1/UpperArm_Encoders"
+      port_name: "/gh360/upperarm/encoders"
       port_id: 1
       offset: 0.1076
       inverter: -1
     upperarm_roll:
-      port_name: "/arm1/UpperArm_Encoders"
+      port_name: "/gh360/upperarm/encoders"
       port_id: 2
       offset: 1.1
       inverter: 1
     elbow:
-      port_name: "/arm1/UpperArm_Encoders"
+      port_name: "/gh360/upperarm/encoders"
       port_id: 3
       offset: -0.5
       inverter: 1
     wrist_pitch:
-      port_name: "/arm1/LowerArm_Encoders"
+      port_name: "/gh360/lowerarm/encoders"
       port_id: 3
       offset: 4.04
       inverter: 1

@@ -11,20 +11,13 @@ from launch_ros.substitutions import FindPackageShare
 from launch.substitutions import PathJoinSubstitution
 
 def generate_launch_description():
-    robot_config_file = PathJoinSubstitution([FindPackageShare('gh360'), 'config', 'gh360_config.yaml'])
-    controller_config_file = PathJoinSubstitution([FindPackageShare('gh360_control'), 'config', 'controller_config.yaml'])
     spacemouse_config_file = PathJoinSubstitution([FindPackageShare('gh360_demonstration'), 'config', 'spacemouse_config.yaml'])
 
-    # controller_nodes = IncludeLaunchDescription(
-    #     PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360_control'), 'launch'), '/controllers.launch.py'])
-    # )
-
-    teleop_node = Node(
-        package='gh360_control',
-        executable='teleop_eef_velocity',
-        name='teleop_eef_velocity',
+    demo_node = Node(
+        package='gh360_demonstration',
+        executable='gh360_demo',
+        name='gh360_demo',
         namespace='gh360_control',
-        parameters=[robot_config_file, controller_config_file],
         output='screen'
     )
 
@@ -38,6 +31,6 @@ def generate_launch_description():
     
     return LaunchDescription([
         # controller_nodes,
-        teleop_node,
+        demo_node,
         spacemouse_node,
     ])

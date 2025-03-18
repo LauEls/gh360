@@ -26,18 +26,6 @@ class Monitor(Node):
             self.port_callback,
             10)
         
-        # self.create_subscription(
-        #     PortStatus,
-        #     '/upperarm/motor_status',
-        #     self.port_callback,
-        #     10)
-        
-        # self.create_subscription(
-        #     PortStatus,
-        #     '/lowerarm/motor_status',
-        #     self.port_callback,
-        #     10)
-        
         self.create_subscription(
             ArmEncoderStates,
             ns+'/encoder_states',

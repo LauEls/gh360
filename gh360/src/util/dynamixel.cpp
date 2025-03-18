@@ -97,6 +97,7 @@ bool DynamixelHandler::setOperatingMode(Joint* joint, int value)
         {
             joint->set_operating_mode(value);
             RCLCPP_INFO(rclcpp::get_logger("motor_handler"), msg);
+            if (value == 3 || value == 4) this->setVelocityProfile(joint, 10.0);
             return true;
         }
         else

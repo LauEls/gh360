@@ -10,6 +10,7 @@
 #include "gh360_interfaces/msg/port_status.hpp"
 #include "gh360/util/config_parser.hpp"
 #include "std_msgs/msg/float64_multi_array.hpp"
+#include "std_msgs/msg/bool.hpp"
 
 using namespace std::chrono_literals;
 
@@ -27,6 +28,7 @@ class TeleopEEFVelocity : public rclcpp::Node
 
         // rclcpp::TimerBase::SharedPtr timer_;
         rclcpp::Publisher<geometry_msgs::msg::Twist>::SharedPtr eef_velocity_publisher_;
+        rclcpp::Publisher<std_msgs::msg::Bool>::SharedPtr door_reset_publisher_;
         rclcpp::Publisher<std_msgs::msg::Float64MultiArray>::SharedPtr motor_position_publisher_;
         rclcpp::Subscription<geometry_msgs::msg::Twist>::SharedPtr teleop_commands_subscriber_;
         rclcpp::Subscription<gh360_interfaces::msg::BoolMultiArray>::SharedPtr teleop_buttons_subscriber_;

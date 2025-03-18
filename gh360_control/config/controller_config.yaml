@@ -17,8 +17,6 @@
 
 /gh360_control/teleop_eef_velocity:
   ros__parameters:
-    translation_scaler: 0.1
-    rotation_scaler: 0.5
     shoulder_yaw:
       right:
         motor_reset_pos: 0.0

@@ -30,12 +30,22 @@ def generate_launch_description():
         PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360'), 'launch'), '/encoder_handler.launch.py'])
     )
 
+    eef_pose_node = Node(
+        package='gh360',
+        executable='eef_pose',
+        name='eef_pose',
+        namespace='gh360',
+        output='screen'
+    )
+
     controller_nodes = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360_control'), 'launch'), '/controllers.launch.py'])
     )
+
     
     return LaunchDescription([
         motor_handler_with_namespace,
         encoder_handler,
+        eef_pose_node,
         controller_nodes
     ])

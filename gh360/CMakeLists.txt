@@ -20,11 +20,14 @@ find_package(ament_cmake REQUIRED)
 find_package(dynamixel_sdk REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(gh360_interfaces REQUIRED)
 find_package(orocos_kdl REQUIRED)
 find_package(urdf REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(kdl_parser REQUIRED)
 
 set(library_name ${PROJECT_NAME}_core)
@@ -62,7 +65,6 @@ target_link_libraries(encoder_handler PRIVATE ${library_name} rclcpp::rclcpp)
 # ament_target_dependencies(encoder_handler std_msgs gh360_interfaces)
 
 add_executable(joint_states src/joint_states.cpp)
-# target_link_libraries(joint_states PRIVATE ${library_name} rclcpp::rclcpp)
 target_link_libraries(joint_states ${library_name})
 ament_target_dependencies(joint_states std_msgs gh360_interfaces sensor_msgs)
 
@@ -70,17 +72,13 @@ add_executable(motor_states src/motor_states.cpp)
 target_link_libraries(motor_states ${library_name})
 ament_target_dependencies(motor_states std_msgs gh360_interfaces sensor_msgs)
 
-# add_executable(inverse_jacobian src/inverse_jacobian.cpp)
-# target_link_libraries(motor_handler ${library_name} rclcpp::rclcpp)
-# ament_target_dependencies(inverse_jacobian std_msgs gh360_interfaces orocos_kdl kdl_parser)
+add_executable(eef_pose src/eef_pose.cpp)
+target_link_libraries(eef_pose ${library_name})
+ament_target_dependencies(eef_pose geometry_msgs tf2 tf2_ros)
 
-# add_executable(teleop_rviz src/teleop_rviz.cpp)
-# target_link_libraries(motor_handler ${library_name} rclcpp::rclcpp)
-# ament_target_dependencies(teleop_rviz std_msgs gh360_interfaces)
-
-# add_executable(teleop src/teleop.cpp)
-# target_link_libraries(motor_handler ${library_name} rclcpp::rclcpp)
-# ament_target_dependencies(teleop std_msgs gh360_interfaces)
+add_executable(camera_frame src/camera_frame.cpp)
+target_link_libraries(camera_frame ${library_name})
+ament_target_dependencies(camera_frame geometry_msgs tf2 tf2_ros)
 
 ################################################################################
 # Install
@@ -102,9 +100,8 @@ install(TARGETS
   encoder_handler
   joint_states
   motor_states
-  # inverse_jacobian
-  # teleop_rviz
-  # teleop
+  eef_pose
+  camera_frame
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files.
