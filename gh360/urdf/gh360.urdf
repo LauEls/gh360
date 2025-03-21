@@ -23,7 +23,8 @@
         <parent link="base_link"/>
         <child link="shoulder0"/>
         <!-- <limit effort="1000.0" lower="-1.571" upper="1.571" velocity="0.5"/>-->
-        <origin rpy="1.571 0 1.571" xyz="-0.66 0.0 1.242"/> 
+        <!-- <origin rpy="1.571 0 1.571" xyz="-0.66 0.0 1.242"/>  -->
+        <origin rpy="1.571 0 1.571" xyz="-0.26 0.0 0.330"/>
     </joint>
 
     <link name="shoulder0">

@@ -6,7 +6,7 @@ import tkinter.ttk as ttk
 from tkinter import RIGHT
 import threading
 
-from .gui_util import GUIMotor, GUIJoint
+# from .gui_util import GUIMotor, GUIJoint
 
 from std_msgs.msg import String
 from std_srvs.srv import SetBool
@@ -17,54 +17,45 @@ class Monitor(Node):
 
     def __init__(self):
         super().__init__('gh360_monitor')
+
+        ns = "/gh360"
+
         self.create_subscription(
             PortStatus,
-            '/shoulder/motor_status',
-            self.port_callback,
-            10)
-        
-        self.create_subscription(
-            PortStatus,
-            '/upperarm/motor_status',
-            self.port_callback,
-            10)
-        
-        self.create_subscription(
-            PortStatus,
-            '/lowerarm/motor_status',
+            ns+'/motor_states',
             self.port_callback,
             10)
         
         self.create_subscription(
             ArmEncoderStates,
-            '/encoder_status',
+            ns+'/encoder_states',
             self.encoder_callback,
             10
         )
         
         
-        
-        self.shoulder_client = self.create_client(MotorPositionStep, '/shoulder/motor_positions_step')
+        self.get_logger().info(ns+'/shoulder/motor_positions_step')
+        self.shoulder_client = self.create_client(MotorPositionStep, '/gh360/shoulder/motor_positions_step')
         while not self.shoulder_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('shoulder motor position service not available, waiting again...')
 
-        self.upperarm_client = self.create_client(MotorPositionStep, '/upperarm/motor_positions_step')
+        self.upperarm_client = self.create_client(MotorPositionStep, ns+'/upperarm/motor_positions_step')
         while not self.upperarm_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('upperarm motor position service not available, waiting again...')
 
-        self.lowerarm_client = self.create_client(MotorPositionStep, '/lowerarm/motor_positions_step')
+        self.lowerarm_client = self.create_client(MotorPositionStep, ns+'/lowerarm/motor_positions_step')
         while not self.lowerarm_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('lowerarm motor position service not available, waiting again...')
 
-        self.shoulder_shutdown_client = self.create_client(SetBool, '/shoulder/motor_set_torque')
+        self.shoulder_shutdown_client = self.create_client(SetBool, ns+'/shoulder/motor_set_torque')
         while not self.shoulder_shutdown_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('shoulder motor torque service not available, waiting again...')
 
-        self.upperarm_shutdown_client = self.create_client(SetBool, '/upperarm/motor_set_torque')
+        self.upperarm_shutdown_client = self.create_client(SetBool, ns+'/upperarm/motor_set_torque')
         while not self.upperarm_shutdown_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('upperarm motor torque service not available, waiting again...')
 
-        self.lowerarm_shutdown_client = self.create_client(SetBool, '/lowerarm/motor_set_torque')
+        self.lowerarm_shutdown_client = self.create_client(SetBool, ns+'/lowerarm/motor_set_torque')
         while not self.lowerarm_shutdown_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('lowerarm motor torque service not available, waiting again...')
         
@@ -222,6 +213,23 @@ class Monitor(Node):
             _port_name=port_name,
         )
         self.gui_motors.append(new_motor)
+
+class GUIJoint:
+    def __init__(self, _joint_name, _port_name, _joint_angle):
+        self.joint_name = _joint_name
+        self.joint_angle = _joint_angle
+        self.motors = []
+
+        self.port_name = _port_name
+
+
+class GUIMotor:
+    def __init__(self, _id, _present_pos, _present_vel, _present_current, _port_name):
+        self.id = _id
+        self.port_name = _port_name
+        self.present_pos = _present_pos
+        self.present_vel = _present_vel
+        self.present_current = _present_current
 
 
 def main(args=None):

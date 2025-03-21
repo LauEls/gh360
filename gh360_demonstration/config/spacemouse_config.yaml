@@ -1,0 +1,4 @@
+/gh360_control/spacemouse:
+  ros__parameters:
+    translation_scaler: 0.1
+    rotation_scaler: 0.5

@@ -1,0 +1,5 @@
+string joint_name
+float64 max_joint_angle
+float64 min_joint_angle
+float64 max_motor_current
+float64 min_motor_current

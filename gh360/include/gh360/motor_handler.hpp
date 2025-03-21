@@ -20,7 +20,9 @@
 #include "gh360_interfaces/msg/set_current.hpp"
 #include "gh360_interfaces/srv/motor_position_step.hpp"
 #include "gh360_interfaces/srv/motor_velocity_step.hpp"
+#include "gh360_interfaces/srv/set_joint_limits.hpp"
 #include "std_srvs/srv/set_bool.hpp"
+#include "std_msgs/msg/bool.hpp"
 #include "gh360_interfaces/msg/arm_encoder_states.hpp"
 // #include <DynamixelWorkbench.h>
 // #include <dynamixel_workbench_toolbox/dynamixel_workbench.h>
@@ -29,11 +31,14 @@
 // #include "dynamixel_sdk_custom_interfaces/srv/get_position.hpp"
 
 // #include "motor_dict.hpp"
-#include "mx_106_dict.hpp"
-#include "mx_64_dict.hpp"
-#include "joint.hpp"
-#include "soft_joint.hpp"
-#include "motor_joint.hpp"
+#include "joint_types/motor.hpp"
+#include "motor_dictionaries/mx_106_dict.hpp"
+#include "motor_dictionaries/mx_64_dict.hpp"
+#include "joint_types/joint.hpp"
+#include "joint_types/soft_joint.hpp"
+#include "joint_types/motor_joint.hpp"
+#include "util/dynamixel.hpp"
+#include "util/config_parser.hpp"
 
 using namespace std::chrono_literals;
 
@@ -42,42 +47,53 @@ namespace gh360
     class MotorHandler : public rclcpp::Node
     {
         public:
-
-            // using SetPosition = dynamixel_sdk_custom_interfaces::msg::SetPosition;
-            // using GetPosition = dynamixel_sdk_custom_interfaces::srv::GetPosition;
-
             MotorHandler();
             virtual ~MotorHandler();
 
-            // bool addJoint(std::string joint_name);
-            // bool initJoints(std::vector<std::string> joint_names);
-            bool openPortsAndSetBaudrate();
-            MotorDictionary* getMotorModel(int motor_id);
-            bool setOperatingMode(Joint* joint, int value);
-            bool setPositionControlMode();
-            bool setVelocityControlMode();
-            bool setCurrentControlMode();
-            bool setTorqueEnable(Joint* joint, int value);
-            bool setVelocityProfile(Joint* joint, double value);
-            bool setAccelerationProfile(Joint* joint, double value);
-            // bool setPositionControlMode(uint8_t id);
-            // bool setExtendedPositionControlMode(uint8_t id);
-            bool readPresentPosition();
-            // bool readPresentVelocity();
-            // bool readPresentCurrent();
-            // bool readPresentTemperature();
-            // bool writeGoalPosition();
-            bool setMotorGoalPositions(std::vector<gh360_interfaces::msg::SetPosition> motor_goal_positions);
-            bool setMotorGoalVelocities(std::vector<gh360_interfaces::msg::SetVelocity> motor_goal_velocities);
-            bool setMotorGoalCurrents(std::vector<gh360_interfaces::msg::SetCurrent> motor_goal_currents);
-            bool setDeltaMotorGoalPositions(std::vector<gh360_interfaces::msg::SetPosition> delta_motor_goal_positions);
-            gh360_interfaces::msg::PortStatus getMotorStatus();
-            bool syncRead(uint8_t size, uint8_t address);
-            bool syncWrite(uint8_t size, uint8_t address);
-            bool writeRegister(uint8_t id, int32_t data, uint8_t data_size, uint8_t address);
+            /**
+             * @brief Set goal values for all motors in the joints vector. The type of goal value is determined by the template type T.
+             * @param motor_goal_positions The goal values for the motors.
+             */
+            template <typename T>
+            void setMotorGoal(std::vector<T> motor_goal_positions);
+            
+            /**
+             * @brief Returns the present position, velocity, current and temperature of the motors
+             * @return The present state of the motors as a PortStatus message
+             */
+            gh360_interfaces::msg::PortStatus getMotorStates();
+            
+            /**
+             * @brief Checks if the present current on all the motors are within the safety limits defined by the motor model.
+             * @return True if the current is within the safety limits.
+             */
             bool safetyCheck();
+
+            /**
+             * @brief Initializes the motor positions to the values defined in the motor_init_pos parameter.
+             * @return True if the motor positions are initialized.
+             */
             bool initMotorPositions();
+
+            /**
+             * @brief Safety check for the movement of the motors during initialization as well as detects if the motors finished moving.
+             * @param reference_current If true, the present current of the motors is compared to a reference current.
+             * @param reference_joint_angle If true, the present joint angle is compared to a reference joing angle.
+             * @return True if the movement has been completed.
+             */
             bool initMovementCheck(bool reference_current=false, bool reference_joint_angle=false);
+
+            /**
+             * @brief If the motors are in velocity or current mode, this function checks if the goal values are still being updated.
+             * If the goal values are not updated for more than 200ms, velocity and current goal values are set to 0.
+             */
+            void check_goal_alive();
+
+            /**
+             * @brief Checks if the state of the robot (joints and motors) are within the limits.
+             * If not, the goal velocities and currents are set to 0.
+             */
+            void check_limits();
 
         private:
             void timer_callback();
@@ -85,17 +101,17 @@ namespace gh360
             void motor_goal_current_callback(const gh360_interfaces::msg::SetMotorCurrents::SharedPtr msg);
             void motor_goal_velocity_callback(const gh360_interfaces::msg::SetMotorVelocities::SharedPtr msg);
             void position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
-            void velocity_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorVelocityStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorVelocityStep::Response> response);
-            void delta_position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
+            // void velocity_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorVelocityStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorVelocityStep::Response> response);
+            // void delta_position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
             void set_torque_callback(const std::shared_ptr<std_srvs::srv::SetBool::Request> request, std::shared_ptr<std_srvs::srv::SetBool::Response> response);
             void move_home_callback(const std::shared_ptr<std_srvs::srv::SetBool::Request> request, std::shared_ptr<std_srvs::srv::SetBool::Response> response);
+            void move_home_sub_callback(const std_msgs::msg::Bool::SharedPtr msg);
             void encoder_callback(const gh360_interfaces::msg::ArmEncoderStates::SharedPtr msg);
+            void set_torque_sub_callback(const std_msgs::msg::Bool::SharedPtr msg);
+            void set_joint_limits_callback(const std::shared_ptr<gh360_interfaces::srv::SetJointLimits::Request> request, std::shared_ptr<gh360_interfaces::srv::SetJointLimits::Response> response);
 
-            dynamixel::PortHandler * portHandler;
-            dynamixel::PacketHandler * packetHandler;
-
-            const char* port_name;
-            int baud_rate;
+            DynamixelHandler* dxl_handler;
+            
             int protocol;
             bool torque_start;
             constexpr static int motor_cnt = 2;
@@ -105,36 +121,30 @@ namespace gh360
             bool motors_initiated = false;
             bool emergency_stop = false;
             bool require_encoder_data = true;
+            bool move_home_topic = false;
+         
+            std::chrono::time_point<std::chrono::high_resolution_clock> velocity_goal_timestamp;
+            std::chrono::time_point<std::chrono::high_resolution_clock> current_goal_timestamp;
             int init_state = 0;
-            // std::vector<double> init_reference_current, init_reference_position;
-            std::vector<int> init_motor_side;
 
             rclcpp::TimerBase::SharedPtr timer_;
             rclcpp::Publisher<gh360_interfaces::msg::PortStatus>::SharedPtr motor_state_publisher_;
             rclcpp::Subscription<gh360_interfaces::msg::SetMotorPositions>::SharedPtr motor_goal_positions_subscriber_;
             rclcpp::Service<gh360_interfaces::srv::MotorPositionStep>::SharedPtr position_step_service_;
-            rclcpp::Service<gh360_interfaces::srv::MotorVelocityStep>::SharedPtr velocity_step_service_;
-            rclcpp::Service<gh360_interfaces::srv::MotorPositionStep>::SharedPtr delta_position_step_service_;
+            // rclcpp::Service<gh360_interfaces::srv::MotorVelocityStep>::SharedPtr velocity_step_service_;
+            // rclcpp::Service<gh360_interfaces::srv::MotorPositionStep>::SharedPtr delta_position_step_service_;
             rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_torque_service_;
             rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr move_home_service_;
+            rclcpp::Service<gh360_interfaces::srv::SetJointLimits>::SharedPtr set_joint_limits_service_;
             rclcpp::Subscription<gh360_interfaces::msg::ArmEncoderStates>::SharedPtr encoder_subscriber_;
             rclcpp::Subscription<gh360_interfaces::msg::SetMotorCurrents>::SharedPtr motor_goal_currents_subscriber_;
             rclcpp::Subscription<gh360_interfaces::msg::SetMotorVelocities>::SharedPtr motor_goal_velocities_subscriber_;
+            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr move_home_subscriber_;
+            rclcpp::Subscription<std_msgs::msg::Bool>::SharedPtr set_torque_subscriber_;
 
             std::vector<std::string> joint_names;
             std::vector<Joint*> joints;
-            // std::string joint_type;
-            // int right_id;
-            // int left_id;
-
-            // gh360::MX_106_DICT* motor_test = new gh360::MX_106_DICT(2);
-
-            // uint16_t model_number = 0;
-            // uint8_t dxl_id[motor_cnt] = {30, 31};
-            // std::vector<MotorDictionary*> motor_dicts;
-
-            // DynamixelWorkbench dxl_wb;
-            const char *log;
+           
     };
 
 }

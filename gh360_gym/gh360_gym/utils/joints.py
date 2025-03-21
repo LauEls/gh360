@@ -1,5 +1,12 @@
 import numpy as np
 
+class Joint:
+    def __init__(self):
+        self.joint_name = ""
+        self.joint_angle = 0.0
+        self.joint_velocity = 0.0
+
+
 class SoftJoint:
     def __init__(self,
                  joint_name,

@@ -109,11 +109,7 @@ def motor_torque_off():
 
     process_handler = ProcessHandler()
     process_handler.add_process(
-        f'{pre_command} ros2 service call /shoulder/motor_set_torque std_srvs/srv/SetBool "{{data: False}}"')
-    process_handler.add_process(
-        f'{pre_command} ros2 service call /upperarm/motor_set_torque std_srvs/srv/SetBool "{{data: False}}"')
-    process_handler.add_process(
-        f'{pre_command} ros2 service call /lowerarm/motor_set_torque std_srvs/srv/SetBool "{{data: False}}"')
+        f'{pre_command} ros2 service call /gh360_control/robot_stop std_srvs/srv/SetBool "{{data: True}}"')
     process_handler.add_process(
         f'{pre_command} ros2 service call /door/motor_set_torque std_srvs/srv/SetBool "{{data: False}}"',
         env=Env.door)
@@ -144,11 +140,9 @@ def move_home():
 
     process_handler = ProcessHandler()
     process_handler.add_process(
-        f'{pre_command} ros2 service call /shoulder/motor_move_home std_srvs/srv/SetBool "{{data: True}}"')
+        f'{pre_command} ros2 service call /gh360_control/robot_stop std_srvs/srv/SetBool "{{data: False}}"')
     process_handler.add_process(
-        f'{pre_command} ros2 service call /upperarm/motor_move_home std_srvs/srv/SetBool "{{data: True}}"')
-    process_handler.add_process(
-        f'{pre_command} ros2 service call /lowerarm/motor_move_home std_srvs/srv/SetBool "{{data: True}}"')
+        f'{pre_command} ros2 service call /gh360_control/move_home std_srvs/srv/SetBool "{{data: True}}"')
 
     action_handler = KeyActionHandler(
         process_handler=process_handler,
@@ -162,10 +156,10 @@ def spacemouse_teleop():
 
     process_handler = ProcessHandler()
     process_handler.add_process(
-        f'{pre_command} ros2 launch gh360 spacemouse_teleop.launch.py')
-    process_handler.add_process(
-        f'{pre_command} ros2 run gh360_examples door_motor_control',
-        env=Env.door)
+        f'{pre_command} ros2 launch gh360_control spacemouse_teleop.launch.py')
+    # process_handler.add_process(
+    #     f'{pre_command} ros2 run gh360_examples door_motor_control',
+    #     env=Env.door)
     
     action_handler = KeyActionHandler(
         process_handler=process_handler,
@@ -184,7 +178,7 @@ def demo_gui():
     action_handler = KeyActionHandler(
         process_handler=process_handler,
         on_icon=load_icon_byte_arr('record_icon.png'),
-        off_icon=load_icon_byte_arr('record_icon.png'))
+        off_icon=load_icon_byte_arr('record_icon.png', overlay=True))
     
     return action_handler
 
