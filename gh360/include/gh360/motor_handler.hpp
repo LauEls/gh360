@@ -20,7 +20,7 @@
 #include "gh360_interfaces/msg/set_current.hpp"
 #include "gh360_interfaces/srv/motor_position_step.hpp"
 #include "gh360_interfaces/srv/motor_velocity_step.hpp"
-#include "gh360_interfaces/srv/set_robot_limits.hpp"
+#include "gh360_interfaces/srv/set_joint_limits.hpp"
 #include "std_srvs/srv/set_bool.hpp"
 #include "std_msgs/msg/bool.hpp"
 #include "gh360_interfaces/msg/arm_encoder_states.hpp"
@@ -108,7 +108,7 @@ namespace gh360
             void move_home_sub_callback(const std_msgs::msg::Bool::SharedPtr msg);
             void encoder_callback(const gh360_interfaces::msg::ArmEncoderStates::SharedPtr msg);
             void set_torque_sub_callback(const std_msgs::msg::Bool::SharedPtr msg);
-            void set_robot_limits_callback(const std::shared_ptr<gh360_interfaces::srv::SetRobotLimits::Request> request, std::shared_ptr<gh360_interfaces::srv::SetRobotLimits::Response> response);
+            void set_joint_limits_callback(const std::shared_ptr<gh360_interfaces::srv::SetJointLimits::Request> request, std::shared_ptr<gh360_interfaces::srv::SetJointLimits::Response> response);
 
             DynamixelHandler* dxl_handler;
             
@@ -135,7 +135,7 @@ namespace gh360
             // rclcpp::Service<gh360_interfaces::srv::MotorPositionStep>::SharedPtr delta_position_step_service_;
             rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_torque_service_;
             rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr move_home_service_;
-            rclcpp::Service<gh360_interfaces::srv::SetRobotLimits>::SharedPtr set_robot_limits_service_;
+            rclcpp::Service<gh360_interfaces::srv::SetJointLimits>::SharedPtr set_joint_limits_service_;
             rclcpp::Subscription<gh360_interfaces::msg::ArmEncoderStates>::SharedPtr encoder_subscriber_;
             rclcpp::Subscription<gh360_interfaces::msg::SetMotorCurrents>::SharedPtr motor_goal_currents_subscriber_;
             rclcpp::Subscription<gh360_interfaces::msg::SetMotorVelocities>::SharedPtr motor_goal_velocities_subscriber_;

@@ -6,6 +6,8 @@
       joint_type: "soft_joint"
       min_joint_angle: -1.5708
       max_joint_angle: 0.7
+      radius_active_pulley: 0.018
+      radius_passive_pulley: 0.0745
       right:
         motor_id: 1
       left:
@@ -14,6 +16,8 @@
       joint_type: "soft_joint"
       min_joint_angle: -1.4
       max_joint_angle: 1.4
+      radius_active_pulley: 0.018
+      radius_passive_pulley: 0.0505
       right:
         motor_id: 3
       left:
@@ -22,6 +26,8 @@
       joint_type: "soft_joint"
       min_joint_angle: 0.0
       max_joint_angle: 1.0
+      radius_active_pulley: 0.018
+      radius_passive_pulley: 0.05
       right:
         motor_id: 5
       left:
@@ -30,6 +36,8 @@
       joint_type: "soft_joint"
       min_joint_angle: -1.0
       max_joint_angle: 3.0
+      radius_active_pulley: 0.0156
+      radius_passive_pulley: 0.043
       right:
         motor_id: 7
       left:
@@ -38,6 +46,8 @@
       joint_type: "soft_joint"
       min_joint_angle: -0.1
       max_joint_angle: 2.1
+      radius_active_pulley: 0.0156
+      radius_passive_pulley: 0.04
       right:
         motor_id: 10
       left:
@@ -51,6 +61,8 @@
       joint_type: "soft_joint"
       min_joint_angle: -1.5
       max_joint_angle: 1.5
+      radius_active_pulley: 0.0156
+      radius_passive_pulley: 0.03
       right:
         motor_id: 13
       left:
@@ -165,25 +177,3 @@
       offset: 4.04
       inverter: 1
 
-/gh360_control/joint_velocity:
-  ros__parameters:
-    max_motor_velocity: 10.0
-    control_mode: "open_loop"
-    shoulder_yaw:
-      radius_active_pulley: 0.018
-      radius_passive_pulley: 0.0745
-    shoulder_roll:
-      radius_active_pulley: 0.018
-      radius_passive_pulley: 0.0505
-    shoulder_pitch:
-      radius_active_pulley: 0.018
-      radius_passive_pulley: 0.05
-    upperarm_roll:
-      radius_active_pulley: 0.0156
-      radius_passive_pulley: 0.043
-    elbow:
-      radius_active_pulley: 0.0156
-      radius_passive_pulley: 0.04
-    wrist_pitch:
-      radius_active_pulley: 0.0156
-      radius_passive_pulley: 0.03

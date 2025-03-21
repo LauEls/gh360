@@ -46,8 +46,8 @@ class GH360Teleop(Node):
         self.btn2_pressed = False
 
 
-        self.save_file_path = '/home/laurenz/phd_project/ros2_gh360_ws/src/gh360/gh360_examples/data/spacemouse_demonstrations/door/gh360_door_demonstration_v1.npy'
-        config_file = '/home/laurenz/phd_project/TD7/runs/door/real_gh360/motor_vel/online/v6_eef_vel_test/variant.json'
+        self.save_file_path = '/home/laurenz/phd_project/ros2_gh360_ws/src/gh360/gh360_demonstration/gh360_demonstration/data/spacemouse_demonstrations/door/gh360_door_demonstration_v2.npy'
+        config_file = '/home/laurenz/phd_project/TD7/runs/door/real_gh360/eef_vel/online/v7_refactor_test/variant.json'
         self.expert_paths = ''
 
         # kwargs_fpath = os.path.join(load_dir, "variant.json")
@@ -60,9 +60,9 @@ class GH360Teleop(Node):
             
         env_config = variant["environment_kwargs"]
         env_name = variant["environment_kwargs"].pop("env_name")
-        variant["environment_kwargs"].pop("max_joint_pos")
-        variant["environment_kwargs"].pop("min_joint_pos")
-        variant["environment_kwargs"].pop("max_current")
+        # variant["environment_kwargs"].pop("max_joint_pos")
+        # variant["environment_kwargs"].pop("min_joint_pos")
+        # variant["environment_kwargs"].pop("max_current")
 
         raw_env = gym.make('gh360_gym/'+env_name, **env_config, node=self)
         self.env = NormalizedBoxEnv(raw_env)
@@ -140,7 +140,7 @@ class GH360Teleop(Node):
         self.get_logger().info("Collecting expert demonstrations")
         paths = collect_demonstrations(self, mode, num_eps, self.expert_paths)
         self.get_logger().info("Expert demonstrations collected")
-        
+        self.env.reset()
         file_array = np.array(paths)
         np.save(self.save_file_path, file_array)
 

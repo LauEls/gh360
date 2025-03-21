@@ -31,6 +31,14 @@ def generate_launch_description():
         parameters=[robot_config_file, controller_config_file],
         output='screen')
     
+    joint_position_node = Node(
+        package='gh360_control',
+        executable='joint_position',
+        name='joint_position',
+        namespace='gh360_control',
+        parameters=[robot_config_file, controller_config_file],
+        output='screen')
+    
     motor_position_node = Node(
         package='gh360_control',
         executable='motor_position',
@@ -53,10 +61,20 @@ def generate_launch_description():
         namespace='gh360_control',
         output='screen')
     
+    robot_limits_node = Node(
+        package='gh360_control',
+        executable='robot_limits',
+        name='robot_limits',
+        namespace='gh360_control',
+        parameters=[robot_config_file],
+        output='screen')
+    
     return LaunchDescription([
         joint_velocity_node,
+        joint_position_node,
         eef_velocity_node,
         motor_position_node,
         move_home_node,
-        robot_stop_node
+        robot_stop_node,
+        robot_limits_node
     ])

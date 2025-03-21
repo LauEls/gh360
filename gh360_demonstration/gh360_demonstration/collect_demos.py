@@ -22,6 +22,7 @@ def collect_demonstrations(node, mode, num_eps: int, expert_episodes=None):
         eps += 1
 
     node.get_logger().info(f"Collected {eps} episodes with {steps} steps. Start generating random data.")
+    
     # rnd_steps = 0
     # while rnd_steps < steps:
     #     path = self.exploration_rollout()

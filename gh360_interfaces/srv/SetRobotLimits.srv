@@ -1,7 +1,5 @@
 float64[] max_joint_angles
 float64[] min_joint_angles
-float64[] max_motor_velocities
-float64[] min_motor_velocities
 float64[] max_motor_currents
 float64[] min_motor_currents
 ---

@@ -84,7 +84,7 @@ gh360::MotorHandler::MotorHandler()
     
     this->set_torque_service_ = this->create_service<std_srvs::srv::SetBool>("motor_set_torque", std::bind(&gh360::MotorHandler::set_torque_callback, this, std::placeholders::_1, std::placeholders::_2));
     
-    this->set_robot_limits_service_ = this->create_service<gh360_interfaces::srv::SetRobotLimits>("set_robot_limits", std::bind(&gh360::MotorHandler::set_robot_limits_callback, this, std::placeholders::_1, std::placeholders::_2));
+    this->set_joint_limits_service_ = this->create_service<gh360_interfaces::srv::SetJointLimits>("set_joint_limits", std::bind(&gh360::MotorHandler::set_joint_limits_callback, this, std::placeholders::_1, std::placeholders::_2));
 
     this->motor_goal_positions_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorPositions>(ns+"/motor_goal_position", 10, std::bind(&gh360::MotorHandler::motor_goal_positions_callback, this, std::placeholders::_1));
     this->motor_goal_currents_subscriber_ = this->create_subscription<gh360_interfaces::msg::SetMotorCurrents>(ns+"/motor_goal_current", 10, std::bind(&gh360::MotorHandler::motor_goal_current_callback, this, std::placeholders::_1));
@@ -573,38 +573,24 @@ void gh360::MotorHandler::position_step_callback(const std::shared_ptr<gh360_int
 
 }
 
-void gh360::MotorHandler::set_robot_limits_callback(const std::shared_ptr<gh360_interfaces::srv::SetRobotLimits::Request> request, std::shared_ptr<gh360_interfaces::srv::SetRobotLimits::Response> response)
+void gh360::MotorHandler::set_joint_limits_callback(const std::shared_ptr<gh360_interfaces::srv::SetJointLimits::Request> request, std::shared_ptr<gh360_interfaces::srv::SetJointLimits::Response> response)
 {
-    bool max_joint_angles_set = false;
-    bool min_joint_angles_set = false;
-    bool max_motor_currents_set = false;
-    bool min_motor_currents_set = false;
-    bool max_motor_velocities_set = false;
-    bool min_motor_velocities_set = false;
-
-    unsigned int motor_cnt = 0;
+    RCLCPP_INFO(this->get_logger(), "Setting joint limits");
     for (unsigned int i=0; i < this->joints.size(); i++)
     {
-        motor_cnt += this->joints[i]->get_motor_cnt();
-    }
-
-    if (request->max_joint_angles.size() == this->joints.size()) max_joint_angles_set = true;
-    if (request->min_joint_angles.size() == this->joints.size()) min_joint_angles_set = true;
-    if (request->max_motor_currents.size() == motor_cnt) max_motor_currents_set = true;
-    if (request->min_motor_currents.size() == motor_cnt) min_motor_currents_set = true;
-    if (request->max_motor_velocities.size() == motor_cnt) max_motor_velocities_set = true;
-    if (request->min_motor_velocities.size() == motor_cnt) min_motor_velocities_set = true;
-
-    for (unsigned int i=0; i < this->joints.size(); i++)
-    {
-        if (max_joint_angles_set) this->joints[i]->set_max_joint_angle(request->max_joint_angles[i]);
-        if (min_joint_angles_set) this->joints[i]->set_min_joint_angle(request->min_joint_angles[i]);
-        for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
+        for (unsigned int j=0; j < request->joint_limits.size(); j++)
         {
-            if (max_motor_currents_set) this->joints[i]->get_motor(j)->set_max_current(request->max_motor_currents[i*this->joints[i]->get_motor_cnt()+j]);
-            if (min_motor_currents_set) this->joints[i]->get_motor(j)->set_min_current(request->min_motor_currents[i*this->joints[i]->get_motor_cnt()+j]);
-            if (max_motor_velocities_set) this->joints[i]->get_motor(j)->set_max_velocity(request->max_motor_velocities[i*this->joints[i]->get_motor_cnt()+j]);
-            if (min_motor_velocities_set) this->joints[i]->get_motor(j)->set_min_velocity(request->min_motor_velocities[i*this->joints[i]->get_motor_cnt()+j]);
+            if (request->joint_limits[j].joint_name == this->joints[i]->get_joint_name())
+            {
+                this->joints[i]->set_max_joint_angle(request->joint_limits[j].max_joint_angle);
+                this->joints[i]->set_min_joint_angle(request->joint_limits[j].min_joint_angle);
+
+                for (int k=0; k<this->joints[i]->get_motor_cnt(); k++)
+                {
+                    this->joints[i]->get_motor(k)->set_max_current(request->joint_limits[j].max_motor_current);
+                    this->joints[i]->get_motor(k)->set_min_current(request->joint_limits[j].min_motor_current);
+                }
+            }
         }
     }
 

@@ -65,6 +65,9 @@ ament_target_dependencies(move_home gh360 rclcpp std_srvs std_msgs gh360_interfa
 add_executable(robot_stop src/robot_stop.cpp)
 ament_target_dependencies(robot_stop gh360 rclcpp std_srvs std_msgs gh360_interfaces)
 
+add_executable(robot_limits src/robot_limits.cpp)
+ament_target_dependencies(robot_limits gh360 rclcpp gh360_interfaces)
+
 install(DIRECTORY include/
   DESTINATION include
 )
@@ -76,6 +79,7 @@ install(TARGETS
   motor_position
   move_home
   robot_stop
+  robot_limits
   teleop_eef_velocity
   DESTINATION lib/${PROJECT_NAME})
 
