@@ -25,8 +25,8 @@ class EEFVelocityController(BaseController):
         self.control_dim = 6
         # print("control dimensions: ", self.control_dim)
 
-        self.input_max = np.ones(self.control_dim)
-        self.input_min = -np.ones(self.control_dim)
+        # self.input_max = np.ones(self.control_dim)
+        # self.input_min = -np.ones(self.control_dim)
         if len(input_max) == self.control_dim:
             self.max_multiplier = input_max
         else:
@@ -35,6 +35,9 @@ class EEFVelocityController(BaseController):
             self.min_multiplier = input_min
         else:
             self.min_multiplier = -np.ones(self.control_dim)
+
+        self.input_max = np.ones(self.control_dim)
+        self.input_min = -np.ones(self.control_dim)
 
         self.last_time = 0
 
@@ -47,6 +50,12 @@ class EEFVelocityController(BaseController):
             self.last_time = time.time()
 
         action = np.clip(action, self.input_min, self.input_max)
+        for i in range(self.control_dim):
+            if action[i] > 0.0:
+                action[i] *= self.max_multiplier[i]
+            else: 
+                action[i] *= self.min_multiplier[i]
+                
         eef_goal_vel = Twist()
         eef_goal_vel.linear.x = float(action[0])
         eef_goal_vel.linear.y = float(action[1])

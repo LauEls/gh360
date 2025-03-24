@@ -62,11 +62,11 @@ class BaseController:
 
         self.node.get_logger().info("Joint and Motor states received!")
         msg = SetRobotLimits.Request()
-        if len(max_joint_pos) == self.joint_cnt and len(min_joint_pos) == self.joint_cnt and len(max_current) == self.joint_cnt and len(min_current) == self.joint_cnt: 
+        if len(max_joint_pos) == self.joint_cnt and len(min_joint_pos) == self.joint_cnt: 
             msg.max_joint_angles = max_joint_pos
             msg.min_joint_angles = min_joint_pos
-            msg.max_motor_currents = max_current
-            msg.min_motor_currents = min_current
+            # msg.max_motor_currents = max_current
+            # msg.min_motor_currents = min_current
 
             future_set_robot_limits = self.client_set_robot_limits.call_async(msg)
             rclpy.spin_until_future_complete(self.node, future_set_robot_limits)
@@ -128,9 +128,9 @@ class BaseController:
 
             if not self.robot_safety_check():
                     # wait for user_input
-                    self.set_motor_torque(False)
+                    self.stop_robot(True)
                     input("Press Enter to continue...")
-                    self.set_motor_torque(True)
+                    self.stop_robot(False)
 
         t_control_loop = time.time() - self.last_time
         self.last_time = time.time()
