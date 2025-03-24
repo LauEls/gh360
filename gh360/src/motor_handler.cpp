@@ -585,11 +585,13 @@ void gh360::MotorHandler::set_joint_limits_callback(const std::shared_ptr<gh360_
                 this->joints[i]->set_max_joint_angle(request->joint_limits[j].max_joint_angle);
                 this->joints[i]->set_min_joint_angle(request->joint_limits[j].min_joint_angle);
 
-                // for (int k=0; k<this->joints[i]->get_motor_cnt(); k++)
-                // {
-                //     this->joints[i]->get_motor(k)->set_max_current(request->joint_limits[j].max_motor_current);
-                //     this->joints[i]->get_motor(k)->set_min_current(request->joint_limits[j].min_motor_current);
-                // }
+                for (int k=0; k<this->joints[i]->get_motor_cnt(); k++)
+                {
+                    if (request->joint_limits[j].max_motor_current > 0) this->joints[i]->get_motor(k)->set_max_current(request->joint_limits[j].max_motor_current);
+                    if (request->joint_limits[j].min_motor_current < 0) this->joints[i]->get_motor(k)->set_min_current(request->joint_limits[j].min_motor_current);
+                    // this->joints[i]->get_motor(k)->set_max_current(request->joint_limits[j].max_motor_current);
+                    // this->joints[i]->get_motor(k)->set_min_current(request->joint_limits[j].min_motor_current);
+                }
             }
         }
     }

@@ -10,7 +10,7 @@ from rclpy.node import Node
 
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import JointState
-from gh360_interfaces.msg import SpaceMouse
+from gh360_interfaces.msg import SpaceMouse, PortStatus
 
 import sys
 from robosuite.wrappers import GymWrapper
@@ -35,6 +35,9 @@ class GH360Teleop(Node):
             'spacemouse',
             self.spacemouse_callback,
             10)
+        
+        self.create_subscription(JointState,'/gh360/joint_states',self.joint_states_callback,10)
+        self.create_subscription(PortStatus,'/gh360/motor_states_sorted',self.motor_status_callback,10)
         
         # self.create_subscription(JointState, '/inverse_jacobian', self.inverse_jacobian_callback, 10)
         
@@ -66,6 +69,12 @@ class GH360Teleop(Node):
 
         raw_env = gym.make('gh360_gym/'+env_name, **env_config, node=self)
         self.env = NormalizedBoxEnv(raw_env)
+
+        self.max_joint_pos = np.ones(self.env.controller.joint_cnt)*-1000
+        self.min_joint_pos = np.ones(self.env.controller.motor_cnt)*1000
+        self.max_current = np.ones(self.env.controller.motor_cnt)*-1000
+        self.min_current = np.ones(self.env.controller.motor_cnt)*1000
+
 
         self.ep_length = variant["episode_length"]
 
@@ -115,6 +124,58 @@ class GH360Teleop(Node):
             else:
                 self.get_logger().info("Stopped recording data")
 
+    def joint_states_callback(self, msg):
+        # self.joint_cnt = len(msg.name)
+
+        # if len(self.joints) != self.joint_cnt:
+        #     self.joints = []
+        #     for i in range(self.joint_cnt):
+        #         self.joints.append(Joint())
+
+        for i in range(len(msg.name)):
+            if msg.position[i] > self.max_joint_pos[i]:
+                self.max_joint_pos[i] = msg.position[i]
+            if msg.position[i] < self.min_joint_pos[i]:
+                self.min_joint_pos[i] = msg.position[i]
+
+            # self.joints[i].joint_name = msg.name[i]
+            # self.joints[i].joint_angle = msg.position[i]
+            # self.joints[i].joint_velocity = msg.velocity[i]
+
+    def motor_status_callback(self, msg):
+        # print("recieved message!")
+        # self.motor_cnt = len(msg.motors)
+        # if len(self.motors) != self.motor_cnt:
+        #     self.motors = []
+        #     for i in range(self.motor_cnt):
+        #         self.motors.append(Motor())
+        
+        for i, motor in enumerate(msg.motors):
+            if motor.present_current > self.max_current[i]:
+                self.max_joint_pos[i] = motor.present_current
+            if motor.present_current < self.min_current[i]:
+                self.min_joint_pos[i] = motor.present_current
+
+            # self.motors[i].motor_id = motor.motor_id
+            # self.motors[i].safety_check = motor.safety_check
+            # self.motors[i].moving = motor.moving
+            # self.motors[i].present_current = motor.present_current
+            # self.motors[i].present_position = motor.present_position
+            # self.motors[i].present_velocity = motor.present_velocity
+
+    def write_limits_file(self):
+        self.get_logger().info("Writing limits to file")
+        limits = {
+            "max_joint_pos": self.max_joint_pos.tolist(),
+            "min_joint_pos": self.min_joint_pos.tolist(),
+            "max_current": self.max_current.tolist(),
+            "min_current": self.min_current.tolist()
+        }
+
+        with open('/home/laurenz/phd_project/ros2_gh360_ws/src/gh360/gh360_demonstration/gh360_demonstration/data/spacemouse_demonstrations/door/limits.json', 'w') as f:
+            json.dump(limits, f)
+        self.get_logger().info("Limits written to file")
+
     def expert_action(self, observation):
         if self.reset:
             self.reset_env()
@@ -148,12 +209,13 @@ class GH360Teleop(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    robosuite_teleop = GH360Teleop()
+    gh360_teleop = GH360Teleop()
 
     # rclpy.spin(robosuite_teleop)
     # while True:
     #     rclpy.spin_once(robosuite_teleop)
-    robosuite_teleop.collect_demonstrations("expert", 10)
+    gh360_teleop.collect_demonstrations("expert", 10)
+    gh360_teleop.write_limits_file()
     # robosuite_teleop.collect_gradual_demonstrations(50)
 
     
