@@ -15,8 +15,8 @@ from gh360_interfaces.msg import SpaceMouse, PortStatus
 import sys
 from robosuite.wrappers import GymWrapper
 from .collect_demos import collect_demonstrations
-sys.path.insert(0, '/home/laurenz/phd_project/sac/sac_2')
-from wrappers import NormalizedBoxEnv
+# sys.path.insert(0, '/home/laurenz/phd_project/sac/sac_2')
+# from wrappers import NormalizedBoxEnv
 
 
 class GH360Teleop(Node):
@@ -36,8 +36,7 @@ class GH360Teleop(Node):
             self.spacemouse_callback,
             10)
         
-        self.create_subscription(JointState,'/gh360/joint_states',self.joint_states_callback,10)
-        self.create_subscription(PortStatus,'/gh360/motor_states_sorted',self.motor_status_callback,10)
+        
         
         # self.create_subscription(JointState, '/inverse_jacobian', self.inverse_jacobian_callback, 10)
         
@@ -48,9 +47,11 @@ class GH360Teleop(Node):
         self.btn1_pressed = False
         self.btn2_pressed = False
 
-
-        self.save_file_path = '/home/laurenz/phd_project/ros2_gh360_ws/src/gh360/gh360_demonstration/gh360_demonstration/data/spacemouse_demonstrations/door/gh360_door_demonstration_v2.npy'
-        config_file = '/home/laurenz/phd_project/TD7/runs/door/real_gh360/eef_vel/online/v7_refactor_test/variant.json'
+        self.save_file = '/home/gh360/ros2_gh360_ws/src/gh360/gh360_demonstration/data/spacemouse_demonstrations/door/gh360_door_demonstration_v3'
+        self.save_file_path = self.save_file+'.npy'
+        # config_file = '/home/laurenz/phd_project/TD7/runs/door/real_gh360/eef_vel/online/v7_refactor_test/variant.json'
+        self.config_path = '/home/gh360/TD7/runs/door/real_gh360/eef_vel/online/v1_refactor_test/'
+        config_file = self.config_path+'variant.json'
         self.expert_paths = ''
 
         # kwargs_fpath = os.path.join(load_dir, "variant.json")
@@ -61,19 +62,26 @@ class GH360Teleop(Node):
             print("Error opening default controller filepath at: {}. "
                 "Please check filepath and try again.".format(config_file))
             
-        env_config = variant["environment_kwargs"]
+        
         env_name = variant["environment_kwargs"].pop("env_name")
-        # variant["environment_kwargs"].pop("max_joint_pos")
-        # variant["environment_kwargs"].pop("min_joint_pos")
+        variant["environment_kwargs"].pop("input_max")
+        variant["environment_kwargs"].pop("input_min")
+        variant["environment_kwargs"].pop("max_joint_pos")
+        variant["environment_kwargs"].pop("min_joint_pos")
+        env_config = variant["environment_kwargs"]
         # variant["environment_kwargs"].pop("max_current")
 
         raw_env = gym.make('gh360_gym/'+env_name, **env_config, node=self)
-        self.env = NormalizedBoxEnv(raw_env)
+        # self.env = NormalizedBoxEnv(raw_env)
+        self.env = raw_env
 
         self.max_joint_pos = np.ones(self.env.controller.joint_cnt)*-1000
-        self.min_joint_pos = np.ones(self.env.controller.motor_cnt)*1000
+        self.min_joint_pos = np.ones(self.env.controller.joint_cnt)*1000
         self.max_current = np.ones(self.env.controller.motor_cnt)*-1000
         self.min_current = np.ones(self.env.controller.motor_cnt)*1000
+
+        self.create_subscription(JointState,'/gh360/joint_states',self.joint_states_callback,10)
+        self.create_subscription(PortStatus,'/gh360/motor_states_sorted',self.motor_status_callback,10)
 
 
         self.ep_length = variant["episode_length"]
@@ -152,9 +160,9 @@ class GH360Teleop(Node):
         
         for i, motor in enumerate(msg.motors):
             if motor.present_current > self.max_current[i]:
-                self.max_joint_pos[i] = motor.present_current
+                self.max_current[i] = motor.present_current
             if motor.present_current < self.min_current[i]:
-                self.min_joint_pos[i] = motor.present_current
+                self.min_current[i] = motor.present_current
 
             # self.motors[i].motor_id = motor.motor_id
             # self.motors[i].safety_check = motor.safety_check
@@ -172,7 +180,7 @@ class GH360Teleop(Node):
             "min_current": self.min_current.tolist()
         }
 
-        with open('/home/laurenz/phd_project/ros2_gh360_ws/src/gh360/gh360_demonstration/gh360_demonstration/data/spacemouse_demonstrations/door/limits.json', 'w') as f:
+        with open(self.save_file+'_limits.json', 'w') as f:
             json.dump(limits, f)
         self.get_logger().info("Limits written to file")
 

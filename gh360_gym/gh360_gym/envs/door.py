@@ -36,7 +36,8 @@ class DoorEnv(gym.Env):
                  input_min=[],
                  max_joint_pos=[],
                  min_joint_pos=[],
-                 max_current=[],
+                 max_motor_current=[],
+                 min_motor_current=[],
                  stiffness_mode = "variable",
                  motor_obs = False,
                  node = None,
@@ -92,7 +93,7 @@ class DoorEnv(gym.Env):
         # self.controller = EqPointController(self.node, op_mode=self.stiffness_mode)
         # self.controller = EqPointController(self.node, stiffness_mode=self.stiffness_mode, input_min=input_min, input_max=input_max)
         # self.controller = MotorVelocityController(self.node, input_min=input_min, input_max=input_max, max_current=max_current, max_joint_pos=max_joint_pos, min_joint_pos=min_joint_pos)
-        self.controller = EEFVelocityController(self.node, input_min=input_min, input_max=input_max, max_current=max_current, max_joint_pos=max_joint_pos, min_joint_pos=min_joint_pos)
+        self.controller = EEFVelocityController(self.node, input_min=input_min, input_max=input_max, max_motor_current=max_motor_current, min_motor_current=min_motor_current, max_joint_pos=max_joint_pos, min_joint_pos=min_joint_pos)
         # self.reset_controller = MotorPositionController(self.node, input_min=input_min, input_max=input_max, max_current=max_current, max_joint_pos=max_joint_pos, min_joint_pos=min_joint_pos)
         print("EEFVelocityController initialized")
         self.reset_controller = JointPositionController(self.node)
