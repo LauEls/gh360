@@ -16,8 +16,8 @@ from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
 
 class EEFVelocityController(BaseController):
-    def __init__(self, node, input_max=[], input_min=[], max_current=[], min_current=[], max_joint_pos=[], min_joint_pos=[]):
-        super().__init__(node, max_joint_pos, min_joint_pos, max_current, min_current)
+    def __init__(self, node, input_max=[], input_min=[], max_motor_current=[], min_motor_current=[], max_joint_pos=[], min_joint_pos=[]):
+        super().__init__(node, max_joint_pos, min_joint_pos, max_motor_current, min_motor_current)
 
         print("Super class initialized")
         self.cmd_eef_vel_publisher = self.node.create_publisher(Twist, '/gh360_control/cmd_eef_vel', 10)
@@ -54,8 +54,8 @@ class EEFVelocityController(BaseController):
             if action[i] > 0.0:
                 action[i] *= self.max_multiplier[i]
             else: 
-                action[i] *= self.min_multiplier[i]
-                
+                action[i] *= -self.min_multiplier[i]
+
         eef_goal_vel = Twist()
         eef_goal_vel.linear.x = float(action[0])
         eef_goal_vel.linear.y = float(action[1])
