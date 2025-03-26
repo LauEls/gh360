@@ -6,7 +6,7 @@
 /gh360_control/joint_velocity:
   ros__parameters:
     control_mode: "open_loop"
-    max_motor_vel: 2.0
+    max_motor_vel: 1.0
 
 /gh360_control/joint_position:
   ros__parameters:

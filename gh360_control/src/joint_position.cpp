@@ -55,7 +55,7 @@ void JointPosition::cmd_joint_pos_callback(const std_msgs::msg::Float64MultiArra
     for (unsigned int i=0; i < this->joints.size(); i++)
     {
         double kp = 2.0;
-        if (this->joints[i]->get_joint_name() == "shoulder_pitch") kp = 6.0;
+        if (this->joints[i]->get_joint_name() == "shoulder_pitch") kp = 4.0;
         // else if (this->joints[i]->get_joint_name() == "upperarm_roll") kp = 3.0;
         else if (this->joints[i]->get_joint_name() == "forearm_roll") kp = 1.0;
         double joint_pos_error = msg->data[i] - this->joints[i]->get_joint_angle();

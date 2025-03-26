@@ -463,6 +463,7 @@ void gh360::MotorHandler::check_limits()
     for (unsigned int i=0; i < this->joints.size(); i++)
     {
         bool limit_reached = false;
+        // if (this->joints[i]->get_joint_name() == "forearm_roll") RCLCPP_INFO(this->get_logger(), "Present Joint Angle: %f, Max Joint Angle: %f", this->joints[i]->get_joint_angle(), this->joints[i]->get_max_joint_angle());
         if (this->joints[i]->get_joint_angle() >= this->joints[i]->get_max_joint_angle())
         {
             for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
@@ -486,13 +487,14 @@ void gh360::MotorHandler::check_limits()
         for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
         {
             Motor * motor = this->joints[i]->get_motor(j);
+            // if (motor->get_motor_id() == 11) RCLCPP_INFO(this->get_logger(), "Present Current: %f, Max Current: %f",motor->get_present_current_adjusted(), motor->get_max_current());
             if (motor->get_present_current_adjusted() >= motor->get_max_current())
             {
                 if (motor->get_goal_position_adjusted() > motor->get_present_position_adjusted()) limit_reached = true;
                 if (motor->get_goal_velocity_adjusted() > 0.0) limit_reached = true;
                 if (motor->get_goal_current_adjusted() > 0.0) limit_reached = true;
             }
-            else if (motor->get_present_current() <= motor->get_min_current())
+            else if (motor->get_present_current_adjusted() <= motor->get_min_current())
             {
                 if (motor->get_goal_position_adjusted() < motor->get_present_position_adjusted()) limit_reached = true;
                 if (motor->get_goal_velocity_adjusted() < 0.0) limit_reached = true;
@@ -502,6 +504,7 @@ void gh360::MotorHandler::check_limits()
 
         if (limit_reached)
         {
+            // RCLCPP_INFO(this->get_logger(), "%s Reached a Current Limit", this->joints[i]->get_joint_name());
             for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
             {
                 Motor * motor = this->joints[i]->get_motor(j);

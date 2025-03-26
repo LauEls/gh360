@@ -13,7 +13,7 @@ from sensor_msgs.msg import JointState
 
 
 class BaseController:
-    def __init__(self, node: Node, max_joint_pos=[], min_joint_pos=[], max_current=[], min_current=[]):
+    def __init__(self, node: Node, max_joint_pos=[], min_joint_pos=[], max_motor_current=[], min_motor_current=[]):
         self. node = node 
 
         self.motor_controller = "velocity"
@@ -65,8 +65,10 @@ class BaseController:
         if len(max_joint_pos) == self.joint_cnt and len(min_joint_pos) == self.joint_cnt: 
             msg.max_joint_angles = max_joint_pos
             msg.min_joint_angles = min_joint_pos
-            # msg.max_motor_currents = max_current
-            # msg.min_motor_currents = min_current
+            msg.max_motor_currents = max_motor_current
+            msg.min_motor_currents = min_motor_current
+
+            self.node.get_logger().info(f"Max Motor Currents: {max_motor_current}, Min Motor Currents: {min_motor_current}")
 
             future_set_robot_limits = self.client_set_robot_limits.call_async(msg)
             rclpy.spin_until_future_complete(self.node, future_set_robot_limits)

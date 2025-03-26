@@ -3,6 +3,14 @@
 RobotLimits::RobotLimits(): Node("robot_limits")
 {
     this->joints = get_robot_joints(this);
+
+    this->joint_cnt = this->joints.size();
+    this->motor_cnt = 0;
+    for (unsigned int i=0; i<this->joints.size(); i++)
+    {
+        for (int j=0; j<this->joints[i]->get_motor_cnt(); j++) this->motor_cnt++;
+    }
+
     this->joint_limits_request = std::make_shared<gh360_interfaces::srv::SetJointLimits::Request>();
 
     this->shoulder_limits_client_ = this->create_client<gh360_interfaces::srv::SetJointLimits>("/gh360/shoulder/set_joint_limits");
@@ -34,12 +42,12 @@ void RobotLimits::robot_limits_callback(const std::shared_ptr<gh360_interfaces::
 
     RCLCPP_INFO(this->get_logger(), "Recieved Robot Limits Request: %s", true ? "true": "false");
 
-    if ((request->max_joint_angles.size() == this->joints.size()) && (request->min_joint_angles.size() == this->joints.size())) joint_angle_limits = true;
+    if ((request->max_joint_angles.size() == this->joint_cnt) && (request->min_joint_angles.size() == this->joint_cnt)) joint_angle_limits = true;
     RCLCPP_INFO(this->get_logger(), "Joint Angle Limits: %s", joint_angle_limits ? "true": "false");
 
-    if ((request->max_motor_currents.size() == this->joints.size()) && (request->min_motor_currents.size() == this->joints.size())) motor_current_limits = true;
+    if ((request->max_motor_currents.size() == this->motor_cnt) && (request->min_motor_currents.size() == this->motor_cnt)) motor_current_limits = true;
     RCLCPP_INFO(this->get_logger(), "Motor Current Limits: %s", motor_current_limits ? "true": "false");
-
+    int motor_cntr = 0;
     for (unsigned int i=0; i < this->joints.size(); i++)
     {
         gh360_interfaces::msg::JointLimits new_joint_limits = gh360_interfaces::msg::JointLimits();
@@ -49,12 +57,17 @@ void RobotLimits::robot_limits_callback(const std::shared_ptr<gh360_interfaces::
             new_joint_limits.max_joint_angle = request->max_joint_angles[i];
             new_joint_limits.min_joint_angle = request->min_joint_angles[i];
         }
+        
         if (motor_current_limits)
         {
-            new_joint_limits.max_motor_current = request->max_motor_currents[i];
-            new_joint_limits.min_motor_current = request->min_motor_currents[i];
+            for (int j=0; j < this->joints[i]->get_motor_cnt(); j++)
+            {
+                new_joint_limits.max_motor_current = request->max_motor_currents[motor_cntr];
+                new_joint_limits.min_motor_current = request->min_motor_currents[motor_cntr];
+
+                motor_cntr++;
+            }
         }
-       
         this->joint_limits_request->joint_limits.push_back(new_joint_limits);
     }
 

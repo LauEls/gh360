@@ -27,5 +27,8 @@ class RobotLimits : public rclcpp::Node
         
         std::vector<Joint*> joints;
         gh360_interfaces::srv::SetJointLimits::Request::SharedPtr joint_limits_request;
+
+        unsigned int joint_cnt;
+        unsigned int motor_cnt;
 };
 #endif // ROBOT_LIMITS_HPP_
