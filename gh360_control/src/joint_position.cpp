@@ -13,6 +13,7 @@ JointPosition::JointPosition(): Node("joint_velocity")
     this->cmd_joint_pos_subscriber_ = this->create_subscription<std_msgs::msg::Float64MultiArray>("cmd_joint_pos", 10, std::bind(&JointPosition::cmd_joint_pos_callback, this, std::placeholders::_1));
     this->motor_velocity_publisher_ = this->create_publisher<gh360_interfaces::msg::SetMotorVelocities>("/gh360/motor_goal_velocity", 10);
     this->joint_position_subscriber_ = this->create_subscription<sensor_msgs::msg::JointState>("/gh360/joint_states", 10, std::bind(&JointPosition::joint_position_callback, this, std::placeholders::_1));
+    this->motor_states_subscriber_ = this->create_subscription<gh360_interfaces::msg::PortStatus>("/gh360/motor_states", 10, std::bind(&JointPosition::motor_states_callback, this, std::placeholders::_1));
     // this->timer_ = this->create_wall_timer(10ms, std::bind(&JointPosition::timer_callback, this));
     RCLCPP_INFO(this->get_logger(), "Joint Velocity node started");
 }
@@ -46,11 +47,33 @@ void JointPosition::joint_position_callback(const sensor_msgs::msg::JointState::
     }
 }
 
+void JointPosition::motor_states_callback(const gh360_interfaces::msg::PortStatus::SharedPtr msg)
+{;
+    if (!(this->motor_states_recieved)) this->motor_states_recieved = true;
+
+    for (unsigned int s=0; s < msg->motors.size(); s++) 
+    {
+        for (unsigned int i=0; i<this->joints.size(); i++)
+        {
+            for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
+            {
+                if (msg->motors[s].motor_id == this->joints[i]->get_motor(j)->get_motor_id())
+                {
+                    this->joints[i]->get_motor(j)->set_present_position_adjusted(msg->motors[s].present_position);
+                    this->joints[i]->get_motor(j)->set_present_velocity_adjusted(msg->motors[s].present_velocity);
+                    this->joints[i]->get_motor(j)->set_present_current_adjusted(msg->motors[s].present_current);
+                }
+            }
+        }
+    }
+}
+
 void JointPosition::cmd_joint_pos_callback(const std_msgs::msg::Float64MultiArray::SharedPtr msg)
 {
     if (!this->joint_states_recieved) return;
     
     this->motor_goal_vel_msg.motor_goal_velocities.clear();
+    double motor_vel_adjustment[2] = {0.0, 0.0};
 
     for (unsigned int i=0; i < this->joints.size(); i++)
     {
@@ -65,8 +88,16 @@ void JointPosition::cmd_joint_pos_callback(const std_msgs::msg::Float64MultiArra
         if (SoftJoint* soft_joint = dynamic_cast<SoftJoint*>(this->joints[i])) 
         {
             motor_vel = joint_vel * (soft_joint->get_radius_passive_pulley() / soft_joint->get_radius_active_pulley());
+            double motor_pos_diff = soft_joint->get_motor(0)->get_present_position_adjusted() - soft_joint->get_motor(1)->get_present_position_adjusted();
+            motor_vel_adjustment[0] = motor_pos_diff * 0.5;
+            motor_vel_adjustment[1] = -motor_pos_diff * 0.5;
         }
-        else motor_vel = joint_vel;
+        else 
+        {
+            motor_vel = joint_vel;
+            motor_vel_adjustment[0] = 0.0;
+            motor_vel_adjustment[1] = 0.0;
+        }
 
         motor_vel = std::max(-this->max_motor_vel, std::min(motor_vel,this->max_motor_vel));
         if (abs(joint_pos_error) < this->joint_pos_accuracy) motor_vel = 0.0;
@@ -75,7 +106,7 @@ void JointPosition::cmd_joint_pos_callback(const std_msgs::msg::Float64MultiArra
         {
             gh360_interfaces::msg::SetVelocity new_velocity = gh360_interfaces::msg::SetVelocity();
             new_velocity.id = this->joints[i]->get_motor(k)->get_motor_id();
-            new_velocity.velocity = motor_vel;
+            new_velocity.velocity = motor_vel+motor_vel_adjustment[k];
             this->motor_goal_vel_msg.motor_goal_velocities.push_back(new_velocity);
         }
     }
