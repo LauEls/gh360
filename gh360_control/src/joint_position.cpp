@@ -89,8 +89,8 @@ void JointPosition::cmd_joint_pos_callback(const std_msgs::msg::Float64MultiArra
         {
             motor_vel = joint_vel * (soft_joint->get_radius_passive_pulley() / soft_joint->get_radius_active_pulley());
             double motor_pos_diff = soft_joint->get_motor(0)->get_present_position_adjusted() - soft_joint->get_motor(1)->get_present_position_adjusted();
-            motor_vel_adjustment[0] = motor_pos_diff * 0.5;
-            motor_vel_adjustment[1] = -motor_pos_diff * 0.5;
+            motor_vel_adjustment[0] = -motor_pos_diff * 0.5;
+            motor_vel_adjustment[1] = motor_pos_diff * 0.5;
         }
         else 
         {

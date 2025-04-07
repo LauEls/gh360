@@ -304,6 +304,10 @@ class DoorEnv(gym.Env):
                 self.door_reset()
 
             self.robot_reset()
+
+            if self.hinge_qpos > 0.04:
+                self.door_reset()
+                self.robot_reset()
             
         # self.handle_pos = self.get_handle_pos()
 
