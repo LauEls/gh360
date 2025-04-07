@@ -17,6 +17,7 @@ class JointPositionController(BaseController):
         
 
         self.control_dim = self.joint_cnt
+        self.stuck_cntr = 0
         # print("control dimensions: ", self.control_dim)
 
         # self.input_max = np.ones(self.control_dim)
@@ -56,6 +57,7 @@ class JointPositionController(BaseController):
         
     def set_goal_trajectory(self, goal_trajectory):
         self.start_time = time.time()
+        self.stuck_cntr = 0
         for goal in goal_trajectory:
             while not self.joint_pos_goal_reached(goal, 0.2, False):
                 self.joint_goal_pos_msg.data = goal
@@ -70,6 +72,7 @@ class JointPositionController(BaseController):
     def joint_pos_goal_reached(self, joint_pos_goal, accuracy, velocity_check=True):
         pos_reached = True
         moving = False
+        
 
         for i, joint in enumerate(self.joints):
             if abs(joint_pos_goal[i] - joint.joint_angle) > accuracy:
@@ -89,12 +92,13 @@ class JointPositionController(BaseController):
             elif not velocity_check:
                 return True
        
-        if (time.time() < self.start_time) > 10:
+        if (time.time() - self.start_time) > 10:
             self.node.get_logger().info(f"Robot seems to be stuck. Trying to recover...")
             self.stop_robot(True)
             time.sleep(3)
             self.stop_robot(False)
             self.start_time = time.time()
+            self.stuck_cntr += 1
         return False
 
 
