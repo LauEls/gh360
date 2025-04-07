@@ -55,6 +55,7 @@ class JointPositionController(BaseController):
 
         
     def set_goal_trajectory(self, goal_trajectory):
+        self.start_time = time.time()
         for goal in goal_trajectory:
             while not self.joint_pos_goal_reached(goal, 0.2, False):
                 self.joint_goal_pos_msg.data = goal
@@ -88,6 +89,12 @@ class JointPositionController(BaseController):
             elif not velocity_check:
                 return True
        
+        if (time.time() < self.start_time) > 10:
+            self.node.get_logger().info(f"Robot seems to be stuck. Trying to recover...")
+            self.stop_robot(True)
+            time.sleep(3)
+            self.stop_robot(False)
+            self.start_time = time.time()
         return False
 
 

@@ -804,7 +804,20 @@ class RecordDemos(Node, TKMT.ThemedTKinterFrame):
             self.get_logger().info("Hybrid Mode")
 
     def open_file(self):
-        file_path = tk.filedialog.askopenfilename(title="Select Configuration File", filetypes=(("json files", "*.json"), ("all files", "*.*")))
+        # f_dialog = tk.Tk()
+        # style = ttk.Style(f_dialog)
+        # style.configure('TEntry', foreground='white')
+        # f_dialog.configure(bg="black")
+        self.root.option_add('*TkFDialog*foreground', 'black')  # set all tk widgets' foreground to red
+        # self.root.option_add('*activeForeground', 'red')  # set all tk widgets' foreground to red
+
+        # style = ttk.Style(self.root)
+        # # style.configure('TEntry', foreground='black')
+        # style.configure('TLabel', foreground='red')
+        # style.configure('TEntry', foreground='red')
+        # style.configure('TMenubutton', foreground='red')
+        # style.configure('TButton', foreground='red')
+        file_path = tk.filedialog.askopenfilename(master=self.root, title="Select Configuration File", filetypes=(("json files", "*.json"), ("all files", "*.*")))
         if file_path:
             self.get_logger().info(f"Opening File: {file_path}")
             # os.system(f'xdg-open "{file_path}"')
