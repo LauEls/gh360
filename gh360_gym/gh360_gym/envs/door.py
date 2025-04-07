@@ -276,7 +276,7 @@ class DoorEnv(gym.Env):
         else:
             reset_trajectory = [self.via_point_pos_1, self.via_point_pos_2, self.robot_reset_pos]
 
-        self.reset_controller.set_goal_trajectory(reset_trajectory)
+        if not self.reset_controller.set_goal_trajectory(reset_trajectory): return False
 
         self.controller.last_time = 0
         time_sum = 0
@@ -289,7 +289,7 @@ class DoorEnv(gym.Env):
         self.reseted = True
         
 
-        return
+        return True
         
 
 
@@ -297,13 +297,14 @@ class DoorEnv(gym.Env):
         # print("resetting")
         # self.controller.reset(robot_eef_pos=self.eef_pos, handle_pos=self.handle_pos, handle_qpos=self.handle_qpos)
         self.node.get_logger().info("Resetting Door Environment")
+        reset_success = False
         if not self.reseted:
             for _ in range(10):
                 rclpy.spin_once(self.node)
             if self.hinge_qpos > 0.04:
                 self.door_reset()
 
-            self.robot_reset()
+            reset_success = self.robot_reset()
 
             if self.hinge_qpos > 0.04:
                 self.door_reset()
@@ -313,10 +314,11 @@ class DoorEnv(gym.Env):
 
         obs = self._get_obs()
         info = self._get_info()
+        info["reset_success"] = reset_success
         # print("finished reset")
         self.reseted = True
         self.node.get_logger().info("Resetting Door Environment Finished")
-        return obs
+        return obs, info
 
     def step(self, action):
         """

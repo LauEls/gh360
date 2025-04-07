@@ -64,10 +64,20 @@ class JointPositionController(BaseController):
                 self.cmd_joint_pos_publisher.publish(self.joint_goal_pos_msg)
                 rclpy.spin_once(self.node)
 
+                if self.stuck_cntr > 3:
+                    self.stop_robot(True)
+                    return False
+
         while not self.joint_pos_goal_reached(goal_trajectory[-1], 0.02):
             self.joint_goal_pos_msg.data = goal_trajectory[-1]
             self.cmd_joint_pos_publisher.publish(self.joint_goal_pos_msg)
             rclpy.spin_once(self.node)
+
+            if self.stuck_cntr > 3:
+                self.stop_robot(True)
+                return False
+
+        return True
 
     def joint_pos_goal_reached(self, joint_pos_goal, accuracy, velocity_check=True):
         pos_reached = True
