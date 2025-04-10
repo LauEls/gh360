@@ -1,6 +1,6 @@
 import numpy as np
 
-file_path = '/home/laurenz/phd_project/ros2_gh360_ws/src/gh360/gh360_demonstration/gh360_demonstration/data/spacemouse_demonstrations/door/gh360_door_demonstration_v2.npy'
+file_path = '/home/laurenz/phd_project/ros2_gh360_ws/src/gh360/gh360_demonstration/data/spacemouse_demonstrations/door/gh360_door_demonstration_v2.npy'
 max_joint_pos = np.ones(7)*-1000
 min_joint_pos = np.ones(7)*1000
 
