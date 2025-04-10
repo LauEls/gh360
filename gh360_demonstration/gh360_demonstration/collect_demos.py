@@ -87,6 +87,7 @@ def rollout(node, mode, expert_steps=0, expert_episodes=None):
             rewards = []
             dones = []
             infos = []
+            success = False
 
             next_observation = node.reset_env()
 

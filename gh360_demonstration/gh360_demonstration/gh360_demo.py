@@ -47,10 +47,10 @@ class GH360Teleop(Node):
         self.btn1_pressed = False
         self.btn2_pressed = False
 
-        self.save_file = '/home/gh360/ros2_gh360_ws/src/gh360/gh360_demonstration/data/spacemouse_demonstrations/door/gh360_door_demonstration_v3'
+        self.save_file = '/home/gh360/ros2_gh360_ws/src/gh360/gh360_demonstration/data/spacemouse_demonstrations/door/gh360_door_demonstration_v6'
         self.save_file_path = self.save_file+'.npy'
         # config_file = '/home/laurenz/phd_project/TD7/runs/door/real_gh360/eef_vel/online/v7_refactor_test/variant.json'
-        self.config_path = '/home/gh360/TD7/runs/door/real_gh360/eef_vel/online/v1_refactor_test/'
+        self.config_path = '/home/gh360/TD7/runs/door/real_gh360/eef_vel/online/v2_constraint_demo/'
         config_file = self.config_path+'variant.json'
         self.expert_paths = ''
 
@@ -64,10 +64,10 @@ class GH360Teleop(Node):
             
         
         env_name = variant["environment_kwargs"].pop("env_name")
-        variant["environment_kwargs"].pop("input_max")
-        variant["environment_kwargs"].pop("input_min")
-        variant["environment_kwargs"].pop("max_joint_pos")
-        variant["environment_kwargs"].pop("min_joint_pos")
+        #variant["environment_kwargs"].pop("input_max")
+        #variant["environment_kwargs"].pop("input_min")
+        # variant["environment_kwargs"].pop("max_joint_pos")
+        # variant["environment_kwargs"].pop("min_joint_pos")
         env_config = variant["environment_kwargs"]
         # variant["environment_kwargs"].pop("max_current")
 
@@ -176,8 +176,8 @@ class GH360Teleop(Node):
         limits = {
             "max_joint_pos": self.max_joint_pos.tolist(),
             "min_joint_pos": self.min_joint_pos.tolist(),
-            "max_current": self.max_current.tolist(),
-            "min_current": self.min_current.tolist()
+            "max_motor_current": self.max_current.tolist(),
+            "min_motor_current": self.min_current.tolist()
         }
 
         with open(self.save_file+'_limits.json', 'w') as f:
@@ -222,7 +222,7 @@ def main(args=None):
     # rclpy.spin(robosuite_teleop)
     # while True:
     #     rclpy.spin_once(robosuite_teleop)
-    gh360_teleop.collect_demonstrations("expert", 10)
+    gh360_teleop.collect_demonstrations("expert", 20)
     gh360_teleop.write_limits_file()
     # robosuite_teleop.collect_gradual_demonstrations(50)
 

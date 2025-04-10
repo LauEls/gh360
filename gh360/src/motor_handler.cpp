@@ -466,6 +466,9 @@ void gh360::MotorHandler::check_limits()
         // if (this->joints[i]->get_joint_name() == "forearm_roll") RCLCPP_INFO(this->get_logger(), "Present Joint Angle: %f, Max Joint Angle: %f", this->joints[i]->get_joint_angle(), this->joints[i]->get_max_joint_angle());
         if (this->joints[i]->get_joint_angle() >= this->joints[i]->get_max_joint_angle())
         {
+            // RCLCPP_INFO(this->get_logger(), "%s Reached a max joint angle", this->joints[i]->get_joint_name().c_str());
+            // RCLCPP_INFO(this->get_logger(), "max joint angle: %f, present joint angle: %f", this->joints[i]->get_max_joint_angle(), this->joints[i]->get_joint_angle());
+
             for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
             {
                 Motor * motor = this->joints[i]->get_motor(j);
@@ -476,6 +479,8 @@ void gh360::MotorHandler::check_limits()
         }
         else if (this->joints[i]->get_joint_angle() <= this->joints[i]->get_min_joint_angle())
         {
+            // RCLCPP_INFO(this->get_logger(), "%s Reached a min joint angle", this->joints[i]->get_joint_name().c_str());
+            // RCLCPP_INFO(this->get_logger(), "min joint angle: %f, present joint angle: %f", this->joints[i]->get_min_joint_angle(), this->joints[i]->get_joint_angle());
             for (int j=0; j<this->joints[i]->get_motor_cnt(); j++)
             {
                 Motor * motor = this->joints[i]->get_motor(j);

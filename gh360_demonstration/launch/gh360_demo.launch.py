@@ -26,7 +26,7 @@ def generate_launch_description():
         executable='spacemouse',
         name='spacemouse',
         namespace='gh360_control',
-        parameters=[spacemouse_config_file],
+        #parameters=[spacemouse_config_file],
         output='screen')
     
     return LaunchDescription([
