@@ -47,8 +47,8 @@ class BaseController:
 
         self.pub_step = self.node.create_publisher(Bool, '/gym_stepping', 10)
 
-        self.pub_motor_goal_velocity = self.node.create_publisher(SetMotorVelocities, '/gh360/motor_goal_velocity', 10)
-        self.pub_motor_goal_position = self.node.create_publisher(SetMotorPositions, '/gh360/cmd_motor_pos', 10)
+        # self.pub_motor_goal_velocity = self.node.create_publisher(SetMotorVelocities, '/gh360/motor_goal_velocity', 10)
+        # self.pub_motor_goal_position = self.node.create_publisher(SetMotorPositions, '/gh360/cmd_motor_pos', 10)
 
         self.client_robot_stop = self.node.create_client(SetBool, '/gh360_control/robot_stop')
         while not self.client_robot_stop.wait_for_service(timeout_sec=1.0):

@@ -72,6 +72,7 @@ class DoorReset(Node):
         if close_door_msg and not self.close_door:
             self.motor_future = self.client_motor_torque.call_async(SetBool.Request(data=True))
             self.status = 0
+            self.closing_start_pos = 2.2
             self.close_door = True
 
     def timer_callback(self):
@@ -98,6 +99,7 @@ class DoorReset(Node):
             elif self.status == 1 and self.motor_status.present_velocity <= 0.0 and self.motor_status.present_position >= self.closing_start_pos-0.1:
                 self.status = 2
                 self.goal_current_msg.motor_goal_currents[0].current = self.closing_current
+                self.closing_start_pos += 0.2
                 self.get_logger().info("Changing to Satus 2")
             elif self.status == 2 and self.motor_status.present_velocity < 0.0:
                 self.status = 3
