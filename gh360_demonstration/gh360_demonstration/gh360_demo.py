@@ -104,6 +104,7 @@ class GH360Teleop(Node):
             rclpy.spin_once(self)
 
         self.get_logger().info("GH360 Teleop Node initialized")
+        self.start_time = time.time()
 
     def spacemouse_callback(self, msg):
         self.eef_vel = np.zeros(6)
@@ -177,7 +178,8 @@ class GH360Teleop(Node):
             "max_joint_pos": self.max_joint_pos.tolist(),
             "min_joint_pos": self.min_joint_pos.tolist(),
             "max_motor_current": self.max_current.tolist(),
-            "min_motor_current": self.min_current.tolist()
+            "min_motor_current": self.min_current.tolist(),
+            "duration": self.end_time - self.start_time,
         }
 
         with open(self.save_file+'_limits.json', 'w') as f:
@@ -212,6 +214,8 @@ class GH360Teleop(Node):
         self.env.reset()
         file_array = np.array(paths)
         np.save(self.save_file_path, file_array)
+
+        self.end_time = time.time()
 
 
 def main(args=None):
