@@ -88,7 +88,7 @@ class DoorEnv(gym.Env):
         self.robot_reset_pos = [0.02, -0.19, 0.15, 1.58, 1.87, 0.0, 0.0]
         self.via_point_pos_1 = [0.3383, -0.1071, -0.0041, 1.6654, 1.1585, 0.2132, 0.6659]
         self.via_point_pos_2 = [0.0729, -0.1325, 0.1064, 1.9791, 1.9488, -0.1779, -0.0942]
-        self.via_point_pos_3 = [0.27, -0.124, 0.2483, 1.4, 1.4, 0.0, 1.4]
+        self.via_point_pos_3 = [0.02, -0.19, 0.15, 1.58, 1.87, 0.0, 1.4]
         self.robot_standby_pos = [-0.38, -0.05, -0.016, 1.12, 1.94, 0.08, 0.46]
         self.standby_pos = False
         self.reset_pos = False
@@ -244,10 +244,11 @@ class DoorEnv(gym.Env):
             self.reset_controller.stop_robot(True)
             input("Press Enter to continue...")
             self.reset_controller.stop_robot(False)
-        if self.reset_pos:
-            self.reset_controller.set_goal_trajectory([self.robot_standby_pos])
-        else:
-            self.reset_controller.set_goal_trajectory([self.via_point_pos_3, self.robot_standby_pos])
+        # if self.reset_pos:
+        #     self.reset_controller.set_goal_trajectory([self.robot_standby_pos])
+        # else:
+        #     self.reset_controller.set_goal_trajectory([self.via_point_pos_3, self.robot_standby_pos])
+        self.reset_controller.set_goal_trajectory([self.robot_standby_pos])
         self.standby_pos = True
         self.reset_pos  = False
         
@@ -280,7 +281,7 @@ class DoorEnv(gym.Env):
         if self.standby_pos:
             reset_trajectory = [self.robot_reset_pos]
             self.standby_pos = False
-        elif self.handle_pos[2] < self.eef_pos[2]+0.01 or self.handle_qpos > 0.1:
+        elif self.handle_pos[2] < self.eef_pos[2]-0.0052 or self.handle_qpos > 0.1:
             reset_trajectory = [self.via_point_pos_3, self.robot_reset_pos]
         else:
             reset_trajectory = [self.via_point_pos_1, self.via_point_pos_2, self.robot_reset_pos]

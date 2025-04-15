@@ -47,10 +47,10 @@ class GH360Teleop(Node):
         self.btn1_pressed = False
         self.btn2_pressed = False
 
-        self.save_file = '/home/gh360/ros2_gh360_ws/src/gh360/gh360_demonstration/data/spacemouse_demonstrations/door/gh360_door_demonstration_v7'
+        self.save_file = '/home/gh360/ros2_gh360_ws/src/gh360/gh360_demonstration/data/spacemouse_demonstrations/door/gh360_door_demonstration_v9'
         self.save_file_path = self.save_file+'.npy'
         # config_file = '/home/laurenz/phd_project/TD7/runs/door/real_gh360/eef_vel/online/v7_refactor_test/variant.json'
-        self.config_path = '/home/gh360/TD7/runs/door/real_gh360/eef_vel/online/v2_constraint_demo/'
+        self.config_path = '/home/gh360/TD7/runs/door/real_gh360/eef_vel/online/v3_train_with_demo_buffer/'
         config_file = self.config_path+'variant.json'
         self.expert_paths = ''
 
@@ -207,6 +207,7 @@ class GH360Teleop(Node):
 
     def collect_demonstrations(self, mode, num_eps: int):
         paths = []
+        self.start_time = time.time()
 
         self.get_logger().info("Collecting expert demonstrations")
         paths = collect_demonstrations(self, mode, num_eps, self.expert_paths)
