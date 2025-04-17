@@ -65,7 +65,10 @@ class JointPositionController(BaseController):
                 rclpy.spin_once(self.node)
 
                 if self.stuck_cntr > 0:
-                    self.stop_robot(True)
+                    # self.stop_robot(True)
+                    start_time = time.time()
+                    while (time.time() - start_time) < 2:
+                        rclpy.spin_once(self.node)
                     return False
 
         while not self.joint_pos_goal_reached(goal_trajectory[-1], 0.02):
@@ -74,7 +77,10 @@ class JointPositionController(BaseController):
             rclpy.spin_once(self.node)
 
             if self.stuck_cntr > 0:
-                self.stop_robot(True)
+                # self.stop_robot(True)
+                start_time = time.time()
+                while (time.time() - start_time) < 2:
+                    rclpy.spin_once(self.node)
                 return False
 
         return True

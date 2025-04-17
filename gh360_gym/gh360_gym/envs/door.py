@@ -301,6 +301,10 @@ class DoorEnv(gym.Env):
                 reset_trajectory = [self.via_point_pos_1, self.via_point_pos_2, self.robot_reset_pos]
             stuck_cntr += 1
 
+        if stuck_cntr >= 3:
+            self.reset_controller.stop_robot(True)
+            return False
+
         self.reset_pos = True
         self.controller.last_time = 0
         time_sum = 0
