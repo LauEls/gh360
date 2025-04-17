@@ -64,7 +64,7 @@ class JointPositionController(BaseController):
                 self.cmd_joint_pos_publisher.publish(self.joint_goal_pos_msg)
                 rclpy.spin_once(self.node)
 
-                if self.stuck_cntr > 3:
+                if self.stuck_cntr > 0:
                     self.stop_robot(True)
                     return False
 
@@ -73,7 +73,7 @@ class JointPositionController(BaseController):
             self.cmd_joint_pos_publisher.publish(self.joint_goal_pos_msg)
             rclpy.spin_once(self.node)
 
-            if self.stuck_cntr > 3:
+            if self.stuck_cntr > 0:
                 self.stop_robot(True)
                 return False
 

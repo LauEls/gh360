@@ -248,7 +248,10 @@ class DoorEnv(gym.Env):
         #     self.reset_controller.set_goal_trajectory([self.robot_standby_pos])
         # else:
         #     self.reset_controller.set_goal_trajectory([self.via_point_pos_3, self.robot_standby_pos])
-        self.reset_controller.set_goal_trajectory([self.robot_standby_pos])
+        stuck_cntr = 0
+        while not self.reset_controller.set_goal_trajectory([self.robot_standby_pos]) and stuck_cntr < 3:
+            stuck_cntr += 1
+
         self.standby_pos = True
         self.reset_pos  = False
         
@@ -278,6 +281,7 @@ class DoorEnv(gym.Env):
             self.reset_controller.stop_robot(False)
 
         # reset_trajectory = [self.robot_reset_pos]
+        stuck_cntr = 0
         if self.standby_pos:
             reset_trajectory = [self.robot_reset_pos]
             self.standby_pos = False
@@ -286,7 +290,16 @@ class DoorEnv(gym.Env):
         else:
             reset_trajectory = [self.via_point_pos_1, self.via_point_pos_2, self.robot_reset_pos]
 
-        if not self.reset_controller.set_goal_trajectory(reset_trajectory): return False
+        # if not self.reset_controller.set_goal_trajectory(reset_trajectory): return False
+        while not self.reset_controller.set_goal_trajectory(reset_trajectory) and stuck_cntr < 3:
+            if self.standby_pos:
+                reset_trajectory = [self.robot_reset_pos]
+                self.standby_pos = False
+            elif self.handle_pos[2] < self.eef_pos[2]-0.0052 or self.handle_qpos > 0.1:
+                reset_trajectory = [self.via_point_pos_3, self.robot_reset_pos]
+            else:
+                reset_trajectory = [self.via_point_pos_1, self.via_point_pos_2, self.robot_reset_pos]
+            stuck_cntr += 1
 
         self.reset_pos = True
         self.controller.last_time = 0
