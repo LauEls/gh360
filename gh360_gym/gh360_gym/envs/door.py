@@ -320,6 +320,56 @@ class DoorEnv(gym.Env):
         return True
         
 
+    def special_reset(self, index):
+        max = self.controller.max_joint_pos
+        min = self.controller.min_joint_pos
+        self.special_reset_positions = []
+        self.special_reset_positions.append([min[0], max[1], min[2], max[3], min[4], max[5], max[6]])
+        self.special_reset_positions.append([min[0], max[1], max[2], min[3], min[4], max[5], min[6]])
+        self.special_reset_positions.append([max[0], min[1], max[2], min[3], max[4], max[5], max[6]])
+        self.special_reset_positions.append([max[0], min[1], min[2], max[3], max[4], max[5], min[6]])
+        self.special_reset_positions.append([min[0], min[1], max[2], max[3], min[4], min[5], min[6]])
+        self.special_reset_positions.append([min[0], max[1], min[2], max[3], min[4], min[5], min[6]])
+        self.special_reset_positions.append([min[0], max[1], max[2], max[3], min[4], max[5], max[6]])
+        self.special_reset_positions.append([min[0], max[1], max[2], max[3], min[4], min[5], max[6]])
+        self.special_reset_positions.append([max[0], max[1], min[2], min[3], max[4], max[5], min[6]])
+        self.special_reset_positions.append([min[0], min[1], max[2], min[3], max[4], min[5], min[6]])
+
+        reset_trajectory = []
+
+        if not self.reset_controller.robot_safety_check():
+            self.reset_controller.stop_robot(True)
+            input("Press Enter to continue...")
+            self.reset_controller.stop_robot(False)
+
+        reset_trajectory = [self.special_reset_positions[index], self.robot_reset_pos]
+        stuck_cntr = 0
+        while not self.reset_controller.set_goal_trajectory(reset_trajectory) and stuck_cntr < 3:
+            stuck_cntr += 1
+
+        if stuck_cntr >= 3:
+            self.reset_controller.stop_robot(True)
+            return False
+
+        self.reset_pos = True
+        self.controller.last_time = 0
+        time_sum = 0
+        for i in range(20):
+            zero_action = np.zeros(self.controller.control_dim)
+            time_sum += self.controller.set_step_goal(zero_action)
+
+        self.controller.control_time_adj = (time_sum/20) - (self.controller.control_timestep)
+        self.controller.last_time = 0
+        self.reseted = True
+        
+        obs = self._get_obs()
+        info = self._get_info()
+        info["reset_success"] = True
+        # print("finished reset")
+        self.reseted = True
+        self.node.get_logger().info("Resetting Door Environment Finished")
+
+        return obs, info
 
     def reset(self):
         # print("resetting")

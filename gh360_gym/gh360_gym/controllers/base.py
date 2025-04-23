@@ -26,7 +26,8 @@ class BaseController:
         self.motors = []
         self.joints = []
 
-        
+        self.max_joint_pos = max_joint_pos
+        self.min_joint_pos = min_joint_pos
 
         # if len(max_joint_pos) < 7:
         #     max_joint_pos = [1.5, 1.5, 0.7, 3.0, 2.2, np.pi/2, np.pi/2]
