@@ -1,5 +1,6 @@
 import numpy as np
 import rclpy
+import time
 from rclpy.node import Node
 
 from std_srvs.srv import SetBool
@@ -74,6 +75,7 @@ class DoorReset(Node):
             self.status = 0
             self.closing_start_pos = 2.2
             self.close_door = True
+            self.start_time = time.time()
 
     def timer_callback(self):
         if not self.first_status:
@@ -82,6 +84,9 @@ class DoorReset(Node):
         
         if self.close_door:
             if not self.motor_future.done():
+                return
+            if (time.time() - self.start_time) > 10:
+                self.client_motor_torque.call_async(SetBool.Request(data=False))
                 return
             if self.status == 0: 
                 if self.motor_status.present_position < 1.81:

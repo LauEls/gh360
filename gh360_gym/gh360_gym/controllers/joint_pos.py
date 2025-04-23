@@ -56,9 +56,9 @@ class JointPositionController(BaseController):
 
         
     def set_goal_trajectory(self, goal_trajectory):
-        self.start_time = time.time()
         self.stuck_cntr = 0
         for goal in goal_trajectory:
+            self.start_time = time.time()
             while not self.joint_pos_goal_reached(goal, 0.2, False):
                 self.joint_goal_pos_msg.data = goal
                 self.cmd_joint_pos_publisher.publish(self.joint_goal_pos_msg)
@@ -71,6 +71,8 @@ class JointPositionController(BaseController):
                         rclpy.spin_once(self.node)
                     return False
 
+        self.stuck_cntr = 0
+        self.start_time = time.time()
         while not self.joint_pos_goal_reached(goal_trajectory[-1], 0.02):
             self.joint_goal_pos_msg.data = goal_trajectory[-1]
             self.cmd_joint_pos_publisher.publish(self.joint_goal_pos_msg)
