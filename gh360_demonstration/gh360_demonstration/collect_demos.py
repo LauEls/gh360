@@ -1,6 +1,6 @@
 import numpy as np
 
-def collect_demonstrations(node, mode, num_eps: int, expert_episodes=None):
+def collect_demonstrations(node, mode, num_eps: int, expert_episodes=None, render=False):
     paths = []
     eps = 0
     steps = 0
@@ -9,19 +9,19 @@ def collect_demonstrations(node, mode, num_eps: int, expert_episodes=None):
         # print(f"Episode {eps}")
         node.get_logger().info(f"Episode {eps}")
         if mode == 'expert':
-            path = rollout(node, mode)
+            path = rollout(node, mode, render=render)
         elif mode == 'random':
-            path = rollout(node, mode)
+            path = rollout(node, mode, render=render)
         elif mode == 'gradual_random':
             expert_steps = np.random.randint(0, node.ep_length)
-            path = rollout(node, mode, expert_steps=expert_steps, expert_episodes=expert_episodes)
+            path = rollout(node, mode, expert_steps=expert_steps, expert_episodes=expert_episodes, render=render)
 
         # path = rollout(node, mode)
         steps += len(path['actions'])
         paths.append(path)
         eps += 1
 
-    node.get_logger().info(f"Collected {eps} episodes with {steps} steps. Start generating random data.")
+    node.get_logger().info(f"Collected {eps} episodes with {steps} steps.")
     
     # rnd_steps = 0
     # while rnd_steps < steps:
@@ -35,7 +35,7 @@ def collect_demonstrations(node, mode, num_eps: int, expert_episodes=None):
     # np.save(self.save_file_path, file_array)
     return paths
 
-def rollout(node, mode, expert_steps=0, expert_episodes=None):
+def rollout(node, mode, expert_steps=0, expert_episodes=None, render=False):
     action = np.zeros(7)
     observation = node.reset_env()
 
@@ -65,6 +65,9 @@ def rollout(node, mode, expert_steps=0, expert_episodes=None):
                 action = node.env.action_space.sample()
 
         next_observation, reward, done, info = node.env.step(action)
+        # print(f"next_observation: {len(next_observation)}")
+        if render:
+            node.env.render()
 
         if reward == 1 and not success:
             success = True

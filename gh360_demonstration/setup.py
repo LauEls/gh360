@@ -31,6 +31,7 @@ setup(
             'door_env_obs = gh360_demonstration.door_env_obs:main',
             'robosuite_demo = gh360_demonstration.robosuite_demo:main',
             'gh360_demo = gh360_demonstration.gh360_demo:main',
+            'gh360_sim_demo = gh360_demonstration.gh360_sim_demo:main',
             'spacemouse = gh360_demonstration.spacemouse:main',
         ],
     },

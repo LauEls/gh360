@@ -64,6 +64,9 @@ add_executable(encoder_handler src/encoder_handler.cpp)
 target_link_libraries(encoder_handler PRIVATE ${library_name} rclcpp::rclcpp)
 # ament_target_dependencies(encoder_handler std_msgs gh360_interfaces)
 
+add_executable(encoder_handler_v2 src/encoder_handler_v2.cpp)
+target_link_libraries(encoder_handler_v2 PRIVATE ${library_name} rclcpp::rclcpp)
+
 add_executable(joint_states src/joint_states.cpp)
 target_link_libraries(joint_states ${library_name})
 ament_target_dependencies(joint_states std_msgs gh360_interfaces sensor_msgs)
@@ -98,6 +101,7 @@ install(
 install(TARGETS 
   motor_handler
   encoder_handler
+  encoder_handler_v2
   joint_states
   motor_states
   eef_pose

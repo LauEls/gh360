@@ -38,8 +38,6 @@ class Encoder
          * @return The velocity of the joint
          */
         double calc_joint_velocity(std::chrono::time_point<std::chrono::system_clock> time);
-        // void set_prev_joint_angle(double angle);
-        // void set_joint_velocity(double velocity);
 
         /**
          * @return The name of the joint the encoder is connected to

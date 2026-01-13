@@ -101,8 +101,6 @@ namespace gh360
             void motor_goal_current_callback(const gh360_interfaces::msg::SetMotorCurrents::SharedPtr msg);
             void motor_goal_velocity_callback(const gh360_interfaces::msg::SetMotorVelocities::SharedPtr msg);
             void position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
-            // void velocity_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorVelocityStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorVelocityStep::Response> response);
-            // void delta_position_step_callback(const std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Request> request, std::shared_ptr<gh360_interfaces::srv::MotorPositionStep::Response> response);
             void set_torque_callback(const std::shared_ptr<std_srvs::srv::SetBool::Request> request, std::shared_ptr<std_srvs::srv::SetBool::Response> response);
             void move_home_callback(const std::shared_ptr<std_srvs::srv::SetBool::Request> request, std::shared_ptr<std_srvs::srv::SetBool::Response> response);
             void move_home_sub_callback(const std_msgs::msg::Bool::SharedPtr msg);
@@ -131,8 +129,6 @@ namespace gh360
             rclcpp::Publisher<gh360_interfaces::msg::PortStatus>::SharedPtr motor_state_publisher_;
             rclcpp::Subscription<gh360_interfaces::msg::SetMotorPositions>::SharedPtr motor_goal_positions_subscriber_;
             rclcpp::Service<gh360_interfaces::srv::MotorPositionStep>::SharedPtr position_step_service_;
-            // rclcpp::Service<gh360_interfaces::srv::MotorVelocityStep>::SharedPtr velocity_step_service_;
-            // rclcpp::Service<gh360_interfaces::srv::MotorPositionStep>::SharedPtr delta_position_step_service_;
             rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr set_torque_service_;
             rclcpp::Service<std_srvs::srv::SetBool>::SharedPtr move_home_service_;
             rclcpp::Service<gh360_interfaces::srv::SetJointLimits>::SharedPtr set_joint_limits_service_;

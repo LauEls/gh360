@@ -1,0 +1,17 @@
+/arduino/motor_handler:
+  ros__parameters:
+    joint_names: ['test_joint']
+    port_name: "/dev/serial/by-id/usb-Arduino_Srl_Arduino_Uno_9553034373435120C231-if00"
+    baud_rate: 1000000
+    protocol: 2
+    start_with_torque: true
+    test_joint:
+      joint_type: "motor_joint"
+      min_joint_angle: 1.77
+      max_joint_angle: 3.0
+      motor_init_pos: 0.0
+      motor_id: 30
+      movement_direction: 1
+      offset: 0.0
+      initialize: false
+      

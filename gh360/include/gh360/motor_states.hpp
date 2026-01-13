@@ -20,6 +20,9 @@ using namespace std::chrono_literals;
 
 namespace gh360
 {
+    /**
+     * @brief This class publishes the motor states sorted order from base to end-effector, so that the subscriber does not need to know the motor IDs.
+     */
     class MotorStates : public rclcpp::Node
     {
         public:

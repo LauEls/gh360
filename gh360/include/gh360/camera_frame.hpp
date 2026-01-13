@@ -10,6 +10,9 @@
 
 using namespace std::chrono_literals;
 
+/**
+ * Publishes the transform between the camera and the base frame of the robot.
+*/
 class CameraFrame : public rclcpp::Node
 {
     public:

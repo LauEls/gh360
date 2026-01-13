@@ -19,6 +19,9 @@ using namespace std::chrono_literals;
 
 namespace gh360
 {
+    /**
+     * @brief This class handles the encoders of the robot. It translates the data from integer values to radians, adjusts the values according to offset and movement direction and publishes the data to a ROS2 topic.
+     */
     class EncoderHandler : public rclcpp::Node
     {
         public:

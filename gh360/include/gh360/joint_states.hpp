@@ -20,6 +20,9 @@ using namespace std::chrono_literals;
 
 namespace gh360
 {
+    /**
+     * @brief This class handles the joint states of the robot. It subscribes to the motor states and encoder data, and publishes the joint states to a ROS2 topic.
+     */
     class JointStates : public rclcpp::Node
     {
         public:

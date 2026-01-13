@@ -14,6 +14,9 @@
 
 using namespace std::chrono_literals;
 
+/**
+ * Publishes the end-effector pose in the base frame of the robot.
+ */
 class EEFPose : public rclcpp::Node
 {
     public:
