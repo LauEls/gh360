@@ -270,7 +270,7 @@ class DoorEnv(gym.Env):
             rclpy.spin_once(self.node)
             if (time.time() - start_time) > 10:
                 self.reset_controller.stop_robot(True)
-            if self.handle_qpos[0] < 0.0 and self.hinge_qpos[0] < 0.01:
+            if self.handle_qpos[0] < 0.0 and self.hinge_qpos[0] < 0.04:
                 door_closed = True
         
         return
