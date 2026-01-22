@@ -187,12 +187,12 @@ def rosbag_record():
 
     process_handler = ProcessHandler()
     process_handler.add_process(
-        f'{pre_command} ros2 bag record -o {ros2_ws}/src/gh360/gh360_examples/data/spacemouse_demonstrations/no_env/test /shoulder/motor_goal_velocity /upperarm/motor_goal_velocity /lowerarm/motor_goal_velocity')
-    
+        # f'{pre_command} ros2 bag record -o {ros2_ws}/src/gh360/gh360_examples/data/spacemouse_demonstrations/no_env/test /shoulder/motor_goal_velocity /upperarm/motor_goal_velocity /lowerarm/motor_goal_velocity')
+        f'{pre_command} ros2 bag record -o {ros2_ws}/src/gh360/gh360_examples/data/spacemouse_demonstrations/no_env/full_setup_recording -a')
     action_handler = KeyActionHandler(
         process_handler=process_handler,
         on_icon=load_icon_byte_arr('record_icon.png'),
-        off_icon=load_icon_byte_arr('record_icon.png'))
+        off_icon=load_icon_byte_arr('record_icon.png', overlay=True))
     
     return action_handler
 

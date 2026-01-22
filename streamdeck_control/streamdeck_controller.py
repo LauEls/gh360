@@ -26,7 +26,7 @@ class StreamDeckGH360Control:
         self.key_actions.append(action_library.colcon_build())
         self.key_actions.append(action_library.move_home())
         self.key_actions.append(action_library.spacemouse_teleop())
-        self.key_actions.append(action_library.demo_gui())
+        self.key_actions.append(action_library.rosbag_record())
 
         self.dial_1_actions = []
         # self.dial_1_actions.append(action_library.rosbag_record())
