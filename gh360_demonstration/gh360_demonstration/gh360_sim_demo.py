@@ -25,7 +25,7 @@ class GH360Teleop(Node):
         super().__init__('gh360_teleop')
         self.get_logger().info("Initializing GH360 Teleop Node")
 
-        self.declare_parameter('demonstration_mode', 'gradual_random')
+        self.declare_parameter('demonstration_mode', 'expert')
         self.declare_parameter('num_episodes', 50)
         self.demonstration_mode = self.get_parameter('demonstration_mode').get_parameter_value().string_value
         self.num_episodes = self.get_parameter('num_episodes').get_parameter_value().integer_value
@@ -93,7 +93,8 @@ class GH360Teleop(Node):
             use_object_obs=True,
             use_camera_obs=False,
             controller_configs=controller_config,
-            render_camera="agentview",
+            # render_camera="agentview",
+            render_camera="frontview",
             )
         self.env = NormalizedBoxEnv(GymWrapper(env))
 

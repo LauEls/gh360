@@ -21,14 +21,14 @@ class MinimalPublisher : public rclcpp::Node
     {
         try {
             // Configure the serial port (replace with your port name)
-            configureSerialPort(serial_, "/dev/serial/by-id/usb-Arduino_Srl_Arduino_Uno_9553034373435120C231-if00", 115200);
+            configureSerialPort(serial_, "/dev/serial/by-id/usb-FWR_BOMBUS-SH-E-if00-port0", 2000000);
         }
         catch (const std::exception& e) {
             cerr << "Error configuring serial port: " << e.what() << endl;
             return;
         }
 
-        publisher_ = this->create_publisher<std_msgs::msg::String>("topic", 10);
+        publisher_ = this->create_publisher<std_msgs::msg::String>("/gh360/lowerarm/encoders", 10);
         timer_ = this->create_wall_timer(50ms, std::bind(&MinimalPublisher::timer_callback, this));
     }
 
@@ -86,6 +86,7 @@ class MinimalPublisher : public rclcpp::Node
         // }
 
         auto message = std_msgs::msg::String();
+        response.pop_back(); // Remove the newline character at the end of the response
         message.data = response;
         // RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
         publisher_->publish(message);
