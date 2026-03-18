@@ -33,6 +33,7 @@ setup(
             'gh360_demo = gh360_demonstration.gh360_demo:main',
             'gh360_sim_demo = gh360_demonstration.gh360_sim_demo:main',
             'spacemouse = gh360_demonstration.spacemouse:main',
+            'gh360_erf_teleop = gh360_demonstration.gh360_erf_teleop:main',
         ],
     },
 )

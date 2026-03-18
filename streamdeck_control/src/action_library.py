@@ -210,3 +210,35 @@ def rosbag_play():
         off_icon=load_icon_byte_arr('play_icon.png'))
     
     return action_handler
+
+def spacemouse_gym_teleop():
+    pre_command = f'{source_ros2_venv} {source_ros2_ws}'
+
+    process_handler = ProcessHandler()
+    process_handler.add_process(
+        f'{pre_command} ros2 launch gh360_demonstration gh360_erf_teleop.launch.py')
+    # process_handler.add_process(
+    #     f'{pre_command} ros2 run gh360_examples door_motor_control',
+    #     env=Env.door)
+    
+    action_handler = KeyActionHandler(
+        process_handler=process_handler,
+        on_icon=load_icon_byte_arr('spacemouse_icon_3.png'),
+        off_icon=load_icon_byte_arr('spacemouse_icon_3.png', overlay=True))
+    
+    return action_handler
+
+def open_door():
+    pre_command = f'{source_ros2_venv} {source_ros2_ws}'
+
+    process_handler = ProcessHandler()
+    process_handler.add_process(
+        f'{pre_command} python3 ~/TD7/erf_rollout.py',
+        env=Env.door)
+    
+    action_handler = KeyActionHandler(
+        process_handler=process_handler,
+        on_icon=load_icon_byte_arr('open_door_icon.png'),
+        off_icon=load_icon_byte_arr('open_door_icon.png', overlay=True))
+    
+    return action_handler
