@@ -34,7 +34,6 @@ class GH360Teleop(Node):
         
         
         self.reset = False
-        self.record_data = False
         self.btn1_pressed = False
         self.btn2_pressed = False
 
@@ -57,9 +56,6 @@ class GH360Teleop(Node):
 
         raw_env = gym.make('gh360_gym/'+env_name, **env_config, node=self)
         self.env = raw_env
-
-        self.create_subscription(JointState,'/gh360/joint_states',self.joint_states_callback,10)
-        self.create_subscription(PortStatus,'/gh360/motor_states_sorted',self.motor_status_callback,10)
 
 
         self.ep_length = variant["episode_length"]
@@ -89,49 +85,15 @@ class GH360Teleop(Node):
         elif not msg.button1 and self.btn1_pressed:
             self.reset = True
             self.btn1_pressed = False
-            if self.record_data:
-                self.get_logger().info("Stopped and deleted recorded data")
+            
 
         if msg.button2:
             self.btn2_pressed = True
         elif not msg.button2 and self.btn2_pressed:
-            self.record_data = not self.record_data
             self.btn2_pressed = False
-            if self.record_data:
-                self.get_logger().info("Recording data")
-            else:
-                self.get_logger().info("Stopped recording data")
-
-    def joint_states_callback(self, msg):
-        for i in range(len(msg.name)):
-            if msg.position[i] > self.max_joint_pos[i]:
-                self.max_joint_pos[i] = msg.position[i]
-            if msg.position[i] < self.min_joint_pos[i]:
-                self.min_joint_pos[i] = msg.position[i]
-
-    def motor_status_callback(self, msg):
-        for i, motor in enumerate(msg.motors):
-            if motor.present_current > self.max_current[i]:
-                self.max_current[i] = motor.present_current
-            if motor.present_current < self.min_current[i]:
-                self.min_current[i] = motor.present_current
 
 
-    def write_limits_file(self):
-        self.get_logger().info("Writing limits to file")
-        limits = {
-            "max_joint_pos": self.max_joint_pos.tolist(),
-            "min_joint_pos": self.min_joint_pos.tolist(),
-            "max_motor_current": self.max_current.tolist(),
-            "min_motor_current": self.min_current.tolist(),
-            "duration": self.end_time - self.start_time,
-        }
-
-        with open(self.save_file+'_limits.json', 'w') as f:
-            json.dump(limits, f)
-        self.get_logger().info("Limits written to file")
-
-    def expert_action(self, observation):
+    def expert_action(self):
         if self.reset:
             self.reset_env()
 
@@ -139,49 +101,49 @@ class GH360Teleop(Node):
 
         action = self.eef_vel
 
-        return action, self.record_data
+        return action
     
     def reset_env(self):
         observation = self.env.reset()
 
         self.reset = False
-        self.record_data = False
+        self.start_time = time.time()
+        self.step_cntr = 0
+        self.get_logger().info("Start Teleop Demonstration")
 
         return observation
 
     def collect_demonstrations(self):
     
-        self.rollout()
-        self.end_time = time.time()
-        self.get_logger().info("Demonstration Finished in {} seconds".format(self.end_time - self.start_time))
-        self.env.reset()
+        while True:
+            self.rollout()
+            self.end_time = time.time()
+            self.get_logger().info("Demonstration Finished in {} seconds".format(self.end_time - self.start_time))
+            self.env.reset()
 
         
 
     def rollout(self):
         action = np.zeros(7)
-        observation = self.reset_env()
+        self.reset_env()
 
-        i = 0
+        self.step_cntr = 0
         success = False
-        self.get_logger().info("Start Teleop Demonstration")
+        
         self.start_time = time.time()
 
-        while i < self.ep_length:
+        while self.step_cntr < self.ep_length:
             
-            action = self.expert_action(observation)
+            action = self.expert_action()
             
-
-            next_observation, reward, done, info = self.env.step(action)
+            if not self.reset:
+                next_observation, reward, done, info = self.env.step(action)
             # print(f"next_observation: {len(next_observation)}")
 
             if reward == 1 and not success:
                 success = True
                 self.get_logger().info(f"Epsiode successful")
                 return True
-
-            observation = next_observation
-
 
         return True
 
@@ -190,7 +152,11 @@ def main(args=None):
     rclpy.init(args=args)
 
     gh360_teleop = GH360Teleop()
-    gh360_teleop.collect_demonstrations()
+
+    try:
+        gh360_teleop.collect_demonstrations()
+    except KeyboardInterrupt:
+        gh360_teleop.reset_env()
 
 
 if __name__ == '__main__':
