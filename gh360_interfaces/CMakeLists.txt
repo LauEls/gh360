@@ -44,6 +44,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/TestService.srv"
   "srv/SetRobotLimits.srv"
   "srv/SetJointLimits.srv"
+  "srv/LogTime.srv"
   "action/DoorEnvReset.action"
   DEPENDENCIES geometry_msgs # Add packages that above messages depend on, in this case geometry_msgs for Sphere.msg
 )

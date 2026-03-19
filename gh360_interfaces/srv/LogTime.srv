@@ -1,0 +1,5 @@
+std_msgs/String username
+float64 time
+---
+int32 placement
+bool topten

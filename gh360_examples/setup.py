@@ -39,6 +39,8 @@ setup(
             'testing_script = gh360_examples.testing_script:main',
             'reset_robot = gh360_examples.reset_robot:main',
             'robosuite_teleop = gh360_examples.robosuite_teleop:main',
+            'erf_leaderboard = gh360_examples.erf_leaderboard:main',
+            'send_time = gh360_examples.send_time:main'
         ],
     },
 )

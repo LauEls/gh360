@@ -8,9 +8,9 @@ import json
 import os
 from rclpy.node import Node
 
-from geometry_msgs.msg import Twist
-from sensor_msgs.msg import JointState
-from gh360_interfaces.msg import SpaceMouse, PortStatus
+from gh360_interfaces.srv import LogTime
+from std_msgs.msg import String
+from gh360_interfaces.msg import SpaceMouse
 
 import sys
 from robosuite.wrappers import GymWrapper
@@ -64,12 +64,24 @@ class GH360Teleop(Node):
 
         self.eef_vel = None
 
+        self.cli = self.create_client(LogTime, 'erf_log_time')
+        while not self.cli.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info('service not available, waiting again...')
+        self.req = LogTime.Request()
 
         while self.eef_vel is None:
             rclpy.spin_once(self)
 
+        
         self.get_logger().info("GH360 Teleop Node initialized")
-        self.start_time = time.time()
+
+    def send_request(self, time):
+        username = String()
+        self.req.username = username
+        self.req.time = time
+        self.future = self.cli.call_async(self.req)
+        rclpy.spin_until_future_complete(self, self.future)
+        return self.future.result()
 
     def spacemouse_callback(self, msg):
         self.eef_vel = np.zeros(6)
@@ -107,8 +119,7 @@ class GH360Teleop(Node):
         observation = self.env.reset()
 
         self.reset = False
-        self.start_time = time.time()
-        self.step_cntr = 0
+        self.start_time = -1
         self.get_logger().info("Start Teleop Demonstration")
 
         return observation
@@ -116,36 +127,39 @@ class GH360Teleop(Node):
     def collect_demonstrations(self):
     
         while True:
-            self.rollout()
+            success = self.rollout()
             self.end_time = time.time()
             self.get_logger().info("Demonstration Finished in {} seconds".format(self.end_time - self.start_time))
-            self.env.reset()
+            if success:
+                response = self.send_request(self.end_time - self.start_time)
+                self.get_logger().info('Result of erf_log_time: %s' % response.topten)
 
         
 
     def rollout(self):
         action = np.zeros(7)
         self.reset_env()
-
-        self.step_cntr = 0
-        success = False
         
-        self.start_time = time.time()
+        self.start_time = -1
 
-        while self.step_cntr < self.ep_length:
+        while not self.success:
             
             action = self.expert_action()
             
+            if self.start_time == -1 and action != np.zeros(6):
+                self.start_time = time.time()
+                self.get_logger().info("Time started")
+
             if not self.reset:
                 next_observation, reward, done, info = self.env.step(action)
             # print(f"next_observation: {len(next_observation)}")
 
-            if reward == 1 and not success:
-                success = True
+            if reward == 1:
+                self.success = True
                 self.get_logger().info(f"Epsiode successful")
                 return True
 
-        return True
+        return False
 
 
 def main(args=None):

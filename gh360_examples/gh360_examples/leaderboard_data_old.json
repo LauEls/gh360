@@ -1,0 +1,32 @@
+{
+    "GH360": {
+        "time": 512.28
+    },
+    "User3": {
+        "time": 550.12
+    },
+    "test_user": {
+        "time": 550.32
+    },
+    "User2": {
+        "time": 600.45
+    },
+    "test_user_9": {
+        "time": 712.32
+    },
+    "test_user_16": {
+        "time": 713.32
+    },
+    "test_user_15": {
+        "time": 714.32
+    },
+    "test_user_14": {
+        "time": 715.32
+    },
+    "test_user_8": {
+        "time": 725.32
+    },
+    "test_user_10": {
+        "time": 727.32
+    }
+}
