@@ -36,6 +36,7 @@ class GH360Teleop(Node):
         self.reset = False
         self.btn1_pressed = False
         self.btn2_pressed = False
+        self.future = None
 
         # config_file = '/home/laurenz/phd_project/TD7/runs/door/real_gh360/eef_vel/online/v7_refactor_test/variant.json'
         self.config_path = '/home/gh360/TD7/runs/door/real_gh360/eef_vel/online/v16_erf/'
@@ -64,7 +65,7 @@ class GH360Teleop(Node):
 
         self.eef_vel = None
 
-        self.cli = self.create_client(LogTime, 'erf_log_time')
+        self.cli = self.create_client(LogTime, '/erf_log_time')
         while not self.cli.wait_for_service(timeout_sec=1.0):
             self.get_logger().info('service not available, waiting again...')
         self.req = LogTime.Request()
@@ -80,8 +81,8 @@ class GH360Teleop(Node):
         self.req.username = username
         self.req.time = time
         self.future = self.cli.call_async(self.req)
-        rclpy.spin_until_future_complete(self, self.future)
-        return self.future.result()
+        # rclpy.spin_until_future_complete(self, self.future)
+        # return self.future.result()
 
     def spacemouse_callback(self, msg):
         self.eef_vel = np.zeros(6)
@@ -132,7 +133,7 @@ class GH360Teleop(Node):
             self.get_logger().info("Demonstration Finished in {} seconds".format(self.end_time - self.start_time))
             if success:
                 response = self.send_request(self.end_time - self.start_time)
-                self.get_logger().info('Result of erf_log_time: %s' % response.topten)
+                # self.get_logger().info('Result of erf_log_time: %s' % response.topten)
 
         
 
@@ -141,12 +142,17 @@ class GH360Teleop(Node):
         self.reset_env()
         
         self.start_time = -1
+        success = False
+        
+        if self.future is not None:
+            while not self.future.done():
+                time.sleep(1)
 
-        while not self.success:
+        while not success:
             
             action = self.expert_action()
             
-            if self.start_time == -1 and action != np.zeros(6):
+            if self.start_time == -1 and action.any() != 0.0:
                 self.start_time = time.time()
                 self.get_logger().info("Time started")
 
@@ -155,7 +161,7 @@ class GH360Teleop(Node):
             # print(f"next_observation: {len(next_observation)}")
 
             if reward == 1:
-                self.success = True
+                success = True
                 self.get_logger().info(f"Epsiode successful")
                 return True
 

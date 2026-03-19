@@ -29,8 +29,9 @@ class ERFLeaderboard(Node):
         # self.app.geometry("1920x1080")
 
         # Load leaderboard data from JSON file if it exists
+        self.file_path = "/home/gh360/ros2_gh360_ws/src/gh360/gh360_examples/gh360_examples/leaderboard_data.json"
         try:
-            with open("/home/laurenz/phd_project/ros2_gh360_ws/src/gh360/gh360_examples/gh360_examples/leaderboard_data.json", "r") as json_file:
+            with open(self.file_path, "r") as json_file:
                 self.leaderboard_data = json.load(json_file)
         except FileNotFoundError:
             self.get_logger().info("Leaderboard data file not found. Using default data.")
@@ -75,7 +76,7 @@ class ERFLeaderboard(Node):
     def log_time_callback(self, request, response):
         self.get_logger().info(f"Received log time request from user: {request.username.data} with time: {request.time}s")
         user_name = request.username.data
-        time = request.time
+        time = round(request.time, 4)
 
         if len(self.leaderboard_data) < 10 or time < max(entry['time'] for entry in self.leaderboard_data.values()) or user_name in self.leaderboard_data:
             if user_name == "":
@@ -110,7 +111,7 @@ class ERFLeaderboard(Node):
         return response
 
     def save_leaderboard_to_json(self):
-        with open("/home/laurenz/phd_project/ros2_gh360_ws/src/gh360/gh360_examples/gh360_examples/leaderboard_data.json", "w") as json_file:
+        with open(self.file_path, "w") as json_file:
             json.dump(self.leaderboard_data, json_file, indent=4)
 
 def main(args=None):
