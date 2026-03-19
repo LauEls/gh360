@@ -177,3 +177,7 @@
       offset: 4.04
       inverter: 1
 
+/gh360/lowerarm/encoders:
+  ros__parameters:
+    port_name: "/dev/serial/by-id/usb-FWR_BOMBUS-SH-E-if00-port0"
+    baud_rate: 115200

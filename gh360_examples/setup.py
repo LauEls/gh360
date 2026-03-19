@@ -41,7 +41,7 @@ setup(
             'robosuite_teleop = gh360_examples.robosuite_teleop:main',
             'erf_leaderboard = gh360_examples.erf_leaderboard:main',
             'send_time = gh360_examples.send_time:main',
-            'encoder_handler = gh360_examples.encoder_handler:main'
+            'serial_encoder_handler = gh360_examples.serial_encoder_handler:main'
         ],
     },
 )
