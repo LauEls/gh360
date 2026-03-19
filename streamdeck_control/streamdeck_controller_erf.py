@@ -26,6 +26,9 @@ class StreamDeckGH360Control:
         self.key_actions.append(action_library.spacemouse_gym_teleop())
         self.key_actions.append(action_library.open_door())
 
+        self.dial_actions = []
+        self.dial_actions.append(action_library.erf_leaderboard())
+
         streamdecks = DeviceManager().enumerate()
 
         print("Found {} Stream Deck(s).\n".format(len(streamdecks)))
@@ -55,6 +58,8 @@ class StreamDeckGH360Control:
             self.deck.set_key_image(key, image)
 
         img = Image.new('RGB', (800, 100), 'black')
+        icon = self.dial_actions[0].off_icon
+        img.paste(icon, (30,10), icon)
                 
         img_bytes = io.BytesIO()
         img.save(img_bytes, format='JPEG')
@@ -78,12 +83,17 @@ class StreamDeckGH360Control:
 
     # callback when dials are pressed or released
     def dial_change_callback(self, deck, dial, event, value):
+        img = Image.new('RGB', (800, 100), 'black')
+
         if event == DialEventType.PUSH:
-            if dial == 3 and value:
+            if dial == 1 and not value:
+                dial_icon = self.dial_actions[0].keypress(self.env)
+                img.paste(dial_icon, (30,10), dial_icon)
+            if dial == 3 and not value:
                 self.closeStreamDeck()
                  
 
-        img = Image.new('RGB', (800, 100), 'black')
+        
                 
         img_byte_arr = io.BytesIO()
         img.save(img_byte_arr, format='JPEG')

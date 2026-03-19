@@ -242,3 +242,20 @@ def open_door():
         off_icon=load_icon_byte_arr('open_door_icon.png', overlay=True))
     
     return action_handler
+
+def erf_leaderboard():
+    pre_command = f'{source_ros2_venv} {source_ros2_ws}'
+
+    process_handler = ProcessHandler()
+    process_handler.add_process(
+        f'{pre_command} ros2 run gh360_examples erf_leaderboard')
+    # process_handler.add_process(
+    #     f'{pre_command} ros2 run gh360_examples door_motor_control',
+    #     env=Env.door)
+    
+    action_handler = KeyActionHandler(
+        process_handler=process_handler,
+        on_icon=load_icon_byte_arr('podium.png'),
+        off_icon=load_icon_byte_arr('podium.png', overlay=True))
+    
+    return action_handler
