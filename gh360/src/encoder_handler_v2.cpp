@@ -21,7 +21,7 @@ class MinimalPublisher : public rclcpp::Node
     {
         try {
             // Configure the serial port (replace with your port name)
-            configureSerialPort(serial_, "/dev/serial/by-id/usb-FWR_BOMBUS-SH-E-if00-port0", 2000000);
+            configureSerialPort(serial_, "/dev/serial/by-id/usb-FWR_BOMBUS-SH-E-if00-port0", 115200);
         }
         catch (const std::exception& e) {
             cerr << "Error configuring serial port: " << e.what() << endl;
@@ -33,6 +33,8 @@ class MinimalPublisher : public rclcpp::Node
     }
 
   private:
+    std::string serial_msgs[10];
+
     // Function to configure the serial port
     void configureSerialPort(asio::serial_port& serial,
                              const string& portname,
@@ -63,32 +65,25 @@ class MinimalPublisher : public rclcpp::Node
         string line;
         getline(is, line); // Extract the line from the buffer
 
-        return line;
-    }
 
-    // Function to write data to the serial port
-    void writeToSerialPort(asio::serial_port& serial,
-                           const string& message)
-    {
-        system::error_code ec;
-        // Write data to the serial port
-        asio::write(serial, asio::buffer(message), ec);
-        if (ec) {
-            cerr << "Error writing to serial port: " << ec.message() << endl;
-        }
+
+        return line;
     }
 
     void timer_callback()
     {
-        string response = readFromSerialPort(serial_);
+        for (int i=0; i<3; i++) {
+            // string response = readFromSerialPort(serial_);
+            this->serial_msgs[i] = readFromSerialPort(serial_);
+        }
         // if (!response.empty()) {
         //     cout << "Response received: " << response << endl;
         // }
 
         auto message = std_msgs::msg::String();
-        response.pop_back(); // Remove the newline character at the end of the response
-        message.data = response;
-        // RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
+        // response.pop_back(); // Remove the newline character at the end of the response
+        message.data = this->serial_msgs[0];
+        RCLCPP_INFO(this->get_logger(), "Publishing: '%s'", message.data.c_str());
         publisher_->publish(message);
     }
 

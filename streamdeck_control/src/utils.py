@@ -38,7 +38,6 @@ def load_icon(file_name, white_background=False, overlay=False):
         img_back = ImageDraw.Draw(img)
         img_back.rectangle([30,45,90,75], fill="white", outline="white") 
     icon = Image.open(asset_path).resize((80, 80))
-    print(type(icon))
     img.paste(icon, (0, 0), icon)
     img = img.convert('RGBA')
 
@@ -52,6 +51,4 @@ def load_icon(file_name, white_background=False, overlay=False):
 
         img = Image.alpha_composite(img, overlay)
         # img = img.convert('RGB')
-
-    print(type(img))
     return img
