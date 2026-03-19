@@ -58,8 +58,8 @@ class StreamDeckGH360Control:
             self.deck.set_key_image(key, image)
 
         img = Image.new('RGB', (800, 100), 'black')
-        icon = self.dial_actions[0].off_icon
-        img.paste(icon, (30,10), icon)
+        self.dial_0_icon = self.dial_actions[0].off_icon
+        img.paste(self.dial_0_icon, (30,10), self.dial_0_icon)
                 
         img_bytes = io.BytesIO()
         img.save(img_bytes, format='JPEG')
@@ -84,17 +84,16 @@ class StreamDeckGH360Control:
     # callback when dials are pressed or released
     def dial_change_callback(self, deck, dial, event, value):
         img = Image.new('RGB', (800, 100), 'black')
-
+        
         if event == DialEventType.PUSH:
-            if dial == 1 and not value:
-                dial_icon = self.dial_actions[0].keypress(self.env)
-                img.paste(dial_icon, (30,10), dial_icon)
+            if dial == 0 and not value:
+                self.dial_0_icon = self.dial_actions[0].keypress(self.env)
             if dial == 3 and not value:
                 self.closeStreamDeck()
                  
 
         
-                
+        img.paste(self.dial_0_icon, (30,10), self.dial_0_icon)
         img_byte_arr = io.BytesIO()
         img.save(img_byte_arr, format='JPEG')
         img_byte_arr = img_byte_arr.getvalue()

@@ -1,5 +1,5 @@
 from src.process_handler import ProcessHandler
-from src.utils import load_icon_byte_arr
+from src.utils import load_icon_byte_arr, load_icon
 from src.environments import Env
 import os
 import json
@@ -255,7 +255,7 @@ def erf_leaderboard():
     
     action_handler = KeyActionHandler(
         process_handler=process_handler,
-        on_icon=load_icon_byte_arr('podium.png'),
-        off_icon=load_icon_byte_arr('podium.png', overlay=True))
+        on_icon=load_icon('podium.png'),
+        off_icon=load_icon('podium.png', overlay=True))
     
     return action_handler
