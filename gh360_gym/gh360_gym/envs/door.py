@@ -288,7 +288,8 @@ class DoorEnv(gym.Env):
 
         # reset_trajectory = [self.robot_reset_pos]
         stuck_cntr = 0
-        if self.standby_pos or (self.handle_pos[2] < self.eef_pos[2] and self.handle_qpos <= 0.1):
+        self.node.get_logger().info(f"handle to eef: {self.handle_pos[2] - self.eef_pos[2]}")
+        if self.standby_pos or (self.handle_pos[2] < self.eef_pos[2]-0.044 and self.handle_qpos <= 0.1):
             reset_trajectory = [self.robot_reset_pos]
             self.standby_pos = False
         elif self.handle_pos[2] < self.eef_pos[2]-0.0052 or self.handle_qpos > 0.1:
