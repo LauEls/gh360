@@ -26,6 +26,18 @@ def generate_launch_description():
         ]
     )
 
+    serial_encoder_handler = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360'), 'launch'), '/serial_encoder_handler.launch.py'])
+    )
+    serial_encoder_handler_with_namespace = GroupAction(
+        actions=[
+            PushRosNamespace(namespace='gh360'),
+            serial_encoder_handler
+        ]
+    )
+
+
+
     encoder_handler = IncludeLaunchDescription(
         PythonLaunchDescriptionSource([os.path.join(get_package_share_directory('gh360'), 'launch'), '/encoder_handler.launch.py'])
     )
@@ -45,6 +57,7 @@ def generate_launch_description():
     
     return LaunchDescription([
         motor_handler_with_namespace,
+        serial_encoder_handler_with_namespace,
         encoder_handler,
         eef_pose_node,
         controller_nodes

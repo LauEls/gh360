@@ -127,7 +127,7 @@
 /gh360/lowerarm/motor_handler:
   ros__parameters:
     joint_names: ['forearm_roll', 'wrist_pitch']
-    port_name: "/dev/serial/by-id/usb-FWR_BOMBUS-SH-M-if00-port0"
+    port_name: "/dev/serial/by-id/usb-FieldworkRobotics_GH2_Lower-RS485_D35NR2H3-if00-port0"
     baud_rate: 1000000
     protocol: 2
     wrist_pitch:
@@ -153,12 +153,12 @@
       inverter: -1
     shoulder_roll:
       port_name: "/gh360/shoulder/encoders"
-      port_id: 1
+      port_id: 3
       offset: 0.05
       inverter: -1
     shoulder_pitch:
       port_name: "/gh360/upperarm/encoders"
-      port_id: 1
+      port_id: 3
       offset: 0.1076
       inverter: -1
     upperarm_roll:
@@ -168,7 +168,7 @@
       inverter: 1
     elbow:
       port_name: "/gh360/upperarm/encoders"
-      port_id: 3
+      port_id: 1
       offset: -0.5
       inverter: 1
     wrist_pitch:
@@ -177,7 +177,17 @@
       offset: 4.04
       inverter: 1
 
-/gh360/lowerarm/encoders:
+/gh360/shoulder/serial_encoder_handler:
   ros__parameters:
-    port_name: "/dev/serial/by-id/usb-FWR_BOMBUS-SH-E-if00-port0"
+    serial_port: 'usb-FieldworkRobotics_GH2_Shoulder-MICRO_D36DKY91-if00-port0'
+    baud_rate: 115200
+
+/gh360/upperarm/serial_encoder_handler:
+  ros__parameters:
+    serial_port: 'usb-FieldworkRobotics_GH2_Upper-MICRO_D35TXUXS-if00-port0'
+    baud_rate: 115200
+
+/gh360/lowerarm/serial_encoder_handler:
+  ros__parameters:
+    serial_port: 'usb-FieldworkRobotics_GH2_Lower-MICRO_D361ZNY8-if00-port0'
     baud_rate: 115200

@@ -65,6 +65,8 @@ def encoder_startup():
         env=Env.door)
     process_handler.add_process(
         f'{source_ros_bridge_ws} ros2 run ros1_bridge dynamic_bridge --bridge-all-topics')
+    # process_handler.add_process(
+    #     f'{source_ros2_venv} {source_ros2_ws} ros2 run gh360_examples erf_leaderboard')
 
     action_handler = KeyActionHandler(
         process_handler=process_handler, 
@@ -83,7 +85,14 @@ def motor_startup():
     process_handler.add_process(
         f'{pre_command} ros2 launch gh360 gh360_door_env.launch.py', 
         env=Env.door)
-    
+    # process_handler.add_process(
+    #     f'{source_ros_venv} {source_ros_ws} roslaunch gh360_control door_env.launch',
+    #     env=Env.door)
+    # process_handler.add_process(
+    #     f'{source_ros_bridge_ws} ros2 run ros1_bridge dynamic_bridge --bridge-all-topics')
+    # process_handler.add_process(
+    #     f'{pre_command} ros2 run gh360_examples erf_leaderboard')
+
     action_handler = KeyActionHandler(
         process_handler=process_handler, 
         on_icon=load_icon_byte_arr('motor_on_icon.png'), 

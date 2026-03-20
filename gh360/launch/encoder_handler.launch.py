@@ -17,13 +17,4 @@ def generate_launch_description():
                 get_package_share_directory('gh360'),
                 'config', 'gh360_config.yaml')],
             output='screen'),
-        Node(
-            package='gh360_examples',
-            executable='serial_encoder_handler',
-            name='serial_encoder_handler_lowerarm',
-            namespace='gh360/lowerarm',
-            parameters=[os.path.join(
-                get_package_share_directory('gh360'),
-                'config', 'gh360_config.yaml')],
-            output='screen'),
     ])

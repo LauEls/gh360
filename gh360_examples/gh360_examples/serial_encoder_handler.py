@@ -9,13 +9,22 @@ from std_msgs.msg import String
 class EncoderSerialPublisher(Node):
 
     def __init__(self):
-        super().__init__('encoder_serial_publisher')
+        super().__init__('serial_encoder_handler')
         
-        self.declare_parameter('serial_port', '')
+        # self.declare_parameter('serial_port', '')
+        self.declare_parameter('serial_port', 'usb-FieldworkRobotics_GH2_Shoulder-MICRO_D36DKY91-if00-port0')
+        # self.declare_parameter('serial_port', 'usb-FieldworkRobotics_GH2_Upper-MICRO_D35TXUXS-if00-port0')
+        # self.declare_parameter('serial_port', 'usb-FieldworkRobotics_GH2_Lower-MICRO_D361ZNY8-if00-port0')
         self.declare_parameter('baud_rate', 115200)
+        # 'usb-FieldworkRobotics_GH2_Shoulder-MICRO_D36DKY91-if00-port0'
+        # 'usb-FieldworkRobotics_GH2_Upper-MICRO_D35TXUXS-if00-port0'
+        # 'usb-FieldworkRobotics_GH2_Lower-MICRO_D361ZNY8-if00-port0'
+    
 
         serial_port = self.get_parameter('serial_port').get_parameter_value().string_value
         baud_rate = self.get_parameter('baud_rate').get_parameter_value().integer_value
+
+        serial_port = '/dev/serial/by-id/'+serial_port
 
         self.ser = serial.Serial(serial_port, baud_rate, timeout=1) 
         time.sleep(2) # Wait a moment for the connection to establish
@@ -38,9 +47,10 @@ class EncoderSerialPublisher(Node):
                 self.decoded_data = raw_data.decode('utf-8').strip()
 
     def timer_callback(self):
-        msg = String()
-        msg.data = self.decoded_data
-        self.publisher_.publish(msg)
+        if self.decoded_data != "fault":
+            msg = String()
+            msg.data = self.decoded_data
+            self.publisher_.publish(msg)
         # self.get_logger().info('Publishing: "%s"' % msg.data)
 
 
